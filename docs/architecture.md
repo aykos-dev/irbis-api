@@ -1,7 +1,7 @@
 # irbis-api — Architecture
 
-The single backend for Irbis. Serves the mobile app (`irbis-app`) and the admin panel
-(`irbis-web`), owns the PostgreSQL database, and publishes the contract both clients generate
+The single backend for Irbis — a gamified outdoor-safety app for Uzbekistan and Central Asia. Serves the mobile app
+(`irbis-app`) and the admin panel (`irbis-web`), owns the PostgreSQL database, and publishes the contract both clients generate
 their code from: **`openapi.json`** at the repo root. (Product summary: `irbis-docs/PROJECT.md`.)
 
 Companion document — mandatory:
@@ -85,12 +85,12 @@ irbis-api/
     │   └── prisma.service.ts    # client with pg adapter, lifecycle hooks
     ├── lib/                     # pure helpers: geo distance, cursor encode/decode, dates
     ├── health/                  # terminus /health (public)
-    └── features/                # vertical slices — same slug as irbis-web / irbis-app
-        ├── auth/                # sign in, OTP, refresh, sign out
-        ├── users/               # me, profile, admin user lookup
-        ├── spots/               # CRUD (admin), list/detail (app), verification
-        ├── spot-checkin/        # check-in rules, XP award
-        └── xp/                  # XP ledger, totals
+    └── features/                # vertical slices — same slug as irbis-web / irbis-app (ROADMAP.md)
+        ├── auth/  onboarding/  profile/        # Phase 1 accounts
+        ├── places/  conditions/                # catalogue, trails, condition engine
+        ├── levels/  lessons/  streaks/  badges/  weekly-path/   # progress (+ game-config, xp ledger in levels/)
+        ├── trip-plan/  active-trip/  check-in/  safety-center/  # trips & safety
+        └── …                                   # Phase 2+ features add their own folder
 ```
 
 Rules (enforced by dependency-cruiser in `npm run check`):
@@ -123,64 +123,123 @@ features/<slug>/
 
 ## Domain Model
 
-Provisional — extend as features land. Database names in brackets.
+From the Product Overview (2026-10-16). Grouped by roadmap phase; a feature adds only its own tables, in its own
+migration. Names are the Prisma models (DB tables snake_case plural). Numbers the doc calls "decided after testing"
+(XP amounts, level thresholds, caps) live in **`GameConfig`**, never in code.
 
+### Accounts & profile (Phase 1: `auth`, `onboarding`, `profile`)
 ```
-User [users]
-├── id, displayName, phone (unique, never logged), role: 'user' | 'admin'
-├── xpTotal                      # cached sum of xp_entries, updated in the same transaction
-└── createdAt, updatedAt
-
-RefreshToken [refresh_tokens]
-└── id, userId, familyId, tokenHash, expiresAt, revokedAt, replacedById
-
-Spot [spots]
-├── id, name, description, lat, lng, radiusM (default 200)
-├── verified, verifiedAt, verifiedById
-└── createdAt, updatedAt
-
-CheckIn [check_ins]
-├── id, userId, spotId, lat, lng, distanceM, checkInDate (date in the rule's timezone)
-├── createdAt
-└── UNIQUE (userId, spotId, checkInDate)       # "once per day per spot" lives here
-
-XpEntry [xp_entries]                            # append-only ledger
-├── id, userId, amount (int), reason: 'check_in' | …, refId
-├── createdAt
-└── UNIQUE (reason, refId)                      # one award per source event
-
-IdempotencyKey [idempotency_keys]
-└── key, userId, route, requestHash, responseStatus, responseBody, createdAt, expiresAt
+User            id, phone (unique, never logged), phoneVerifiedAt, displayName, avatarUrl?, locale (uz|ru|en),
+                experience (beginner|weekend|experienced), interests[] (peak|cave|lake|camping|trail),
+                level (1–7), xpTotal, gems, role (user|admin|operator), createdAt
+RefreshToken    id, userId, familyId, tokenHash, expiresAt, revokedAt, replacedById
+EmergencyContact id, userId, name, phone (encrypted at rest), relation
+Device          id, userId, platform, pushToken, locale
 ```
 
-Invariants:
+### Places & conditions (Phase 1: `places`, `conditions`)
+```
+Region          id, slug, name{uz,ru,en}, country, offlinePackUrl?, bbox
+Place           id, regionId, type (peak|lake|cave|camping|trail), name{uz,ru,en}, lat, lng, elevationM,
+                difficulty (1–5), requiredLevel (1–7), seasonMonths[12] (best|possible|closed), hazards[]
+                (avalanche|flood|mudslide|heat|road_closure|…), safetyTips{…}, visibility (public|fragile),
+                verification (pending|community|official), discovererId?, createdAt
+Trail           id, placeId, name, difficulty, lengthM, durationMin, gpx, requiredLevel, waypoints[]
+Waypoint        id, trailId, order, lat, lng, radiusM, name
+Condition       placeId, status (go|caution|not_now|seasonal_lock), reasonCode?, reasonText{…}, source
+                (forecast|hazard_rule|report|closure|manual), validFrom, validTo, computedAt
+ConditionReport id, placeId, userId, kind, note, photoUrl?, createdAt
+Closure         id, placeId, from, to, reason, source (official|admin)
+PlaceRating     userId, placeId, beauty, difficulty, crowding (1–5)
+```
 
-- **Check-in** succeeds only if the spot is `verified`, the server-computed distance ≤ `radiusM`,
-  and no check-in exists for `(user, spot, day)`. Check-in + XP entry + `xpTotal` update are one
-  transaction. Client-reported coordinates are input, not proof; anti-spoofing measures are a
-  future ADR.
-- **XP** is only ever changed by inserting an `XpEntry`; never by editing `xpTotal` directly.
+### Progress (Phase 1: `levels`, `lessons`, `streaks`, `badges`, `weekly-path`)
+```
+GameConfig      key, value (json), updatedBy, updatedAt          — XP table, level requirements, caps, chest rule
+XpEntry         id, userId, amount, reason (check_in|waypoint|lesson|discoverer|discoverer_visit|top_shot|post|
+                game|campfire|…), refId, createdAt              — append-only; UNIQUE (reason, refId)
+LevelUp         id, userId, fromLevel, toLevel, at
+LessonTier      id, order, name{…}, unlocksLevel
+Lesson          id, tierId, order, title{…}, xp, cards[] (question, options, answer, explanation)
+LessonAttempt   id, userId, lessonId, correct, hearts, completedAt
+Streak          userId, kind (daily|explorer), current, best, lastDay, shieldedWeeks[]
+Badge           id, family, code, tier?, name{…}, rule (json), seasonal?, closesAt?, perk?
+UserBadge       userId, badgeId, progress, earnedAt?            — UNIQUE (userId, badgeId)
+WeeklyPath      id, userId, weekStart (Mon, Asia/Tashkent), nodes[] (placeId, order, status), chestOpenedAt?
+```
+
+### Trips & check-ins (Phase 1: `trip-plan`, `active-trip`, `check-in`, `safety-center`)
+```
+Trip            id, userId, placeId, trailId?, date, startAt, returnAt, contactId, gear[], state
+                (planned|active|checked_out|overdue|alerted|cancelled), sharedAt?, startedAt?, checkedOutAt?
+TripPoint       tripId, lat, lng, elevationM, accuracyM, at   — live tracking (retention-limited)
+CheckIn         id, userId, placeId, tripId?, waypointId?, kind (place|waypoint), lat, lng, distanceM,
+                verified, checkInDay, createdAt                 — UNIQUE (userId, placeId, checkInDay) for place
+Alert           id, tripId, kind (overdue_sms|sos_sms|sos_call), sentAt, toPhoneMasked, status
+```
+
+### Community (Phase 2)
+```
+Group, GroupMember(role owner|admin|member), Message, TripEvent(placeId, date, meetingPoint, maxParticipants,
+minLevel, gear[]), TripEventMember(state requested|approved|declined), BuddyRating(reliable, safetyFirst, goodCompany),
+Post(photos[≤10], caption, placeId, tripType solo|group|tour, enterTopShots), PostLike, PostTag(approved?),
+TopShotsRound(startsAt Mon 00:00, endsAt 2nd Sun 23:59 Asia/Tashkent), TopShotsResult,
+Report(reason, targetType, targetId, reporterTrusted), ModerationAction(warning|mute_7d|ban, appeal),
+Block, HiddenAuthor, SpotSubmission(→ Place pending), SpotVerification(userId, placeId, checkInId)
+```
+
+### Engagement (Phase 3)
+```
+GeoPack, GeoRound(imageRef opaque, placeId), GeoDaily(day), GeoGuess(score, distanceM), Duel, League(tier, week),
+LeagueMember(elevationM), Season(collection), GemTransaction, CampfireResult(game, xp, syncedAt)
+```
+
+### Revenue (Phase 4)
+```
+Operator, Tour, Booking, CommissionRule(per operator), GearItem, PickupPoint, Rental, Subscription(plan, trialEndsAt)
+```
+
+### Invariants (enforced in the database, not only in services)
+- **XP** changes only by inserting an `XpEntry` (`UNIQUE (reason, refId)` = one award per source event); `User.xpTotal`,
+  level and caps are updated in the same transaction. Daily caps (games 30/day, post 5/day) are checked in that
+  transaction against `XpEntry` for the Tashkent day.
+- **Levels** need XP **and** lessons **and** verified check-ins at difficulty — the level service evaluates all three;
+  no endpoint sets `level` directly. Gems and payments never change level or unlock difficulty.
+- **Difficulty lock:** a place / trail above the user's level can be viewed but not started (server refuses).
+- **Check-in** is verified server-side (distance to the place/waypoint, accuracy, trip state); client coordinates are
+  input, not proof. One place check-in per user per place per Tashkent day.
+- **Safety:** `Trip` overdue detection runs server-side (auto-alert SMS 1 h after `returnAt` without check-out); SOS
+  works even when the rest of the API is degraded (separate, minimal endpoint + SMS fallback from the device).
+- **Fragile** places never appear with coordinates in feed or game payloads; photo EXIF is stripped on upload.
+
+### Scheduled jobs (in this service, Asia/Tashkent)
+Weekly path rebuild (Mon 00:00) · condition recompute (hourly + on forecast update) · overdue trip check (every
+minute) · daily game reset (00:00) · streak evaluation (00:05) · league week close (Sun 23:59) · Top Shots round
+close (every 2nd Sun 23:59). Implemented with a job runner chosen in the first feature that needs one (ADR).
 
 ---
 
 ## Representative Endpoints
 
-| Method | Endpoint | Auth | Purpose |
-| ------ | -------- | ---- | ------- |
-| `GET` | `/health` | public | liveness + DB ping |
-| `POST` | `/v1/auth/otp/request` | public | send OTP (rate-limited) |
-| `POST` | `/v1/auth/otp/verify` | public | exchange OTP for tokens |
-| `POST` | `/v1/auth/refresh` | public (refresh token) | rotate tokens |
-| `POST` | `/v1/auth/sign-out` | user | revoke refresh family |
-| `GET` | `/v1/me` | user | current user + XP |
-| `PATCH` | `/v1/me` | user | update profile |
-| `GET` | `/v1/spots?cursor=&limit=&near=` | user | list spots |
-| `GET` | `/v1/spots/:id` | user | spot detail |
-| `POST` | `/v1/spots` | admin | create spot |
-| `PATCH` | `/v1/spots/:id` | admin | edit / verify spot |
-| `POST` | `/v1/spots/:id/check-ins` | user | check in (idempotent) |
-| `GET` | `/v1/me/check-ins` | user | own history |
-| `GET` | `/v1/admin/spots/stats` | admin | check-in counts per spot |
+Phase 1 surface (each feature adds its own; all under `/v1`, auth required unless marked public):
+
+| Method | Endpoint | Feature |
+|---|---|---|
+| `GET` | `/health` (public) | health |
+| `POST` | `/v1/auth/otp/request` · `/v1/auth/otp/verify` (public) · `/v1/auth/refresh` · `/v1/auth/sign-out` | auth |
+| `GET` / `PATCH` | `/v1/me` | profile, onboarding |
+| `PUT` | `/v1/me/onboarding` (language, experience, interests) | onboarding |
+| `GET` | `/v1/places?type=&region=&near=` · `/v1/places/:id` · `/v1/places/:id/trails` | places |
+| `GET` | `/v1/places/:id/condition` · `POST /v1/places/:id/reports` | conditions |
+| `GET` | `/v1/me/path` (this week) · `POST /v1/me/path/swap` · `POST /v1/me/path/chest` | weekly-path |
+| `GET` | `/v1/me/level` (requirement bars, next companion) | levels |
+| `GET` | `/v1/lessons` · `POST /v1/lessons/:id/attempts` | lessons |
+| `POST` | `/v1/trips` · `POST /v1/trips/:id/start` · `/v1/trips/:id/points` · `/v1/trips/:id/check-out` | trip-plan, active-trip |
+| `POST` | `/v1/trips/:id/sos` | active-trip |
+| `POST` | `/v1/check-ins` (place or waypoint, idempotent) | check-in |
+| `GET` | `/v1/me/streaks` · `/v1/me/badges` · `/v1/badges` | streaks, badges |
+| `GET` | `/v1/regions` (+ offline pack links) | safety-center |
+| admin | `/v1/admin/places` CRUD · `/v1/admin/closures` · `/v1/admin/lessons` · `/v1/admin/config` | web |
 
 ---
 
@@ -215,8 +274,8 @@ npm run gen:api && npm run check
 | 1 | Auth | JWT access + rotating refresh, global deny-by-default guard (ADR-001). |
 | 2 | Database | Postgres + Prisma; append-only migrations; invariants as DB constraints (ADR-002). |
 | 3 | API style | REST `/v1`, OpenAPI as contract, clients use orval (ADR-003). |
-| 4 | Geo | Lat/lng columns + distance in `lib/geo` (haversine). PostGIS only via a new ADR when spatial queries need it. |
-| 5 | XP | Append-only ledger + cached total in one transaction. |
+| 4 | Geo | Lat/lng columns + distance in `lib/geo` (haversine). PostGIS likely needed for Explore map / nearby / duplicate spot check — decide in `places` (ADR). |
+| 5 | XP | Append-only ledger + cached total in one transaction; amounts and caps from `GameConfig`. |
 | 6 | Idempotency | `Idempotency-Key` stored for value-granting mutations. |
 
 > Extend this doc as features land: entities to **Domain Model**, routes to **Representative
