@@ -129,10 +129,14 @@ migration. Names are the Prisma models (DB tables snake_case plural). Numbers th
 
 ### Accounts & profile (Phase 1: `auth`, `onboarding`, `profile`)
 ```
-User            id, phone (unique, never logged), phoneVerifiedAt, displayName, avatarUrl?, locale (uz|ru|en),
+User            id, username (unique, case-insensitive), passwordHash (argon2id), recoveryPhone? (encrypted,
+                never logged), recoveryPhoneVerifiedAt?, displayName, avatarUrl?, locale (uz|ru|en),
                 experience (beginner|weekend|experienced), interests[] (peak|cave|lake|camping|trail),
                 level (1–7), xpTotal, gems, role (user|admin|operator), createdAt
 RefreshToken    id, userId, familyId, tokenHash, expiresAt, revokedAt, replacedById
+PasswordReset   id, userId, codeHash, expiresAt, attempts, usedAt      — SMS code, single use
+LoginAttempt    username, ip, at, ok                                    — rate limit + lockout
+(trusted account = createdAt older than 7 days; no separate flag)
 EmergencyContact id, userId, name, phone (encrypted at rest), relation
 Device          id, userId, platform, pushToken, locale
 ```
@@ -200,6 +204,8 @@ Operator, Tour, Booking, CommissionRule(per operator), GearItem, PickupPoint, Re
 ```
 
 ### Invariants (enforced in the database, not only in services)
+- **Guest-first:** read endpoints guests need are `@Public()` (places, conditions, regions, lessons, feed reads);
+  everything that writes, awards or reveals another user's data requires a session.
 - **XP** changes only by inserting an `XpEntry` (`UNIQUE (reason, refId)` = one award per source event); `User.xpTotal`,
   level and caps are updated in the same transaction. Daily caps (games 30/day, post 5/day) are checked in that
   transaction against `XpEntry` for the Tashkent day.
@@ -226,7 +232,10 @@ Phase 1 surface (each feature adds its own; all under `/v1`, auth required unles
 | Method | Endpoint | Feature |
 |---|---|---|
 | `GET` | `/health` (public) | health |
-| `POST` | `/v1/auth/otp/request` · `/v1/auth/otp/verify` (public) · `/v1/auth/refresh` · `/v1/auth/sign-out` | auth |
+| `POST` | `/v1/auth/sign-up` · `/v1/auth/log-in` · `/v1/auth/password/forgot` · `/v1/auth/password/reset` (public) · `/v1/auth/refresh` · `/v1/auth/sign-out` | auth |
+| `GET` | `/v1/auth/username-available?u=` (public, rate-limited) | auth |
+| `POST` | `/v1/me/guest-merge` (onboarding choices, lesson progress, saved places from the device) | auth |
+| `PUT` | `/v1/me/recovery-phone` · `POST /v1/me/recovery-phone/verify` | auth |
 | `GET` / `PATCH` | `/v1/me` | profile, onboarding |
 | `PUT` | `/v1/me/onboarding` (language, experience, interests) | onboarding |
 | `GET` | `/v1/places?type=&region=&near=` · `/v1/places/:id` · `/v1/places/:id/trails` | places |
