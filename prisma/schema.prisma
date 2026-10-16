@@ -1,0 +1,13 @@
+// Models are added by features, each in its own migration (docs/architecture.md → Domain Model).
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

@@ -12,26 +12,34 @@ Companion document — mandatory:
 ## Tech Stack
 
 Pinned. Do not substitute or add libraries without explicit approval (recorded here or as an ADR).
-Versions are latest stable as of 2026-10-16 — replace with exact installed versions at scaffold time.
+Exact versions installed at scaffold time (2026-10-17); `package.json` pins them without ranges.
 
 | Layer | Technology | Version |
 | ----- | ---------- | ------- |
-| **Runtime** | Node.js LTS | 22.x |
-| **Framework** | NestJS (Express adapter) | 12.x |
-| **Language** | TypeScript strict | per `PROJECT.md` |
-| **Database** | PostgreSQL | 17+ |
-| **ORM** | Prisma 7 (stable — not the 8.0 RC) + `@prisma/adapter-pg` | 7.10.x |
-| **Contract** | `@nestjs/swagger` → `openapi.json` | 12.x |
-| **Validation** | class-validator + class-transformer | 0.15 / 0.5 |
-| **Auth** | JWT access + rotating refresh (ADR-001) | — |
-| **Config** | `@nestjs/config` + zod | 12.x / 4.x |
-| **Logging** | nestjs-pino | 5.x |
-| **Security** | helmet, `@nestjs/throttler` | 8.x / 6.x |
-| **Health** | `@nestjs/terminus` | 12.x |
-| **Tests** | the runner the Nest CLI scaffolds (Jest) + supertest + Testcontainers | — |
+| **Runtime** | Node.js LTS + npm | 22.22.x / 10.9.x |
+| **Framework** | NestJS (Express adapter) — `@nestjs/core`, `common`, `platform-express`, `testing` | 12.1.3 (CLI 12.0.8) |
+| **Language** | TypeScript strict, ESM (`"type": "module"`, `nodenext`) | 6.0.3 |
+| **Database** | PostgreSQL (docker-compose `postgres:17`, Testcontainers in e2e) | 17 |
+| **ORM** | Prisma 7 (stable — not the 8.0 RC) — `prisma`, `@prisma/client`, `@prisma/adapter-pg` | 7.10.1 |
+| **Contract** | `@nestjs/swagger` → `openapi.json` | 12.0.2 |
+| **Validation** | class-validator + class-transformer | 0.15.1 / 0.5.1 |
+| **Auth** | JWT access + rotating refresh (ADR-001); access tokens verified with `@nestjs/jwt` (HS256) | 12.0.3 |
+| **Config** | `@nestjs/config` + zod | 12.0.1 / 4.6.7 |
+| **Logging** | nestjs-pino + pino-http | 5.3.1 / 11.0.0 |
+| **Security** | helmet, `@nestjs/throttler` | 8.3.0 / 6.7.1 |
+| **Health** | `@nestjs/terminus` | 12.1.0 |
+| **Tests** | Vitest (what the Nest 12 CLI scaffolds) + supertest + Testcontainers (`testcontainers`, `@testcontainers/postgresql`) | 4.1.12 / 7.3.1 / 12.2.1 |
+| **Lint / rules** | ESLint (flat) + typescript-eslint, dependency-cruiser | 10.13.0 / 8.71.2 / 18.6.0 |
 
 > Prisma 7 uses `prisma.config.ts`, the `prisma-client` generator with an explicit `output`, and a
 > driver adapter. Check Context7 for the pinned version before writing schema/client setup code.
+> Here: generator `output = "../src/generated/prisma"` (ESM, `.js` import extensions; git-ignored, rebuilt by
+> `postinstall` → `prisma generate`), imported only by `src/prisma/prisma.service.ts`. The client connects lazily on
+> the first query, so the API boots — and `/health` reports `db: down` — while Postgres is unreachable.
+>
+> The Nest 12 CLI scaffolds Vitest and oxlint; we keep Vitest and use ESLint (flat config, `--no-inline-config`) for
+> the lint rules in the standards. `process.env` outside `src/config/` is an ESLint error (`no-restricted-properties`);
+> the import rules are dependency-cruiser (`.dependency-cruiser.cjs`).
 
 ---
 
@@ -63,7 +71,7 @@ irbis-api/
 │   └── seed.ts                  # synthetic data only
 ├── prisma.config.ts
 ├── scripts/
-│   └── export-openapi.ts        # boots the app without listening, writes openapi.json
+│   └── export-openapi.ts        # boots the app without listening or a DB, writes openapi.json
 ├── docker-compose.yml           # local Postgres (+ test DB)
 ├── test/                        # e2e: <slug>.e2e-spec.ts, setup, factories
 └── src/

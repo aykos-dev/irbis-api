@@ -11,8 +11,8 @@ Project-wide rules: `../irbis-docs/CLAUDE.md`. Prisma 7 setup differs from older
 - `npm run openapi:export` — writes `openapi.json`. Run and commit after any endpoint/DTO change.
 - `npx nest g resource <slug>` — generators for boilerplate, then reshape to the feature layout.
 - `npx prisma migrate dev --name <change>` — new migration. Never edit existing ones. No `db push`.
-- `npm run test -- <path>` — single test; `npm run test:e2e` — e2e against real Postgres.
-- `docker compose up -d db` — local database.
+- `npm run test -- <path>` — unit tests (Vitest); `npm run test:e2e` — e2e against real Postgres (Testcontainers, needs Docker).
+- `docker compose up -d db` — local database; `npm run start:dev` — API on :3000 (`/health`, Swagger UI at `/docs` outside production).
 
 ## Layout (details in docs/architecture.md)
 `src/features/<slug>/` → `<slug>.controller.ts` (thin) → `<slug>.service.ts` (logic, transactions)
@@ -22,9 +22,9 @@ Project-wide rules: `../irbis-docs/CLAUDE.md`. Prisma 7 setup differs from older
 - `src/common/guards/`, `decorators/` — global JWT guard, `@Public()`, `@Roles()`, `@CurrentUser()`
 - `src/common/errors/` — `DomainError` base + NotFound/Conflict/Forbidden
 - `src/common/filters/global-exception.filter.ts` — the one error format
-- `src/common/dto/` — PaginationQueryDto, PageDto, ErrorResponseDto
-- `src/common/interceptors/idempotency.interceptor.ts`
-- `src/lib/` — geo distance, cursors, dates
+- `src/common/dto/` — ErrorResponseDto (PaginationQueryDto, PageDto: add with the first list endpoint)
+- `src/common/interceptors/idempotency.interceptor.ts` — not yet; add with the first value-granting write
+- `src/lib/` — geo distance, cursors, dates (created by the first feature that needs one)
 - `src/config/` — the only place `process.env` is read
 
 ## Non-negotiables (from the standards)

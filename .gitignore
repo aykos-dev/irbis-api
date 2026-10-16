@@ -10,3 +10,6 @@ coverage/
 .env.*
 !.env.example
 .claude/settings.local.json
+src/generated/
+dist-scripts/
+*.tsbuildinfo

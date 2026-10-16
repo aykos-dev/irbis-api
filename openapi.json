@@ -1,0 +1,108 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "Health_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "API and database are up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unreachable or slower than 3 s; same body with status \"degraded\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "API and database reachability",
+        "tags": [
+          "Health"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Irbis API",
+    "description": "Backend for the Irbis app and admin web. This document is the contract (ADR-003).",
+    "version": "0.0.1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "HealthStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "degraded"
+        ]
+      },
+      "DependencyStatus": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down"
+        ]
+      },
+      "HealthResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "example": "ok",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HealthStatus"
+              }
+            ]
+          },
+          "db": {
+            "example": "up",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DependencyStatus"
+              }
+            ]
+          },
+          "version": {
+            "type": "string",
+            "example": "0.0.1",
+            "description": "API version (package.json)."
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T08:00:00.000Z",
+            "description": "Server time, ISO-8601 UTC."
+          }
+        },
+        "required": [
+          "status",
+          "db",
+          "version",
+          "time"
+        ]
+      }
+    }
+  }
+}
