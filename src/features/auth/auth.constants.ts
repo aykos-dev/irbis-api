@@ -6,9 +6,9 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 export const BLOCK_REASON_CODES = [
   'spam',
-  'abuse',
-  'impersonation',
-  'safety',
+  'harassment',
+  'unsafe',
+  'fake_content',
   'other',
 ] as const;
 export type BlockReason = (typeof BLOCK_REASON_CODES)[number];

@@ -15,6 +15,7 @@ import {
 } from './auth.constants.js';
 import {
   AlreadyBlockedError,
+  CannotBlockSelfError,
   CannotChangeOwnRoleError,
   NotBlockedError,
   PhoneInvalidError,
@@ -136,6 +137,7 @@ export class AdminUsersService {
     id: string,
     dto: BlockUserDto,
   ): Promise<AdminUserDetailDto> {
+    if (adminId === id) throw new CannotBlockSelfError();
     await this.repository.transaction(async (tx) => {
       const user = await this.repository.findById(id, tx);
       if (!user) throw new UserNotFoundError();

@@ -2321,9 +2321,9 @@
         "type": "string",
         "enum": [
           "spam",
-          "abuse",
-          "impersonation",
-          "safety",
+          "harassment",
+          "unsafe",
+          "fake_content",
           "other"
         ]
       },

@@ -277,11 +277,11 @@ describe('log-in, lockout, refresh, sign-out, blocked users (e2e) - AC4, AC9, AC
 
     it('log-in is refused with ACCOUNT_BLOCKED and the reason category', async () => {
       const user = await signUp(app);
-      await block(user.id, 'abuse').expect(200);
+      await block(user.id, 'harassment').expect(200);
       const res = await logIn(user.username, user.password).expect(403);
       expect(res.body).toMatchObject({
         code: 'ACCOUNT_BLOCKED',
-        reasonCode: 'abuse',
+        reasonCode: 'harassment',
       });
     });
 
@@ -296,11 +296,11 @@ describe('log-in, lockout, refresh, sign-out, blocked users (e2e) - AC4, AC9, AC
     it('refresh of a blocked user (tokens already revoked by the block) answers ACCOUNT_BLOCKED', async () => {
       const user = await signUp(app);
       const session = await logIn(user.username, user.password).expect(200);
-      await block(user.id, 'safety').expect(200);
+      await block(user.id, 'unsafe').expect(200);
       const res = await refresh(session.body.refreshToken).expect(403);
       expect(res.body).toMatchObject({
         code: 'ACCOUNT_BLOCKED',
-        reasonCode: 'safety',
+        reasonCode: 'unsafe',
       });
     });
 
@@ -328,14 +328,14 @@ describe('log-in, lockout, refresh, sign-out, blocked users (e2e) - AC4, AC9, AC
         .get('/v1/me')
         .set(...bearer(user.accessToken))
         .expect(200);
-      await block(user.id, 'impersonation').expect(200);
+      await block(user.id, 'fake_content').expect(200);
       const res = await request(server())
         .get('/v1/me')
         .set(...bearer(user.accessToken))
         .expect(403);
       expect(res.body).toMatchObject({
         code: 'ACCOUNT_BLOCKED',
-        reasonCode: 'impersonation',
+        reasonCode: 'fake_content',
       });
     });
 

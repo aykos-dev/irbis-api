@@ -437,12 +437,12 @@ describe('password reset, recovery phone, /me, guest merge (e2e) - AC5, AC6, AC8
       await forgot(account.username).expect(202);
       await prisma.user.update({
         where: { id: account.id },
-        data: { blockedAt: new Date(), blockReasonCode: 'abuse' },
+        data: { blockedAt: new Date(), blockReasonCode: 'harassment' },
       });
       const res = await reset(account.username, sms.last().code).expect(403);
       expect(res.body).toMatchObject({
         code: 'ACCOUNT_BLOCKED',
-        reasonCode: 'abuse',
+        reasonCode: 'harassment',
       });
     });
   });

@@ -594,13 +594,13 @@ describe('admin panel API (e2e) - AC12-AC16', () => {
     it('block: 409 ALREADY_BLOCKED, 404 NOT_FOUND, 400 for a missing reason or bad code; nothing is audited on failure', async () => {
       const user = await signUp(app);
       await send('post', `/v1/admin/users/${user.id}/block`, {
-        reasonCode: 'abuse',
+        reasonCode: 'harassment',
         note: 'first',
       }).expect(200);
       expect(
         (
           await send('post', `/v1/admin/users/${user.id}/block`, {
-            reasonCode: 'abuse',
+            reasonCode: 'harassment',
             note: 'again',
           }).expect(409)
         ).body.code,
@@ -610,24 +610,39 @@ describe('admin panel API (e2e) - AC12-AC16', () => {
           await send(
             'post',
             '/v1/admin/users/0198a000-0000-7000-8000-000000000000/block',
-            { reasonCode: 'abuse', note: 'x' },
+            { reasonCode: 'harassment', note: 'x' },
           ).expect(404)
         ).body.code,
       ).toBe('NOT_FOUND');
       await send('post', `/v1/admin/users/${user.id}/block`, {
-        reasonCode: 'abuse',
+        reasonCode: 'harassment',
       }).expect(400);
       await send('post', `/v1/admin/users/${user.id}/block`, {
         reasonCode: 'rude',
         note: 'x',
       }).expect(400);
       await send('post', `/v1/admin/users/${user.id}/block`, {
-        reasonCode: 'abuse',
+        reasonCode: 'harassment',
         note: '',
       }).expect(400);
       expect(
         await prisma.adminAuditLog.count({ where: { userId: user.id } }),
       ).toBe(1);
+    });
+
+    it('block: 403 CANNOT_BLOCK_SELF when the admin targets themselves', async () => {
+      const res = await send('post', `/v1/admin/users/${admin.id}/block`, {
+        reasonCode: 'spam',
+        note: 'oops',
+      }).expect(403);
+      expect(res.body.code).toBe('CANNOT_BLOCK_SELF');
+      expect(
+        (await prisma.user.findUniqueOrThrow({ where: { id: admin.id } }))
+          .blockedAt,
+      ).toBeNull();
+      expect(
+        await prisma.adminAuditLog.count({ where: { userId: admin.id } }),
+      ).toBe(0);
     });
 
     it('unblock: clears the block, audited; 409 NOT_BLOCKED when not blocked', async () => {

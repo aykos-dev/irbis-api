@@ -29,9 +29,9 @@ enum Locale {
 
 enum BlockReasonCode {
   spam
-  abuse
-  impersonation
-  safety
+  harassment
+  unsafe
+  fake_content
   other
 
   @@map("block_reason_code")

@@ -163,6 +163,15 @@ export class AlreadyBlockedError extends DomainError {
   }
 }
 
+export class CannotBlockSelfError extends DomainError {
+  readonly code = 'CANNOT_BLOCK_SELF';
+  readonly status = HttpStatus.FORBIDDEN;
+
+  constructor() {
+    super('An admin cannot block themselves');
+  }
+}
+
 export class NotBlockedError extends DomainError {
   readonly code = 'NOT_BLOCKED';
   readonly status = HttpStatus.CONFLICT;
