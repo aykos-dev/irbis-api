@@ -41,7 +41,10 @@ export const configSchema = z.object({
   ARGON2_MEMORY_KIB: z.coerce.number().int().min(8).default(19_456),
   ARGON2_TIME_COST: z.coerce.number().int().min(1).default(2),
   // Base64 of 32 random bytes; encrypts recovery phones at rest. Required in staging/prod.
-  PHONE_ENCRYPTION_KEY: z.string().min(1).optional(),
+  PHONE_ENCRYPTION_KEY: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(1).optional(),
+  ),
   SMS_PROVIDER: z.enum(['fake']).default('fake'),
   // Per-IP limits (requests per window) on sign-up, log-in, refresh, reset, and username lookups.
   AUTH_THROTTLE_LIMIT: z.coerce.number().int().positive().default(20),

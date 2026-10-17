@@ -47,6 +47,15 @@ describe('config: SMS sender safety (Q7)', () => {
     ).toBeDefined();
   });
 
+  it('treats an empty PHONE_ENCRYPTION_KEY (as copied from .env.example) as unset', () => {
+    expect(
+      validateEnv({ ...base, PHONE_ENCRYPTION_KEY: '' }).PHONE_ENCRYPTION_KEY,
+    ).toBeUndefined();
+    expect(() =>
+      validateEnv({ ...base, APP_ENV: 'prod', PHONE_ENCRYPTION_KEY: '' }),
+    ).toThrow(/PHONE_ENCRYPTION_KEY/);
+  });
+
   it('never echoes values in the error', () => {
     expect(() => validateEnv({ ...base, APP_ENV: 'prod' })).not.toThrow(
       new RegExp(base.JWT_ACCESS_SECRET),
