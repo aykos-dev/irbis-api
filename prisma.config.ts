@@ -12,6 +12,8 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
+    // Compiled by `npm run db:seed` (tsconfig.scripts.json) before Prisma runs it.
+    seed: 'node dist-scripts/prisma/seed/seed.js',
   },
   datasource: {
     url: process.env.DATABASE_URL ?? '',

@@ -97,6 +97,17 @@ export class AppConfig {
     };
   }
 
+  get placesFallbackOrigin(): { lat: number; lng: number } {
+    return {
+      lat: this.get('PLACES_FALLBACK_LAT'),
+      lng: this.get('PLACES_FALLBACK_LNG'),
+    };
+  }
+
+  get levelsStartLevel(): number {
+    return this.get('LEVELS_START_LEVEL');
+  }
+
   get databaseUrl(): string {
     return this.get('DATABASE_URL');
   }

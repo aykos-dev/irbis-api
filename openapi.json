@@ -1690,6 +1690,198 @@
           "Admin"
         ]
       }
+    },
+    "/v1/places": {
+      "get": {
+        "operationId": "Places_list",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "description": "Device latitude; send together with lng.",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "description": "Device longitude; send together with lat.",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            }
+          },
+          {
+            "name": "types",
+            "required": false,
+            "in": "query",
+            "description": "Any of these types. Repeat the key or send a comma list.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            }
+          },
+          {
+            "name": "difficultyMin",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "difficultyMax",
+            "required": false,
+            "in": "query",
+            "description": "≥ difficultyMin.",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxDistanceKm",
+            "required": false,
+            "in": "query",
+            "description": "Inclusive distance limit from the origin, km.",
+            "schema": {
+              "minimum": 1,
+              "maximum": 1000,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque; the previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceListResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Places sorted by distance from the device or Tashkent",
+        "tags": [
+          "Places"
+        ]
+      }
+    },
+    "/v1/places/{id}": {
+      "get": {
+        "operationId": "Places_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "description": "Device latitude; send together with lng.",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "description": "Device longitude; send together with lat.",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "One place",
+        "tags": [
+          "Places"
+        ]
+      }
     }
   },
   "info": {
@@ -2657,6 +2849,290 @@
         "required": [
           "items",
           "nextCursor"
+        ]
+      },
+      "PlaceType": {
+        "type": "string",
+        "enum": [
+          "peak",
+          "lake",
+          "cave",
+          "camping",
+          "trail",
+          "waterfall",
+          "canyon"
+        ]
+      },
+      "PlaceNameDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true
+          },
+          "en": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "PlaceListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "qorangur-2941"
+          },
+          "name": {
+            "$ref": "#/components/schemas/PlaceNameDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "elevationM": {
+            "type": "integer"
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "requiredLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "distanceM": {
+            "type": "integer",
+            "description": "Great-circle distance from the origin, metres."
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "type",
+          "latitude",
+          "longitude",
+          "elevationM",
+          "difficulty",
+          "requiredLevel",
+          "distanceM"
+        ]
+      },
+      "PlaceOrigin": {
+        "type": "string",
+        "enum": [
+          "device",
+          "tashkent"
+        ]
+      },
+      "PlaceListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceListItemDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "origin": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceOrigin"
+              }
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "description": "Places matching the filters."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "origin",
+          "total"
+        ]
+      },
+      "PlaceDescriptionDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string",
+            "nullable": true,
+            "description": "Markdown."
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true,
+            "description": "Markdown."
+          },
+          "en": {
+            "type": "string",
+            "nullable": true,
+            "description": "Markdown."
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "SeasonStatus": {
+        "type": "string",
+        "enum": [
+          "best",
+          "possible",
+          "closed"
+        ],
+        "description": "Empty (not set yet) or 12 months, January first."
+      },
+      "Hazard": {
+        "type": "string",
+        "enum": [
+          "avalanche",
+          "flood",
+          "mudslide",
+          "heat",
+          "road"
+        ]
+      },
+      "PlaceViewerDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer"
+          },
+          "qualifies": {
+            "type": "boolean",
+            "description": "requiredLevel <= level."
+          }
+        },
+        "required": [
+          "level",
+          "qualifies"
+        ]
+      },
+      "PlaceDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "qorangur-2941"
+          },
+          "name": {
+            "$ref": "#/components/schemas/PlaceNameDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "elevationM": {
+            "type": "integer"
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "requiredLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "distanceM": {
+            "type": "integer",
+            "description": "Great-circle distance from the origin, metres."
+          },
+          "region": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "$ref": "#/components/schemas/PlaceDescriptionDto"
+          },
+          "season": {
+            "type": "array",
+            "description": "Empty (not set yet) or 12 months, January first.",
+            "items": {
+              "$ref": "#/components/schemas/SeasonStatus"
+            }
+          },
+          "hazards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Hazard"
+            }
+          },
+          "origin": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceOrigin"
+              }
+            ]
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/PlaceViewerDto"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "type",
+          "latitude",
+          "longitude",
+          "elevationM",
+          "difficulty",
+          "requiredLevel",
+          "distanceM",
+          "region",
+          "description",
+          "season",
+          "hazards",
+          "origin",
+          "viewer"
         ]
       }
     }

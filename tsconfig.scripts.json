@@ -7,6 +7,6 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["scripts", "src"],
+  "include": ["scripts", "src", "prisma/seed"],
   "exclude": ["**/*.spec.ts"]
 }

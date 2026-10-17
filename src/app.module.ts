@@ -17,6 +17,7 @@ import { AppConfig } from './config/app-config.js';
 import { AppConfigModule } from './config/config.module.js';
 import { AccountStatusGuard } from './features/auth/guards/account-status.guard.js';
 import { AuthModule } from './features/auth/auth.module.js';
+import { PlacesModule } from './features/places/places.module.js';
 import { HealthModule } from './health/health.module.js';
 import { loggerParams } from './logging.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -56,6 +57,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     PrismaModule,
     HealthModule,
     AuthModule,
+    PlacesModule,
   ],
   providers: [
     // Guards run in this order: rate limit → authentication → account status (blocked, current role) → roles.

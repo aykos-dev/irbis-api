@@ -26,6 +26,7 @@
     "slop": "! grep -rnE 'TODO|FIXME|@ts-ignore|eslint-disable|\\bmock' src --include='*.ts' --exclude='*.spec.ts' --exclude-dir=generated",
     "check": "npm run -s lint && npm run -s typecheck && npm run -s test:ci && npm run -s depcruise && npm run -s slop",
     "openapi:export": "tsc -p tsconfig.scripts.json && node dist-scripts/scripts/export-openapi.js",
+    "db:seed": "tsc -p tsconfig.scripts.json && prisma db seed",
     "admin:create": "tsc -p tsconfig.scripts.json && mkdir -p dist-scripts/src/features/auth/data && cp src/features/auth/data/*.txt dist-scripts/src/features/auth/data/ && node dist-scripts/scripts/admin-create.js"
   },
   "dependencies": {

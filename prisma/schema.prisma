@@ -172,3 +172,60 @@ model AdminAuditLog {
   @@index([adminId])
   @@map("admin_audit_logs")
 }
+
+enum PlaceType {
+  peak
+  lake
+  cave
+  camping
+  trail
+  waterfall
+  canyon
+
+  @@map("place_type")
+}
+
+enum SeasonStatus {
+  best
+  possible
+  closed
+
+  @@map("season_status")
+}
+
+enum Hazard {
+  avalanche
+  flood
+  mudslide
+  heat
+  road
+
+  @@map("hazard")
+}
+
+// Curated destinations. Seeded from prisma/seed/places.data.ts (upsert by slug).
+model Place {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  slug          String         @unique @db.VarChar(120)
+  nameUz        String         @map("name_uz") @db.VarChar(200)
+  nameRu        String?        @map("name_ru") @db.VarChar(200)
+  nameEn        String?        @map("name_en") @db.VarChar(200)
+  type          PlaceType
+  latitude      Float
+  longitude     Float
+  elevationM    Int            @map("elevation_m")
+  difficulty    Int
+  requiredLevel Int            @map("required_level")
+  region        String?        @db.VarChar(200)
+  descriptionUz String?        @map("description_uz")
+  descriptionRu String?        @map("description_ru")
+  descriptionEn String?        @map("description_en")
+  // Either empty (not set yet) or 12 entries, January first.
+  season        SeasonStatus[] @default([])
+  hazards       Hazard[]       @default([])
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([type])
+  @@map("places")
+}

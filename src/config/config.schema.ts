@@ -50,6 +50,11 @@ export const configSchema = z.object({
   AUTH_THROTTLE_LIMIT: z.coerce.number().int().positive().default(20),
   AUTH_THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
   LOOKUP_THROTTLE_LIMIT: z.coerce.number().int().positive().default(30),
+  // Origin for place distances when the client sends no position (Tashkent centre).
+  PLACES_FALLBACK_LAT: z.coerce.number().min(-90).max(90).default(41.2995),
+  PLACES_FALLBACK_LNG: z.coerce.number().min(-180).max(180).default(69.2401),
+  // Level every viewer has until the levels feature ships.
+  LEVELS_START_LEVEL: z.coerce.number().int().min(1).max(7).default(1),
   DATABASE_URL: z
     .string()
     .regex(/^postgres(ql)?:\/\//, 'expected a postgresql:// connection string'),
