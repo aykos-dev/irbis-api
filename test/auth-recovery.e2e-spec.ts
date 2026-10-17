@@ -457,8 +457,10 @@ describe('password reset, recovery phone, /me, guest merge (e2e) - AC5, AC6, AC8
       expect(Object.keys(res.body).sort()).toEqual(
         [
           'createdAt',
+          'experience',
           'hasRecoveryPhone',
           'id',
+          'interests',
           'locale',
           'recoveryPhonePending',
           'role',
