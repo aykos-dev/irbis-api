@@ -93,6 +93,7 @@ export class AdminUsersController {
   @ApiErrorResponses({
     ...ADMIN_ERRORS,
     400: ['VALIDATION_FAILED'],
+    403: ['FORBIDDEN', 'ACCOUNT_BLOCKED', 'CANNOT_BLOCK_SELF'],
     404: ['NOT_FOUND'],
     409: ['ALREADY_BLOCKED'],
   })

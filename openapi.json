@@ -1202,7 +1202,7 @@
             }
           },
           "403": {
-            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED | CANNOT_BLOCK_SELF",
             "content": {
               "application/json": {
                 "schema": {
