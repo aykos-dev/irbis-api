@@ -27,6 +27,24 @@ enum Locale {
   @@map("locale")
 }
 
+enum Experience {
+  beginner
+  weekend
+  experienced
+
+  @@map("experience")
+}
+
+enum Interest {
+  peaks
+  caves
+  lakes
+  camping
+  trails
+
+  @@map("interest")
+}
+
 enum BlockReasonCode {
   spam
   harassment
@@ -67,6 +85,8 @@ model User {
   blockedAt               DateTime?        @map("blocked_at") @db.Timestamptz(3)
   blockReasonCode         BlockReasonCode? @map("block_reason_code")
   termsAcceptedAt         DateTime?        @map("terms_accepted_at") @db.Timestamptz(3)
+  experience              Experience?
+  interests               Interest[]       @default([])
   lastActiveAt            DateTime         @default(now()) @map("last_active_at") @db.Timestamptz(3)
   createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt               DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)

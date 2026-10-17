@@ -1803,6 +1803,24 @@
           "acceptTerms"
         ]
       },
+      "Experience": {
+        "type": "string",
+        "enum": [
+          "beginner",
+          "weekend",
+          "experienced"
+        ]
+      },
+      "Interest": {
+        "type": "string",
+        "enum": [
+          "peaks",
+          "caves",
+          "lakes",
+          "camping",
+          "trails"
+        ]
+      },
       "Role": {
         "type": "string",
         "enum": [
@@ -1828,6 +1846,20 @@
               }
             ]
           },
+          "experience": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Experience"
+              }
+            ]
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Interest"
+            }
+          },
           "role": {
             "allOf": [
               {
@@ -1852,6 +1884,8 @@
           "id",
           "username",
           "locale",
+          "experience",
+          "interests",
           "role",
           "hasRecoveryPhone",
           "recoveryPhonePending",
@@ -2077,10 +2111,31 @@
           "code"
         ]
       },
+      "GuestOnboardingDto": {
+        "type": "object",
+        "properties": {
+          "experience": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Experience"
+              }
+            ]
+          },
+          "interests": {
+            "type": "array",
+            "maxItems": 5,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Interest"
+            }
+          }
+        }
+      },
       "GuestMergeDto": {
         "type": "object",
         "properties": {
           "locale": {
+            "description": "Accepted and validated, never written: the account keeps the language set at sign-up.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/Locale"
@@ -2088,9 +2143,7 @@
             ]
           },
           "onboarding": {
-            "type": "object",
-            "additionalProperties": true,
-            "description": "Onboarding choices; accepted now, merged once the onboarding feature registers its handler."
+            "$ref": "#/components/schemas/GuestOnboardingDto"
           }
         }
       },
@@ -2099,7 +2152,7 @@
         "properties": {
           "merged": {
             "example": [
-              "locale"
+              "onboarding"
             ],
             "description": "Parts that were merged.",
             "type": "array",
@@ -2109,9 +2162,9 @@
           },
           "skipped": {
             "example": [
-              "onboarding"
+              "locale"
             ],
-            "description": "Parts nothing handles yet.",
+            "description": "Parts that were accepted but not written to the account.",
             "type": "array",
             "items": {
               "type": "string"

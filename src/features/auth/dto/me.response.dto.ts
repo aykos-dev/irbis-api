@@ -1,5 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LOCALES, USER_ROLES } from '../auth.constants.js';
+import {
+  EXPERIENCES,
+  INTERESTS,
+  LOCALES,
+  USER_ROLES,
+} from '../auth.constants.js';
 
 export class MeResponseDto {
   @ApiProperty({ format: 'uuid' })
@@ -10,6 +15,12 @@ export class MeResponseDto {
 
   @ApiProperty({ enum: LOCALES, enumName: 'Locale' })
   locale: (typeof LOCALES)[number];
+
+  @ApiProperty({ enum: EXPERIENCES, enumName: 'Experience', nullable: true })
+  experience: (typeof EXPERIENCES)[number] | null;
+
+  @ApiProperty({ enum: INTERESTS, enumName: 'Interest', isArray: true })
+  interests: (typeof INTERESTS)[number][];
 
   @ApiProperty({ enum: USER_ROLES, enumName: 'Role' })
   role: (typeof USER_ROLES)[number];

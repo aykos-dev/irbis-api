@@ -18,6 +18,8 @@ export class MeService {
       id: user.id,
       username: user.username,
       locale: user.locale,
+      experience: user.experience,
+      interests: user.interests,
       role: user.role,
       hasRecoveryPhone:
         user.recoveryPhone !== null && user.recoveryPhoneVerifiedAt !== null,

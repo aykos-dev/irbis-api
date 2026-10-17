@@ -1,19 +1,15 @@
 import { Injectable, type OnModuleInit } from '@nestjs/common';
-import { LOCALES, type LocaleCode } from '../auth.constants.js';
 import { AuthRepository } from '../auth.repository.js';
+import { GuestOnboardingDto } from '../dto/guest-merge.dto.js';
 import {
   GuestMergeRegistry,
   type GuestMergeHandler,
 } from './guest-merge.registry.js';
 
-function isLocale(value: unknown): value is LocaleCode {
-  return (LOCALES as readonly unknown[]).includes(value);
-}
-
-/** The guest's app language becomes the account language. */
+/** Guest onboarding choices fill only the account's empty fields; existing values always win. */
 @Injectable()
-export class LocaleMergeHandler implements GuestMergeHandler, OnModuleInit {
-  readonly key = 'locale';
+export class OnboardingMergeHandler implements GuestMergeHandler, OnModuleInit {
+  readonly key = 'onboarding';
 
   constructor(
     private readonly registry: GuestMergeRegistry,
@@ -25,8 +21,10 @@ export class LocaleMergeHandler implements GuestMergeHandler, OnModuleInit {
   }
 
   async merge(userId: string, value: unknown): Promise<void> {
-    if (isLocale(value)) {
-      await this.repository.updateLocale(userId, value);
-    }
+    if (!(value instanceof GuestOnboardingDto)) return;
+    await this.repository.fillEmptyOnboarding(userId, {
+      experience: value.experience,
+      interests: value.interests,
+    });
   }
 }

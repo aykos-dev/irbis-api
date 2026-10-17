@@ -11,7 +11,7 @@ import { AuthRepository } from './auth.repository.js';
 import { AuthService } from './auth.service.js';
 import { GuestMergeRegistry } from './guest-merge/guest-merge.registry.js';
 import { GuestMergeService } from './guest-merge/guest-merge.service.js';
-import { LocaleMergeHandler } from './guest-merge/locale-merge.handler.js';
+import { OnboardingMergeHandler } from './guest-merge/onboarding-merge.handler.js';
 import { MeController } from './me.controller.js';
 import { MeService } from './me.service.js';
 import { PasswordService } from './password.service.js';
@@ -41,7 +41,7 @@ import { TokenService } from './token.service.js';
     TokenService,
     GuestMergeRegistry,
     GuestMergeService,
-    LocaleMergeHandler,
+    OnboardingMergeHandler,
     {
       provide: SmsSender,
       inject: [AppConfig],

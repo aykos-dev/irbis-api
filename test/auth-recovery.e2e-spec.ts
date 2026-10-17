@@ -475,18 +475,18 @@ describe('password reset, recovery phone, /me, guest merge (e2e) - AC5, AC6, AC8
         .set(...bearer(account.accessToken))
         .send(body);
 
-    it('200: merges the app language into the account; unhandled parts are reported as skipped', async () => {
+    it('200: keeps the account language (Q8) and merges onboarding; locale is reported as skipped', async () => {
       const account = await signUp(app, { locale: 'en' });
       const res = await merge(account, {
         locale: 'uz',
         onboarding: { experience: 'beginner' },
       }).expect(200);
-      expect(res.body).toEqual({ merged: ['locale'], skipped: ['onboarding'] });
+      expect(res.body).toEqual({ merged: ['onboarding'], skipped: ['locale'] });
       const me = await request(server())
         .get('/v1/me')
         .set(...bearer(account.accessToken))
         .expect(200);
-      expect(me.body.locale).toBe('uz');
+      expect(me.body.locale).toBe('en');
     });
 
     it('is safe to repeat and accepts an empty body', async () => {

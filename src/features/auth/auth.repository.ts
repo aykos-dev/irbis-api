@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { UsernameTakenError } from './auth.errors.js';
 import type {
   BlockReason,
+  ExperienceCode,
+  InterestCode,
   LocaleCode,
   SmsPurposeCode,
   UserRole,
@@ -20,6 +22,8 @@ const userSelect = {
   recoveryPhone: true,
   recoveryPhoneVerifiedAt: true,
   locale: true,
+  experience: true,
+  interests: true,
   role: true,
   blockedAt: true,
   blockReasonCode: true,
@@ -153,8 +157,25 @@ export class AuthRepository {
     });
   }
 
-  async updateLocale(id: string, locale: LocaleCode): Promise<void> {
-    await this.prisma.user.update({ where: { id }, data: { locale } });
+  /** Writes each onboarding field only where the account's value is still empty (one transaction). */
+  async fillEmptyOnboarding(
+    id: string,
+    data: { experience?: ExperienceCode; interests?: InterestCode[] },
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      if (data.experience !== undefined) {
+        await tx.user.updateMany({
+          where: { id, experience: null },
+          data: { experience: data.experience },
+        });
+      }
+      if (data.interests !== undefined && data.interests.length > 0) {
+        await tx.user.updateMany({
+          where: { id, interests: { isEmpty: true } },
+          data: { interests: data.interests },
+        });
+      }
+    });
   }
 
   async setRecoveryPhone(
