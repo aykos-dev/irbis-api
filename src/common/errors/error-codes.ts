@@ -4,7 +4,7 @@ export const ErrorCode = {
   Unauthenticated: 'UNAUTHENTICATED',
   Forbidden: 'FORBIDDEN',
   NotFound: 'NOT_FOUND',
-  TooManyRequests: 'TOO_MANY_REQUESTS',
+  RateLimited: 'RATE_LIMITED',
   PayloadTooLarge: 'PAYLOAD_TOO_LARGE',
   BadRequest: 'BAD_REQUEST',
   InternalError: 'INTERNAL_ERROR',

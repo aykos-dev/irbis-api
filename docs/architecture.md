@@ -25,6 +25,7 @@ Exact versions installed at scaffold time (2026-10-17); `package.json` pins them
 | **Validation** | class-validator + class-transformer | 0.15.1 / 0.5.1 |
 | **Auth** | JWT access + rotating refresh (ADR-001); access tokens verified with `@nestjs/jwt` (HS256) | 12.0.3 |
 | **Config** | `@nestjs/config` + zod | 12.0.1 / 4.6.7 |
+| **Passwords / cookies** | `@node-rs/argon2` (Argon2id), `cookie-parser` (admin refresh cookie) — approved for `auth` | 2.2.2 / 1.4.7 |
 | **Logging** | nestjs-pino + pino-http | 5.3.1 / 11.0.0 |
 | **Security** | helmet, `@nestjs/throttler` | 8.3.0 / 6.7.1 |
 | **Health** | `@nestjs/terminus` | 12.1.0 |
@@ -136,15 +137,23 @@ migration. Names are the Prisma models (DB tables snake_case plural). Numbers th
 (XP amounts, level thresholds, caps) live in **`GameConfig`**, never in code.
 
 ### Accounts & profile (Phase 1: `auth`, `onboarding`, `profile`)
+Built in `auth` (migration `auth_init`, snake_case plural tables, UUID v7 ids):
 ```
-User            id, username (unique, case-insensitive), passwordHash (argon2id), recoveryPhone? (encrypted,
-                never logged), recoveryPhoneVerifiedAt?, displayName, avatarUrl?, locale (uz|ru|en),
-                experience (beginner|weekend|experienced), interests[] (peak|cave|lake|camping|trail),
-                level (1–7), xpTotal, gems, role (user|admin|operator), createdAt
-RefreshToken    id, userId, familyId, tokenHash, expiresAt, revokedAt, replacedById
-PasswordReset   id, userId, codeHash, expiresAt, attempts, usedAt      — SMS code, single use
-LoginAttempt    username, ip, at, ok                                    — rate limit + lockout
-(trusted account = createdAt older than 7 days; no separate flag)
+User            id, username (stored lowercase, unique on lower(username), CHECK 3–20 of a-z 0-9 . _), passwordHash
+                (argon2id), recoveryPhone? (AES-256-GCM ciphertext, only ever a verified phone) +
+                recoveryPhoneVerifiedAt? (CHECK: both or neither), locale (uz|ru|en), role (user|admin; operator
+                later), blockedAt? + blockReasonCode? (CHECK: both or neither; spam|abuse|impersonation|safety|other),
+                termsAcceptedAt, lastActiveAt (written at most hourly), createdAt, updatedAt
+RefreshToken    id, userId, familyId, tokenHash (sha256, unique), expiresAt, revokedAt?, replacedById?
+                — rotated on every refresh; presenting a rotated token revokes the family
+SmsCode         id, userId, purpose (password_reset|phone_verify), phone (encrypted; the pending phone for
+                phone_verify), codeHash (HMAC), expiresAt (5 min), attempts (max 3), usedAt?, createdAt
+LoginAttempt    id, username, ip, ok, at          — per-username lockout (5 wrong / 15 min) + per-IP throttle (20)
+AdminAuditLog   id, adminId, userId, action, reasonCode?, note, detail?, at — append-only; never a password or phone
+```
+Added by later features: `displayName`, `avatarUrl`, `experience`, `interests[]` (onboarding/profile), `level`,
+`xpTotal`, `gems` (levels). Trusted account = `createdAt` older than 7 days (no separate flag). Later tables:
+```
 EmergencyContact id, userId, name, phone (encrypted at rest), relation
 Device          id, userId, platform, pushToken, locale
 ```
@@ -242,9 +251,12 @@ Phase 1 surface (each feature adds its own; all under `/v1`, auth required unles
 | `GET` | `/health` (public) | health |
 | `POST` | `/v1/auth/sign-up` · `/v1/auth/log-in` · `/v1/auth/password/forgot` · `/v1/auth/password/reset` (public) · `/v1/auth/refresh` · `/v1/auth/sign-out` | auth |
 | `GET` | `/v1/auth/username-available?u=` (public, rate-limited) | auth |
-| `POST` | `/v1/me/guest-merge` (onboarding choices, lesson progress, saved places from the device) | auth |
+| `POST` | `/v1/me/guest-merge` (language now; features register handlers via `GuestMergeRegistry`) | auth |
 | `PUT` | `/v1/me/recovery-phone` · `POST /v1/me/recovery-phone/verify` | auth |
-| `GET` / `PATCH` | `/v1/me` | profile, onboarding |
+| `GET` | `/v1/me` | auth |
+| `PATCH` | `/v1/me` | profile, onboarding |
+| `POST` | `/v1/admin/auth/log-in` · `/refresh` · `/sign-out` (refresh token in an httpOnly Secure SameSite=Lax cookie) | auth |
+| admin | `GET /v1/admin/stats/users` · `GET /v1/admin/users` (search, filters, sort, cursor, total) · `GET /v1/admin/users/:id` · `POST …/block` `…/unblock` · `PUT …/password` `…/recovery-phone` `…/role` · `GET …/audit` | auth |
 | `PUT` | `/v1/me/onboarding` (language, experience, interests) | onboarding |
 | `GET` | `/v1/places?type=&region=&near=` · `/v1/places/:id` · `/v1/places/:id/trails` | places |
 | `GET` | `/v1/places/:id/condition` · `POST /v1/places/:id/reports` | conditions |

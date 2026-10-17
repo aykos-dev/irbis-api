@@ -7,6 +7,10 @@ import { HttpStatus } from '@nestjs/common';
 export abstract class DomainError extends Error {
   abstract readonly code: string;
   abstract readonly status: HttpStatus;
+  /** Extra machine-readable fields clients may need; the filter copies them into the response. */
+  readonly fieldErrors?: Record<string, string[]>;
+  readonly reasonCode?: string;
+  readonly retryAfterSec?: number;
 
   constructor(message: string) {
     super(message);
@@ -27,4 +31,17 @@ export class ConflictError extends DomainError {
 export class ForbiddenError extends DomainError {
   readonly code: string = 'FORBIDDEN';
   readonly status = HttpStatus.FORBIDDEN;
+}
+
+/** 429 for any rate limit: the global throttler, per-IP log-in limits and per-account SMS limits. */
+export class RateLimitedError extends DomainError {
+  readonly code: string = 'RATE_LIMITED';
+  readonly status = HttpStatus.TOO_MANY_REQUESTS;
+
+  constructor(
+    message: string,
+    override readonly retryAfterSec?: number,
+  ) {
+    super(message);
+  }
 }

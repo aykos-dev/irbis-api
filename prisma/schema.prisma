@@ -11,3 +11,144 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  user
+  admin
+
+  @@map("role")
+}
+
+enum Locale {
+  uz
+  ru
+  en
+
+  @@map("locale")
+}
+
+enum BlockReasonCode {
+  spam
+  abuse
+  impersonation
+  safety
+  other
+
+  @@map("block_reason_code")
+}
+
+enum SmsPurpose {
+  password_reset
+  phone_verify
+
+  @@map("sms_purpose")
+}
+
+enum AdminAction {
+  block
+  unblock
+  set_password
+  set_recovery_phone
+  change_role
+
+  @@map("admin_action")
+}
+
+// Usernames are stored lowercase; the unique index and CHECKs in the auth_init migration enforce it.
+model User {
+  id                      String           @id @default(uuid(7)) @db.Uuid
+  username                String           @unique @db.VarChar(20)
+  passwordHash            String           @map("password_hash")
+  // AES-256-GCM ciphertext of the verified recovery phone; never logged or returned in full.
+  recoveryPhone           String?          @map("recovery_phone")
+  recoveryPhoneVerifiedAt DateTime?        @map("recovery_phone_verified_at") @db.Timestamptz(3)
+  locale                  Locale
+  role                    Role             @default(user)
+  blockedAt               DateTime?        @map("blocked_at") @db.Timestamptz(3)
+  blockReasonCode         BlockReasonCode? @map("block_reason_code")
+  termsAcceptedAt         DateTime?        @map("terms_accepted_at") @db.Timestamptz(3)
+  lastActiveAt            DateTime         @default(now()) @map("last_active_at") @db.Timestamptz(3)
+  createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  refreshTokens RefreshToken[]
+  smsCodes      SmsCode[]
+  auditAsAdmin  AdminAuditLog[] @relation("AuditAdmin")
+  auditAsTarget AdminAuditLog[] @relation("AuditTarget")
+
+  @@index([createdAt, id])
+  @@index([lastActiveAt, id])
+  @@index([role])
+  @@index([blockedAt])
+  @@map("users")
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  familyId     String    @map("family_id") @db.Uuid
+  tokenHash    String    @unique @map("token_hash")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
+  // Set when this token was exchanged for a new one; presenting a rotated token again is reuse.
+  replacedById String?   @unique @map("replaced_by_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedBy RefreshToken? @relation("Rotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces   RefreshToken? @relation("Rotation")
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+// One SMS code: password reset or recovery-phone verification (phone_verify keeps the pending phone).
+model SmsCode {
+  id        String     @id @default(uuid(7)) @db.Uuid
+  userId    String     @map("user_id") @db.Uuid
+  purpose   SmsPurpose
+  phone     String
+  codeHash  String     @map("code_hash")
+  expiresAt DateTime   @map("expires_at") @db.Timestamptz(3)
+  attempts  Int        @default(0)
+  usedAt    DateTime?  @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt])
+  @@map("sms_codes")
+}
+
+// Log-in attempts for lockout (per username) and throttling (per IP). username is lowercase, may not exist.
+model LoginAttempt {
+  id       String   @id @default(uuid(7)) @db.Uuid
+  username String   @db.VarChar(64)
+  ip       String   @db.VarChar(64)
+  ok       Boolean
+  at       DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([username, at])
+  @@index([ip, at])
+  @@map("login_attempts")
+}
+
+// Append-only. Never holds a password or a full phone number.
+model AdminAuditLog {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  adminId    String           @map("admin_id") @db.Uuid
+  userId     String           @map("user_id") @db.Uuid
+  action     AdminAction
+  reasonCode BlockReasonCode? @map("reason_code")
+  note       String           @db.VarChar(500)
+  detail     String?          @db.VarChar(200)
+  at         DateTime         @default(now()) @db.Timestamptz(3)
+
+  admin User @relation("AuditAdmin", fields: [adminId], references: [id], onDelete: Restrict)
+  user  User @relation("AuditTarget", fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, at, id])
+  @@index([adminId])
+  @@map("admin_audit_logs")
+}

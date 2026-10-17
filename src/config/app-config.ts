@@ -1,3 +1,4 @@
+import { hkdfSync } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from './config.schema.js';
@@ -38,8 +39,62 @@ export class AppConfig {
     };
   }
 
+  get appEnv(): Env['APP_ENV'] {
+    return this.get('APP_ENV');
+  }
+
   get jwtAccessSecret(): string {
     return this.get('JWT_ACCESS_SECRET');
+  }
+
+  get jwtAccessTtlSec(): number {
+    return this.get('JWT_ACCESS_TTL_SEC');
+  }
+
+  get refreshTtlDays(): number {
+    return this.get('REFRESH_TTL_DAYS');
+  }
+
+  get argon2(): { memoryCost: number; timeCost: number } {
+    return {
+      memoryCost: this.get('ARGON2_MEMORY_KIB'),
+      timeCost: this.get('ARGON2_TIME_COST'),
+    };
+  }
+
+  /** 32-byte key for recovery phones. Local/test without PHONE_ENCRYPTION_KEY derive one from the JWT secret. */
+  get phoneEncryptionKey(): Buffer {
+    const configured = this.get('PHONE_ENCRYPTION_KEY');
+    if (configured) {
+      return Buffer.from(configured, 'base64');
+    }
+    return Buffer.from(
+      hkdfSync(
+        'sha256',
+        this.jwtAccessSecret,
+        'irbis',
+        'phone-encryption-v1',
+        32,
+      ),
+    );
+  }
+
+  get smsProvider(): Env['SMS_PROVIDER'] {
+    return this.get('SMS_PROVIDER');
+  }
+
+  get authThrottle(): { limit: number; ttlMs: number } {
+    return {
+      limit: this.get('AUTH_THROTTLE_LIMIT'),
+      ttlMs: this.get('AUTH_THROTTLE_TTL_MS'),
+    };
+  }
+
+  get lookupThrottle(): { limit: number; ttlMs: number } {
+    return {
+      limit: this.get('LOOKUP_THROTTLE_LIMIT'),
+      ttlMs: this.get('AUTH_THROTTLE_TTL_MS'),
+    };
   }
 
   get databaseUrl(): string {

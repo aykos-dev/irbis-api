@@ -9,7 +9,7 @@ import { writeFileSync } from 'node:fs';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
 const EXPORT_ENV: Record<string, string> = {
-  NODE_ENV: 'production',
+  NODE_ENV: 'test',
   LOG_LEVEL: 'silent',
   CORS_ORIGINS: 'http://localhost',
   JWT_ACCESS_SECRET: 'openapi-export-only-placeholder-not-used-to-sign',

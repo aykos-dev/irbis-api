@@ -10,7 +10,6 @@ import type { Request, Response } from 'express';
 import type { ErrorResponseDto } from '../dto/error-response.dto.js';
 import { DomainError } from '../errors/domain.error.js';
 import { ErrorCode } from '../errors/error-codes.js';
-import { RequestValidationError } from '../errors/validation.error.js';
 import { requestIdOf } from '../request-id.js';
 
 const CODE_BY_STATUS: Partial<Record<number, string>> = {
@@ -19,7 +18,7 @@ const CODE_BY_STATUS: Partial<Record<number, string>> = {
   [HttpStatus.FORBIDDEN]: ErrorCode.Forbidden,
   [HttpStatus.NOT_FOUND]: ErrorCode.NotFound,
   [HttpStatus.PAYLOAD_TOO_LARGE]: ErrorCode.PayloadTooLarge,
-  [HttpStatus.TOO_MANY_REQUESTS]: ErrorCode.TooManyRequests,
+  [HttpStatus.TOO_MANY_REQUESTS]: ErrorCode.RateLimited,
 };
 
 const SAFE_MESSAGE: Partial<Record<number, string>> = {
@@ -74,24 +73,23 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         'Unhandled error',
       );
     }
+    if (body.retryAfterSec !== undefined) {
+      res.setHeader('Retry-After', String(body.retryAfterSec));
+    }
     res.status(body.statusCode).json(body);
   }
 
   private toBody(exception: unknown, requestId: string): ErrorResponseDto {
-    if (exception instanceof RequestValidationError) {
-      return {
-        statusCode: exception.status,
-        code: exception.code,
-        message: exception.message,
-        fieldErrors: exception.fieldErrors,
-        requestId,
-      };
-    }
     if (exception instanceof DomainError) {
       return {
         statusCode: exception.status,
         code: exception.code,
         message: exception.message,
+        ...(exception.fieldErrors && { fieldErrors: exception.fieldErrors }),
+        ...(exception.reasonCode && { reasonCode: exception.reasonCode }),
+        ...(exception.retryAfterSec !== undefined && {
+          retryAfterSec: exception.retryAfterSec,
+        }),
         requestId,
       };
     }

@@ -5,6 +5,7 @@ import {
   type OpenAPIObject,
   SwaggerModule,
 } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { AppConfig } from './config/app-config.js';
@@ -19,6 +20,7 @@ export function configureApp(app: NestExpressApplication): void {
 
   app.useLogger(app.get(Logger));
   app.use(helmet());
+  app.use(cookieParser());
   app.enableCors({ origin: config.corsOrigins, credentials: true });
   app.useBodyParser('json', { limit: config.bodyLimit });
   app.useBodyParser('urlencoded', { limit: config.bodyLimit, extended: false });

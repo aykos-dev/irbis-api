@@ -8,6 +8,7 @@ Project-wide rules: `../irbis-docs/CLAUDE.md`. Prisma 7 setup differs from older
 
 ## Commands
 - `npm run check` — lint + typecheck + tests + dependency-cruiser + slop grep, failures only. Green before "done".
+- `npm run admin:create` — interactive (hidden password): creates or promotes the first admin. Never takes the password as an argument.
 - `npm run openapi:export` — writes `openapi.json`. Run and commit after any endpoint/DTO change.
 - `npx nest g resource <slug>` — generators for boilerplate, then reshape to the feature layout.
 - `npx prisma migrate dev --name <change>` — new migration. Never edit existing ones. No `db push`.
@@ -19,12 +20,13 @@ Project-wide rules: `../irbis-docs/CLAUDE.md`. Prisma 7 setup differs from older
 → `<slug>.repository.ts` (the ONLY place Prisma is used) + `<slug>.errors.ts` + `dto/`.
 
 ## Shared modules — check before creating anything new
-- `src/common/guards/`, `decorators/` — global JWT guard, `@Public()`, `@Roles()`, `@CurrentUser()`
-- `src/common/errors/` — `DomainError` base + NotFound/Conflict/Forbidden
+- `src/common/guards/`, `decorators/` — global JWT guard, `AppThrottlerGuard` (429 `RATE_LIMITED`), `@Public()`, `@Roles()`, `@CurrentUser()`, `@ClientIp()`, `@Throttled('auth'|'lookup')`, `@ApiErrorResponses({status: [codes]})`
+- `src/common/errors/` — `DomainError` base (+ optional `fieldErrors`, `reasonCode`, `retryAfterSec` copied into the error body) + NotFound/Conflict/Forbidden/RateLimited
 - `src/common/filters/global-exception.filter.ts` — the one error format
 - `src/common/dto/` — ErrorResponseDto (PaginationQueryDto, PageDto: add with the first list endpoint)
 - `src/common/interceptors/idempotency.interceptor.ts` — not yet; add with the first value-granting write
-- `src/lib/` — geo distance, cursors, dates (created by the first feature that needs one)
+- `src/lib/` — `cursor` (opaque keyset cursors), `dates` (Asia/Tashkent day start), `field-cipher` (AES-GCM for PII at rest); geo distance when `places` lands
+- `src/features/auth/` — `AccountStatusGuard` (blocked check + live role on every authed request), `GuestMergeRegistry` (features register `GuestMergeHandler`s), `SmsSender` (fake in local/test only), `PhoneCipher`, `PasswordService`
 - `src/config/` — the only place `process.env` is read
 
 ## Non-negotiables (from the standards)

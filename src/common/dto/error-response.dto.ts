@@ -24,6 +24,19 @@ export class ErrorResponseDto {
   })
   fieldErrors?: Record<string, string[]>;
 
+  @ApiPropertyOptional({
+    example: 'spam',
+    description: 'ACCOUNT_BLOCKED only: the block reason category.',
+  })
+  reasonCode?: string;
+
+  @ApiPropertyOptional({
+    example: 900,
+    description:
+      'ACCOUNT_LOCKED, RATE_LIMITED: seconds until the client may retry.',
+  })
+  retryAfterSec?: number;
+
   @ApiProperty({ example: '6f1c2a9e-4b7d-4c1e-9a55-0d2b8f3e7c10' })
   requestId: string;
 }

@@ -16,12 +16,23 @@ export async function startPostgres(): Promise<StartedPostgreSqlContainer> {
 }
 
 /** Environment for an e2e app instance. Secrets are random per run and never leave the process. */
-export function e2eEnv(databaseUrl: string): Record<string, string> {
+export function e2eEnv(
+  databaseUrl: string,
+  overrides: Record<string, string> = {},
+): Record<string, string> {
   return {
     NODE_ENV: 'test',
+    APP_ENV: 'test',
     LOG_LEVEL: 'silent',
     CORS_ORIGINS: 'http://localhost:3001',
     JWT_ACCESS_SECRET: randomBytes(32).toString('hex'),
     DATABASE_URL: databaseUrl,
+    // Cheap hashing and generous rate limits; the throttle e2e file lowers them on purpose.
+    ARGON2_MEMORY_KIB: '8',
+    ARGON2_TIME_COST: '1',
+    THROTTLE_LIMIT: '100000',
+    AUTH_THROTTLE_LIMIT: '100000',
+    LOOKUP_THROTTLE_LIMIT: '100000',
+    ...overrides,
   };
 }

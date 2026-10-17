@@ -9,7 +9,7 @@ export class RequestValidationError extends DomainError {
   readonly code = ErrorCode.ValidationFailed;
   readonly status = HttpStatus.BAD_REQUEST;
 
-  constructor(readonly fieldErrors: FieldErrors) {
+  constructor(override readonly fieldErrors: FieldErrors) {
     super('Request validation failed');
   }
 
