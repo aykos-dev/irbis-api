@@ -3,6 +3,7 @@ import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { ConditionsJob } from '../src/features/conditions/conditions.job.js';
+import { ConditionsService } from '../src/features/conditions/conditions.service.js';
 import { OpenMeteoClient } from '../src/features/conditions/open-meteo.client.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { createE2eApp } from './setup/app.js';
@@ -40,7 +41,7 @@ async function createPlace(
   return row.id;
 }
 
-describe('conditions (e2e) - AC4, AC5', () => {
+describe('conditions (e2e) - AC3, AC4, AC5', () => {
   let db: StartedPostgreSqlContainer;
   let app: NestExpressApplication;
   let prisma: PrismaService;
@@ -289,6 +290,63 @@ describe('conditions (e2e) - AC4, AC5', () => {
       const job = app.get(ConditionsJob);
       await vi.waitFor(() => expect(job.isRunning()).toBe(false));
       fetch.mockRestore();
+    });
+  });
+  describe('AC3 expired override and inactive closures are ignored', () => {
+    const condition = (id: string) =>
+      request(server()).get(`/v1/places/${id}/condition`).expect(200);
+    const recompute = (id: string) =>
+      app.get(ConditionsService).recomputePlace(id, new Date());
+
+    it('an override past its expiresAt is ignored; the closure applies', async () => {
+      const id = await createPlace(prisma, 'Expired override place');
+      await closure(id).expect(201);
+      const created = await override(id, 'go', 'expired').expect(201);
+      expect((await condition(id)).body.status).toBe('go');
+
+      await prisma.conditionOverride.update({
+        where: { id: created.body.id },
+        data: { expiresAt: new Date(Date.now() - 60_000) },
+      });
+      await recompute(id);
+      expect((await condition(id)).body).toMatchObject({
+        status: 'not_now',
+        source: 'closure',
+        reasons: [{ code: 'CLOSURE' }],
+      });
+    });
+
+    it('a closure that has not started yet does not make the place not_now', async () => {
+      const id = await createPlace(prisma, 'Future closure place');
+      const created = await post(`/v1/admin/places/${id}/closures`, {
+        startsAt: inDays(1),
+        reason: { uz: 'later' },
+        source: 'admin',
+      }).expect(201);
+      expect(created.body.active).toBe(false);
+      const res = await condition(id);
+      expect(res.body.status).not.toBe('not_now');
+      expect(res.body.source).not.toBe('closure');
+    });
+
+    it('a closure whose endsAt has passed does not make the place not_now', async () => {
+      const id = await createPlace(prisma, 'Past closure place');
+      const created = await post(`/v1/admin/places/${id}/closures`, {
+        startsAt: inDays(-2),
+        endsAt: inDays(1),
+        reason: { uz: 'over' },
+        source: 'admin',
+      }).expect(201);
+      expect((await condition(id)).body.status).toBe('not_now');
+
+      await prisma.closure.update({
+        where: { id: created.body.id },
+        data: { endsAt: new Date(Date.now() - 60_000) },
+      });
+      await recompute(id);
+      const res = await condition(id);
+      expect(res.body.status).not.toBe('not_now');
+      expect(res.body.source).not.toBe('closure');
     });
   });
 });
