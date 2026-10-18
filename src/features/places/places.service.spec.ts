@@ -52,9 +52,8 @@ function service(rows: PlaceRow[]): {
     findById: (id) =>
       Promise.resolve(rows.find((row) => row.id === id) ?? null),
   };
-  const config: Pick<AppConfig, 'placesFallbackOrigin' | 'levelsStartLevel'> = {
+  const config: Pick<AppConfig, 'placesFallbackOrigin'> = {
     placesFallbackOrigin: TASHKENT,
-    levelsStartLevel: 1,
   };
   return {
     svc: new PlacesService(repo as PlacesRepository, config as AppConfig),

@@ -461,10 +461,12 @@ describe('password reset, recovery phone, /me, guest merge (e2e) - AC5, AC6, AC8
           'hasRecoveryPhone',
           'id',
           'interests',
+          'level',
           'locale',
           'recoveryPhonePending',
           'role',
           'username',
+          'xpTotal',
         ].sort(),
       );
     });

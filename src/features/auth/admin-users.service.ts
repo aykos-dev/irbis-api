@@ -128,7 +128,6 @@ export class AdminUsersService {
       blockReasonCode: user.blockReasonCode,
       lockedForSec: lockout.limited ? lockout.retryAfterSec : null,
       sessionsCount,
-      level: null,
     };
   }
 
@@ -298,6 +297,7 @@ export class AdminUsersService {
       status,
       joinedAt: user.createdAt.toISOString(),
       lastActiveAt: user.lastActiveAt.toISOString(),
+      level: user.level,
       recoveryPhoneMasked: user.recoveryPhone
         ? maskPhone(this.cipher.decrypt(user.recoveryPhone))
         : null,

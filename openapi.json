@@ -2909,6 +2909,16 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7,
+            "example": 1
+          },
+          "xpTotal": {
+            "type": "integer",
+            "description": "Lifetime XP."
           }
         },
         "required": [
@@ -2920,7 +2930,9 @@
           "role",
           "hasRecoveryPhone",
           "recoveryPhonePending",
-          "createdAt"
+          "createdAt",
+          "level",
+          "xpTotal"
         ]
       },
       "AuthSessionResponseDto": {
@@ -3365,6 +3377,12 @@
             "type": "string",
             "nullable": true,
             "example": "+998 •• ••• •• 67"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7,
+            "description": "The user's current level (User.level)."
           }
         },
         "required": [
@@ -3374,7 +3392,8 @@
           "status",
           "joinedAt",
           "lastActiveAt",
-          "recoveryPhoneMasked"
+          "recoveryPhoneMasked",
+          "level"
         ]
       },
       "AdminUserListResponseDto": {
@@ -3448,6 +3467,12 @@
             "nullable": true,
             "example": "+998 •• ••• •• 67"
           },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7,
+            "description": "The user's current level (User.level)."
+          },
           "locale": {
             "allOf": [
               {
@@ -3479,11 +3504,6 @@
           "sessionsCount": {
             "type": "number",
             "description": "Signed-in sessions (refresh tokens still valid)."
-          },
-          "level": {
-            "type": "number",
-            "nullable": true,
-            "description": "Always null until the levels feature exists."
           }
         },
         "required": [
@@ -3494,13 +3514,13 @@
           "joinedAt",
           "lastActiveAt",
           "recoveryPhoneMasked",
+          "level",
           "locale",
           "recoveryPhoneVerified",
           "blockedAt",
           "blockReasonCode",
           "lockedForSec",
-          "sessionsCount",
-          "level"
+          "sessionsCount"
         ]
       },
       "BlockUserDto": {

@@ -36,4 +36,10 @@ export class MeResponseDto {
 
   @ApiProperty({ format: 'date-time' })
   createdAt: string;
+
+  @ApiProperty({ type: 'integer', minimum: 1, maximum: 7, example: 1 })
+  level: number;
+
+  @ApiProperty({ type: 'integer', description: 'Lifetime XP.' })
+  xpTotal: number;
 }

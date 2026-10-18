@@ -53,8 +53,6 @@ export const configSchema = z.object({
   // Origin for place distances when the client sends no position (Tashkent centre).
   PLACES_FALLBACK_LAT: z.coerce.number().min(-90).max(90).default(41.2995),
   PLACES_FALLBACK_LNG: z.coerce.number().min(-180).max(180).default(69.2401),
-  // Level every viewer has until the levels feature ships.
-  LEVELS_START_LEVEL: z.coerce.number().int().min(1).max(7).default(1),
   // QA endpoints (POST /v1/qa/...). Never on in production; off answers like an unknown route.
   QA_TOOLS_ENABLED: z
     .enum(['true', 'false'])

@@ -28,6 +28,8 @@ export class MeService {
         now,
       ),
       createdAt: user.createdAt.toISOString(),
+      level: user.level,
+      xpTotal: user.xpTotal,
     };
   }
 }

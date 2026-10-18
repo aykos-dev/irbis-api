@@ -119,10 +119,6 @@ export class AppConfig {
     };
   }
 
-  get levelsStartLevel(): number {
-    return this.get('LEVELS_START_LEVEL');
-  }
-
   get qaToolsEnabled(): boolean {
     return this.get('QA_TOOLS_ENABLED');
   }

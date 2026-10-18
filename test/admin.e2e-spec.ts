@@ -351,6 +351,7 @@ describe('admin panel API (e2e) - AC12-AC16', () => {
           'id',
           'joinedAt',
           'lastActiveAt',
+          'level',
           'recoveryPhoneMasked',
           'role',
           'status',
@@ -515,7 +516,7 @@ describe('admin panel API (e2e) - AC12-AC16', () => {
         blockReasonCode: null,
         lockedForSec: null,
         sessionsCount: 2,
-        level: null,
+        level: 1,
       });
     });
 

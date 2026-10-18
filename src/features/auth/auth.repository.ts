@@ -29,6 +29,8 @@ const userSelect = {
   blockReasonCode: true,
   createdAt: true,
   lastActiveAt: true,
+  level: true,
+  xpTotal: true,
 } satisfies Prisma.UserSelect;
 
 export type UserRecord = Prisma.UserGetPayload<{ select: typeof userSelect }>;

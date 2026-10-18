@@ -36,6 +36,7 @@ const listSelect = {
   recoveryPhoneVerifiedAt: true,
   createdAt: true,
   lastActiveAt: true,
+  level: true,
 } satisfies Prisma.UserSelect;
 
 export type UserListRow = Prisma.UserGetPayload<{ select: typeof listSelect }>;

@@ -6,7 +6,7 @@ import { seedGameConfig } from '../prisma/seed/seed.js';
 import { AppConfig } from '../src/config/app-config.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { createE2eApp } from './setup/app.js';
-import { type Account, bearer, signUp } from './setup/auth.js';
+import { type Account, bearer, makeAdmin, signUp } from './setup/auth.js';
 import { e2eEnv, startPostgres } from './setup/postgres.js';
 
 // Synthetic places: two open at L1, one at L2, one at L3.
@@ -184,5 +184,26 @@ describe('levels API (e2e) - AC3, AC4', () => {
       .set(...bearer(user.accessToken))
       .expect(200);
     expect(blocked.body.viewer).toEqual({ level: 1, qualifies: false });
+  });
+
+  it('GET /v1/me and admin user detail show the real level after a grant', async () => {
+    const user = await signUp(app);
+    await grant(user, {
+      xp: 300,
+      lessons: [{ tier: '1' }, { tier: '1' }],
+      checkIns: [{ difficulty: 1 }, { difficulty: 1 }],
+    }).expect(200);
+    const me = await request(server())
+      .get('/v1/me')
+      .set(...bearer(user.accessToken))
+      .expect(200);
+    expect(me.body).toMatchObject({ level: 2, xpTotal: 300 });
+
+    const admin = await makeAdmin(app);
+    const detail = await request(server())
+      .get(`/v1/admin/users/${user.id}`)
+      .set(...bearer(admin.accessToken))
+      .expect(200);
+    expect(detail.body.level).toBe(2);
   });
 });

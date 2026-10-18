@@ -221,6 +221,14 @@ export class AdminUserListItemDto {
 
   @ApiProperty({ type: String, nullable: true, example: '+998 •• ••• •• 67' })
   recoveryPhoneMasked: string | null;
+
+  @ApiProperty({
+    type: 'integer',
+    minimum: 1,
+    maximum: 7,
+    description: "The user's current level (User.level).",
+  })
+  level: number;
 }
 
 export class AdminUserListResponseDto {
@@ -262,13 +270,6 @@ export class AdminUserDetailDto extends AdminUserListItemDto {
     description: 'Signed-in sessions (refresh tokens still valid).',
   })
   sessionsCount: number;
-
-  @ApiProperty({
-    type: Number,
-    nullable: true,
-    description: 'Always null until the levels feature exists.',
-  })
-  level: number | null;
 }
 
 export class AuditAdminDto {
