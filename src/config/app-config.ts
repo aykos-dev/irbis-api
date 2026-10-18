@@ -123,6 +123,10 @@ export class AppConfig {
     return this.get('LEVELS_START_LEVEL');
   }
 
+  get qaToolsEnabled(): boolean {
+    return this.get('QA_TOOLS_ENABLED');
+  }
+
   get openMeteo(): {
     baseUrl: string;
     apiKey: string | undefined;

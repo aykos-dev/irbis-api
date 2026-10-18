@@ -15,3 +15,9 @@ export const CurrentUser = createParamDecorator(
     return user;
   },
 );
+
+/** The caller on a `@Public()` route when a valid token was sent; undefined for guests. */
+export const OptionalUser = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): AuthUser | undefined =>
+    ctx.switchToHttp().getRequest<{ user?: AuthUser }>().user,
+);

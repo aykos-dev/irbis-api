@@ -17,14 +17,19 @@ export interface LevelStep {
   toLevel: number;
 }
 
-function lessonsDone(row: LevelRow, state: ProgressState): number {
+/** Lessons that count toward `row`'s lesson gate. */
+export function lessonsDone(row: LevelRow, state: ProgressState): number {
   if (row.lessons.kind === 'tier' && row.lessons.tier !== null) {
     return state.lessonsByTier[row.lessons.tier] ?? 0;
   }
   return state.lessonsTotal;
 }
 
-function checkInsAtLeast(minDifficulty: number, state: ProgressState): number {
+/** Check-ins at places of at least `minDifficulty`. */
+export function checkInsAtLeast(
+  minDifficulty: number,
+  state: ProgressState,
+): number {
   return Object.entries(state.checkInsByDifficulty)
     .filter(([difficulty]) => Number(difficulty) >= minDifficulty)
     .reduce((sum, [, n]) => sum + n, 0);

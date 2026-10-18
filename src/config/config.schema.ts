@@ -55,6 +55,11 @@ export const configSchema = z.object({
   PLACES_FALLBACK_LNG: z.coerce.number().min(-180).max(180).default(69.2401),
   // Level every viewer has until the levels feature ships.
   LEVELS_START_LEVEL: z.coerce.number().int().min(1).max(7).default(1),
+  // QA endpoints (POST /v1/qa/...). Never on in production; off answers like an unknown route.
+  QA_TOOLS_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   // Conditions: Open-Meteo forecast job and rule thresholds (km/h, mm, %, °C, cm).
   OPEN_METEO_BASE_URL: z.url().default('https://api.open-meteo.com'),
   // Paid customer endpoint only; the free tier needs no key.
@@ -138,6 +143,11 @@ function crossFieldIssues(env: Env): string[] {
     Buffer.from(env.PHONE_ENCRYPTION_KEY, 'base64').length !== PHONE_KEY_BYTES
   ) {
     issues.push('PHONE_ENCRYPTION_KEY: expected base64 of 32 bytes');
+  }
+  if (env.QA_TOOLS_ENABLED && env.NODE_ENV === 'production') {
+    issues.push(
+      'QA_TOOLS_ENABLED: QA tools must stay off when NODE_ENV=production',
+    );
   }
   return issues;
 }

@@ -12,7 +12,11 @@ import type {
   PlaceListResponseDto,
 } from './dto/places.response.dto.js';
 import { haversineM, type LatLng, rankByDistance } from './place.rules.js';
-import { PLACES_DEFAULT_LIMIT, type PlaceOrigin } from './places.constants.js';
+import {
+  GUEST_LEVEL,
+  PLACES_DEFAULT_LIMIT,
+  type PlaceOrigin,
+} from './places.constants.js';
 import { PlaceNotFoundError } from './places.errors.js';
 import { PlacesRepository, type PlaceRow } from './places.repository.js';
 
@@ -46,9 +50,11 @@ export class PlacesService {
     };
   }
 
+  /** `viewerId` is the signed-in caller, if any; guests see level 1. */
   async detail(
     id: string,
     query: PlaceOriginQueryDto,
+    viewerId?: string,
   ): Promise<PlaceDetailDto> {
     const row = await this.places.findById(id);
     if (!row) throw new PlaceNotFoundError();
@@ -57,7 +63,9 @@ export class PlacesService {
       lat: row.latitude,
       lng: row.longitude,
     });
-    const level = this.config.levelsStartLevel;
+    const level =
+      (viewerId ? await this.places.findViewerLevel(viewerId) : null) ??
+      GUEST_LEVEL;
     return {
       ...toListItem(row, distanceM),
       region: row.region,

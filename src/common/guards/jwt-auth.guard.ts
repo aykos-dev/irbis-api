@@ -16,7 +16,10 @@ interface AccessTokenPayload {
   role?: unknown;
 }
 
-/** Global, deny-by-default: every route needs a valid HS256 access token unless `@Public()`. */
+/**
+ * Global, deny-by-default: every route needs a valid HS256 access token unless `@Public()`.
+ * On `@Public()` routes a valid token still sets the user; a missing or bad one means guest.
+ */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
@@ -30,14 +33,28 @@ export class JwtAuthGuard implements CanActivate {
       IS_PUBLIC_KEY,
       [context.getHandler(), context.getClass()],
     );
-    if (isPublic) {
-      return true;
-    }
-
     const req = context
       .switchToHttp()
       .getRequest<Request & { user?: AuthUser }>();
-    const token = this.bearerToken(req);
+    if (isPublic) {
+      // Optional auth: a valid token identifies the viewer; anything else is a guest, never a 401.
+      const token = this.bearerTokenOrNull(req);
+      if (token) {
+        req.user = await this.verify(token).catch((error: unknown) => {
+          if (error instanceof UnauthorizedException) return undefined;
+          throw error;
+        });
+      }
+      return true;
+    }
+
+    const token = this.bearerTokenOrNull(req);
+    if (!token) throw new UnauthorizedException();
+    req.user = await this.verify(token);
+    return true;
+  }
+
+  private async verify(token: string): Promise<AuthUser> {
     const payload = await this.jwt
       .verifyAsync<AccessTokenPayload>(token, {
         secret: this.config.jwtAccessSecret,
@@ -46,19 +63,14 @@ export class JwtAuthGuard implements CanActivate {
       .catch((error: unknown) => {
         throw new UnauthorizedException(undefined, { cause: error });
       });
-
     if (typeof payload.sub !== 'string' || !isRole(payload.role)) {
       throw new UnauthorizedException();
     }
-    req.user = { id: payload.sub, role: payload.role };
-    return true;
+    return { id: payload.sub, role: payload.role };
   }
 
-  private bearerToken(req: Request): string {
+  private bearerTokenOrNull(req: Request): string | null {
     const [scheme, token] = (req.headers.authorization ?? '').split(' ');
-    if (scheme !== 'Bearer' || !token) {
-      throw new UnauthorizedException();
-    }
-    return token;
+    return scheme === 'Bearer' && token ? token : null;
   }
 }

@@ -1,6 +1,8 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses } from '../../common/decorators/api-error-responses.decorator.js';
+import type { AuthUser } from '../../common/auth-user.js';
+import { OptionalUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { RequestValidationError } from '../../common/errors/validation.error.js';
 import {
@@ -39,7 +41,12 @@ export class PlacesController {
 
   @Public()
   @Get(':id')
-  @ApiOperation({ operationId: 'Places_get', summary: 'One place' })
+  @ApiOperation({
+    operationId: 'Places_get',
+    summary: 'One place',
+    description:
+      'Public. With a valid bearer token, `viewer` is the signed-in user; otherwise a guest at level 1.',
+  })
   @ApiOkResponse({ type: PlaceDetailDto })
   @ApiErrorResponses({
     400: ['VALIDATION_FAILED'],
@@ -48,7 +55,8 @@ export class PlacesController {
   detail(
     @Param('id', uuidPipe()) id: string,
     @Query() query: PlaceOriginQueryDto,
+    @OptionalUser() viewer: AuthUser | undefined,
   ): Promise<PlaceDetailDto> {
-    return this.places.detail(id, query);
+    return this.places.detail(id, query, viewer?.id);
   }
 }

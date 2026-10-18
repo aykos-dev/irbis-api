@@ -1,5 +1,8 @@
 import { HttpStatus } from '@nestjs/common';
-import { DomainError } from '../../common/errors/domain.error.js';
+import {
+  DomainError,
+  NotFoundError,
+} from '../../common/errors/domain.error.js';
 
 /** A GameConfig row is missing or fails its schema. Internal only: clients see a generic message. */
 export class GameConfigInvalidError extends DomainError {
@@ -11,5 +14,13 @@ export class GameConfigInvalidError extends DomainError {
     readonly detail: string,
   ) {
     super('Game configuration is invalid');
+  }
+}
+
+export class LevelUpNotFoundError extends NotFoundError {
+  override readonly code = 'LEVEL_UP_NOT_FOUND';
+
+  constructor() {
+    super('Level-up not found');
   }
 }

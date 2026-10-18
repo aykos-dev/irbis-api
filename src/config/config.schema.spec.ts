@@ -62,3 +62,23 @@ describe('config: SMS sender safety (Q7)', () => {
     );
   });
 });
+
+describe('config: QA tools (levels AC3)', () => {
+  it('keeps QA tools off by default and allows them outside production', () => {
+    expect(validateEnv({ ...base }).QA_TOOLS_ENABLED).toBe(false);
+    expect(
+      validateEnv({ ...base, APP_ENV: 'test', QA_TOOLS_ENABLED: 'true' })
+        .QA_TOOLS_ENABLED,
+    ).toBe(true);
+  });
+
+  it('refuses to boot with QA tools on when NODE_ENV=production', () => {
+    expect(() =>
+      validateEnv({
+        ...base,
+        NODE_ENV: 'production',
+        QA_TOOLS_ENABLED: 'true',
+      }),
+    ).toThrow(/QA_TOOLS_ENABLED/);
+  });
+});

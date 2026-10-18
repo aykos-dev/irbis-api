@@ -25,3 +25,6 @@ export const PLACE_ORIGINS = ['device', 'tashkent'] as const;
 export type PlaceOrigin = (typeof PLACE_ORIGINS)[number];
 
 export const PLACES_DEFAULT_LIMIT = 50;
+
+/** Level shown to a viewer who is not signed in. */
+export const GUEST_LEVEL = 1;

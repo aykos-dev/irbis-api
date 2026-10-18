@@ -1,14 +1,28 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { startOfTashkentDay } from '../../lib/dates.js';
 import { GameConfigService } from './game-config.service.js';
-import type { LevelTable } from './game-config.schema.js';
-import { levelSteps, nextReachableLevels } from './level-engine.js';
+import type { LevelRow, LevelTable } from './game-config.schema.js';
+import type {
+  LevelDefDto,
+  LevelListResponseDto,
+  MyLevelDto,
+  NextLevelDto,
+} from './dto/levels.response.dto.js';
+import {
+  checkInsAtLeast,
+  levelSteps,
+  lessonsDone,
+  nextReachableLevels,
+  type ProgressState,
+} from './level-engine.js';
 import {
   MAX_DIFFICULTY,
   MIN_DIFFICULTY,
   type LevelFactKindCode,
   type XpSourceCode,
 } from './levels.constants.js';
+import { LevelUpNotFoundError } from './levels.errors.js';
 import {
   LevelsRepository,
   type FactCounts,
@@ -57,6 +71,14 @@ export interface LevelState {
   xpTotal: number;
   reachedAt: Date;
   counts: FactCounts;
+}
+
+/** What a QA grant writes; every item becomes its own `qa:<uuid>` ledger row or fact. */
+export interface QaGrantInput {
+  xp?: number;
+  lessons?: { tier: string }[];
+  checkIns?: { difficulty: number }[];
+  verifiedSpots?: number;
 }
 
 /** XP ledger, level facts and the level engine. Other features call `award` and `recordFact`. */
@@ -181,6 +203,95 @@ export class LevelsService {
     };
   }
 
+  /** The level table with how many places each level opens. */
+  async listLevels(): Promise<LevelListResponseDto> {
+    const [table, places] = await Promise.all([
+      this.config.levelTable(),
+      this.repository.placeCountsByRequiredLevel(),
+    ]);
+    return { items: table.map((row) => toLevelDef(row, places)) };
+  }
+
+  /** The user's level, bars toward the next one and unseen level-ups. */
+  async getMyLevel(userId: string): Promise<MyLevelDto> {
+    const [table, places, state, pending] = await Promise.all([
+      this.config.levelTable(),
+      this.repository.placeCountsByRequiredLevel(),
+      this.getState(userId),
+      this.repository.pendingLevelUps(userId),
+    ]);
+    const progress: ProgressState = {
+      level: state.level,
+      xpTotal: state.xpTotal,
+      ...state.counts,
+    };
+    const nextRow = table.find((row) => row.level === state.level + 1);
+    return {
+      level: state.level,
+      xpTotal: state.xpTotal,
+      reachedAt: state.reachedAt.toISOString(),
+      next: nextRow ? toNextLevel(nextRow, progress) : null,
+      pendingLevelUps: pending.map((levelUp) => ({
+        id: levelUp.id,
+        fromLevel: levelUp.fromLevel,
+        toLevel: levelUp.toLevel,
+        maxDifficulty:
+          table.find((row) => row.level === levelUp.toLevel)?.maxDifficulty ??
+          MIN_DIFFICULTY,
+        newPlacesCount: places[levelUp.toLevel] ?? 0,
+      })),
+    };
+  }
+
+  /** Marks the user's level-up as seen; repeating it is a no-op. */
+  async markLevelUpSeen(
+    userId: string,
+    id: string,
+    now = new Date(),
+  ): Promise<void> {
+    const found = await this.repository.markLevelUpSeen(userId, id, now);
+    if (!found) throw new LevelUpNotFoundError();
+  }
+
+  /** QA only: grants XP and facts through the normal ledger, so caps and level-ups apply. */
+  async grantForQa(
+    userId: string,
+    grant: QaGrantInput,
+    now = new Date(),
+  ): Promise<MyLevelDto> {
+    const refId = (): string => `qa:${randomUUID()}`;
+    if (grant.xp !== undefined) {
+      await this.award(
+        { userId, source: 'qa_grant', refId: refId(), amount: grant.xp },
+        now,
+      );
+    }
+    for (const lesson of grant.lessons ?? []) {
+      await this.recordFact(
+        { userId, kind: 'lesson', refId: refId(), tier: lesson.tier },
+        now,
+      );
+    }
+    for (const checkIn of grant.checkIns ?? []) {
+      await this.recordFact(
+        {
+          userId,
+          kind: 'check_in',
+          refId: refId(),
+          difficulty: checkIn.difficulty,
+        },
+        now,
+      );
+    }
+    for (let i = 0; i < (grant.verifiedSpots ?? 0); i += 1) {
+      await this.recordFact(
+        { userId, kind: 'verified_spot', refId: refId() },
+        now,
+      );
+    }
+    return this.getMyLevel(userId);
+  }
+
   private async lockUser(userId: string, tx: Tx): Promise<UserProgress> {
     const progress = await this.repository.lockUser(userId, tx);
     if (!progress) throw new Error(`User ${userId} not found`);
@@ -209,4 +320,42 @@ export class LevelsService {
       tx,
     );
   }
+}
+
+function toLevelDef(
+  row: LevelRow,
+  places: Record<number, number>,
+): LevelDefDto {
+  return {
+    level: row.level,
+    xp: row.xp,
+    lessons: { ...row.lessons },
+    checkIns: { ...row.checkIns },
+    verifiedSpots: row.verifiedSpots,
+    maxDifficulty: row.maxDifficulty,
+    newPlacesCount: places[row.level] ?? 0,
+  };
+}
+
+/** Progress bars toward `row`, counted with the same rules as the level gates. */
+function toNextLevel(row: LevelRow, state: ProgressState): NextLevelDto {
+  return {
+    level: row.level,
+    xp: { current: state.xpTotal, required: row.xp },
+    lessons: {
+      current: lessonsDone(row, state),
+      required: row.lessons.required,
+      kind: row.lessons.kind,
+      tier: row.lessons.tier,
+    },
+    checkIns: {
+      current: checkInsAtLeast(row.checkIns.minDifficulty, state),
+      required: row.checkIns.required,
+      minDifficulty: row.checkIns.minDifficulty,
+    },
+    verifiedSpots:
+      row.verifiedSpots === 0
+        ? null
+        : { current: state.verifiedSpots, required: row.verifiedSpots },
+  };
 }

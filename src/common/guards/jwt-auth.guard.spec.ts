@@ -80,3 +80,31 @@ describe('JwtAuthGuard', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });
+
+describe('JwtAuthGuard: optional auth on @Public() routes (levels AC4)', () => {
+  it('sets the user when a valid token is sent', async () => {
+    const token = await jwt.signAsync(
+      { sub: 'user_1', role: 'user' },
+      { secret, algorithm: 'HS256' },
+    );
+    const { context, req } = contextFor('publicRoute', `Bearer ${token}`);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(req.user).toEqual({ id: 'user_1', role: 'user' });
+  });
+
+  it('continues as a guest with a bad, foreign or expired token', async () => {
+    const foreign = await jwt.signAsync(
+      { sub: 'user_1', role: 'user' },
+      { secret: randomBytes(32).toString('hex'), algorithm: 'HS256' },
+    );
+    const expired = await jwt.signAsync(
+      { sub: 'user_1', role: 'user', exp: Math.floor(Date.now() / 1000) - 60 },
+      { secret, algorithm: 'HS256' },
+    );
+    for (const token of ['not-a-jwt', foreign, expired]) {
+      const { context, req } = contextFor('publicRoute', `Bearer ${token}`);
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      expect(req.user).toBeUndefined();
+    }
+  });
+});

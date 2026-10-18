@@ -198,4 +198,43 @@ export class LevelsRepository {
     });
     return rows.sort((a, b) => a.toLevel - b.toLevel);
   }
+
+  /** Unseen level-ups, oldest first. */
+  pendingLevelUps(userId: string): Promise<LevelUpRecord[]> {
+    return this.prisma.levelUp.findMany({
+      where: { userId, seenAt: null },
+      orderBy: [{ createdAt: 'asc' }, { toLevel: 'asc' }],
+    });
+  }
+
+  /** Sets `seenAt` once. False when the level-up does not exist or belongs to someone else. */
+  async markLevelUpSeen(
+    userId: string,
+    id: string,
+    at: Date,
+  ): Promise<boolean> {
+    const updated = await this.prisma.levelUp.updateMany({
+      where: { id, userId, seenAt: null },
+      data: { seenAt: at },
+    });
+    if (updated.count > 0) return true;
+    const existing = await this.prisma.levelUp.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    return existing !== null;
+  }
+
+  /** Number of places per required level. */
+  async placeCountsByRequiredLevel(): Promise<Record<number, number>> {
+    const groups = await this.prisma.place.groupBy({
+      by: ['requiredLevel'],
+      _count: { _all: true },
+    });
+    const counts: Record<number, number> = {};
+    for (const group of groups) {
+      counts[group.requiredLevel] = group._count._all;
+    }
+    return counts;
+  }
 }

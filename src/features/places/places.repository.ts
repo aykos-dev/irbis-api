@@ -32,4 +32,13 @@ export class PlacesRepository {
   findById(id: string): Promise<PlaceRow | null> {
     return this.prisma.place.findUnique({ where: { id } });
   }
+
+  /** The viewer's current level; null when the user does not exist. */
+  async findViewerLevel(userId: string): Promise<number | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { level: true },
+    });
+    return user?.level ?? null;
+  }
 }
