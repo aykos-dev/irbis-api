@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { RequestValidationError } from './common/errors/validation.error.js';
@@ -17,6 +18,7 @@ import { AppConfig } from './config/app-config.js';
 import { AppConfigModule } from './config/config.module.js';
 import { AccountStatusGuard } from './features/auth/guards/account-status.guard.js';
 import { AuthModule } from './features/auth/auth.module.js';
+import { ConditionsModule } from './features/conditions/conditions.module.js';
 import { PlacesModule } from './features/places/places.module.js';
 import { HealthModule } from './health/health.module.js';
 import { loggerParams } from './logging.js';
@@ -54,10 +56,12 @@ import { PrismaModule } from './prisma/prisma.module.js';
       }),
     }),
     JwtModule.register({}),
+    ScheduleModule.forRoot(),
     PrismaModule,
     HealthModule,
     AuthModule,
     PlacesModule,
+    ConditionsModule,
   ],
   providers: [
     // Guards run in this order: rate limit → authentication → account status (blocked, current role) → roles.

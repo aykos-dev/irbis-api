@@ -55,6 +55,31 @@ export const configSchema = z.object({
   PLACES_FALLBACK_LNG: z.coerce.number().min(-180).max(180).default(69.2401),
   // Level every viewer has until the levels feature ships.
   LEVELS_START_LEVEL: z.coerce.number().int().min(1).max(7).default(1),
+  // Conditions: Open-Meteo forecast job and rule thresholds (km/h, mm, %, °C, cm).
+  OPEN_METEO_BASE_URL: z.url().default('https://api.open-meteo.com'),
+  // Paid customer endpoint only; the free tier needs no key.
+  OPEN_METEO_API_KEY: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(1).optional(),
+  ),
+  CONDITIONS_FETCH_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(10_000),
+  CONDITIONS_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(50),
+  COND_GUST_NOT_NOW_KMH: z.coerce.number().default(60),
+  COND_PRECIP_NOT_NOW_MM: z.coerce.number().default(20),
+  COND_WIND_CAUTION_KMH: z.coerce.number().default(35),
+  COND_PRECIP_PROB_CAUTION_PCT: z.coerce.number().default(60),
+  COND_HEAT_CAUTION_C: z.coerce.number().default(35),
+  COND_HEAT_NOT_NOW_C: z.coerce.number().default(40),
+  COND_COLD_CAUTION_C: z.coerce.number().default(-10),
+  COND_RAIN_HAZARD_CAUTION_MM: z.coerce.number().default(10),
+  COND_RAIN_HAZARD_NOT_NOW_MM: z.coerce.number().default(30),
+  COND_SNOW_CAUTION_CM: z.coerce.number().default(10),
+  COND_SNOW_NOT_NOW_CM: z.coerce.number().default(30),
+  COND_STALE_HOURS: z.coerce.number().positive().default(6),
   DATABASE_URL: z
     .string()
     .regex(/^postgres(ql)?:\/\//, 'expected a postgresql:// connection string'),

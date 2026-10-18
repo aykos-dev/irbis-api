@@ -91,10 +91,14 @@ model User {
   createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt               DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  refreshTokens RefreshToken[]
-  smsCodes      SmsCode[]
-  auditAsAdmin  AdminAuditLog[] @relation("AuditAdmin")
-  auditAsTarget AdminAuditLog[] @relation("AuditTarget")
+  refreshTokens    RefreshToken[]
+  smsCodes         SmsCode[]
+  auditAsAdmin     AdminAuditLog[]     @relation("AuditAdmin")
+  auditAsTarget    AdminAuditLog[]     @relation("AuditTarget")
+  closuresCreated  Closure[]           @relation("ClosureCreatedBy")
+  closuresEnded    Closure[]           @relation("ClosureEndedBy")
+  overridesCreated ConditionOverride[] @relation("OverrideCreatedBy")
+  overridesEnded   ConditionOverride[] @relation("OverrideEndedBy")
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -226,6 +230,104 @@ model Place {
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  condition PlaceCondition?
+  forecast  PlaceForecast?
+  closures  Closure[]
+  overrides ConditionOverride[]
+
   @@index([type])
   @@map("places")
+}
+
+enum ConditionStatus {
+  go
+  caution
+  not_now
+  seasonal_lock
+}
+
+enum ConditionSource {
+  forecast
+  hazard_rule
+  closure
+  season
+  manual
+}
+
+enum ClosureSource {
+  official
+  admin
+}
+
+// Computed condition per place (rules + closures + overrides + season); rewritten by the hourly job.
+model PlaceCondition {
+  placeId      String           @id @map("place_id") @db.Uuid
+  status       ConditionStatus?
+  source       ConditionSource?
+  reasons      Json
+  hazardLevels Json             @map("hazard_levels")
+  weekend      Json
+  forecastAt   DateTime?        @map("forecast_at") @db.Timestamptz(3)
+  computedAt   DateTime         @map("computed_at") @db.Timestamptz(3)
+
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("place_conditions")
+}
+
+// Last successful Open-Meteo daily forecast (past 3 + next 7 days) per place.
+model PlaceForecast {
+  placeId   String   @id @map("place_id") @db.Uuid
+  daily     Json
+  fetchedAt DateTime @map("fetched_at") @db.Timestamptz(3)
+
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@map("place_forecasts")
+}
+
+// Never deleted: ending sets endedAt/endedById (audit trail).
+model Closure {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  placeId     String        @map("place_id") @db.Uuid
+  startsAt    DateTime      @map("starts_at") @db.Timestamptz(3)
+  endsAt      DateTime?     @map("ends_at") @db.Timestamptz(3)
+  reasonUz    String        @map("reason_uz") @db.VarChar(500)
+  reasonRu    String?       @map("reason_ru") @db.VarChar(500)
+  reasonEn    String?       @map("reason_en") @db.VarChar(500)
+  source      ClosureSource
+  createdById String        @map("created_by_id") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  endedAt     DateTime?     @map("ended_at") @db.Timestamptz(3)
+  endedById   String?       @map("ended_by_id") @db.Uuid
+
+  place     Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("ClosureCreatedBy", fields: [createdById], references: [id])
+  endedBy   User? @relation("ClosureEndedBy", fields: [endedById], references: [id])
+
+  @@index([placeId, endedAt])
+  @@map("closures")
+}
+
+// Never deleted: ending sets endedAt/endedById (audit trail).
+model ConditionOverride {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  placeId     String          @map("place_id") @db.Uuid
+  status      ConditionStatus
+  reasonUz    String          @map("reason_uz") @db.VarChar(500)
+  reasonRu    String?         @map("reason_ru") @db.VarChar(500)
+  reasonEn    String?         @map("reason_en") @db.VarChar(500)
+  expiresAt   DateTime        @map("expires_at") @db.Timestamptz(3)
+  createdById String          @map("created_by_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  endedAt     DateTime?       @map("ended_at") @db.Timestamptz(3)
+  endedById   String?         @map("ended_by_id") @db.Uuid
+
+  place     Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("OverrideCreatedBy", fields: [createdById], references: [id])
+  endedBy   User? @relation("OverrideEndedBy", fields: [endedById], references: [id])
+
+  @@index([placeId, endedAt])
+  @@map("condition_overrides")
 }

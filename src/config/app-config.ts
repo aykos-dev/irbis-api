@@ -3,6 +3,21 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from './config.schema.js';
 
+/** Rule thresholds for the conditions feature (km/h, mm, %, °C, cm). */
+export interface ConditionThresholds {
+  gustNotNowKmh: number;
+  precipNotNowMm: number;
+  windCautionKmh: number;
+  precipProbCautionPct: number;
+  heatCautionC: number;
+  heatNotNowC: number;
+  coldCautionC: number;
+  rainHazardCautionMm: number;
+  rainHazardNotNowMm: number;
+  snowCautionCm: number;
+  snowNotNowCm: number;
+}
+
 /** Typed, validated configuration. Inject this instead of reading the environment. */
 @Injectable()
 export class AppConfig {
@@ -106,6 +121,41 @@ export class AppConfig {
 
   get levelsStartLevel(): number {
     return this.get('LEVELS_START_LEVEL');
+  }
+
+  get openMeteo(): {
+    baseUrl: string;
+    apiKey: string | undefined;
+    timeoutMs: number;
+    batchSize: number;
+  } {
+    return {
+      baseUrl: this.get('OPEN_METEO_BASE_URL'),
+      apiKey: this.get('OPEN_METEO_API_KEY'),
+      timeoutMs: this.get('CONDITIONS_FETCH_TIMEOUT_MS'),
+      batchSize: this.get('CONDITIONS_BATCH_SIZE'),
+    };
+  }
+
+  get conditionThresholds(): ConditionThresholds {
+    return {
+      gustNotNowKmh: this.get('COND_GUST_NOT_NOW_KMH'),
+      precipNotNowMm: this.get('COND_PRECIP_NOT_NOW_MM'),
+      windCautionKmh: this.get('COND_WIND_CAUTION_KMH'),
+      precipProbCautionPct: this.get('COND_PRECIP_PROB_CAUTION_PCT'),
+      heatCautionC: this.get('COND_HEAT_CAUTION_C'),
+      heatNotNowC: this.get('COND_HEAT_NOT_NOW_C'),
+      coldCautionC: this.get('COND_COLD_CAUTION_C'),
+      rainHazardCautionMm: this.get('COND_RAIN_HAZARD_CAUTION_MM'),
+      rainHazardNotNowMm: this.get('COND_RAIN_HAZARD_NOT_NOW_MM'),
+      snowCautionCm: this.get('COND_SNOW_CAUTION_CM'),
+      snowNotNowCm: this.get('COND_SNOW_NOT_NOW_CM'),
+    };
+  }
+
+  /** A forecast older than this keeps the last status (read side, slice 2). */
+  get conditionsStaleHours(): number {
+    return this.get('COND_STALE_HOURS');
   }
 
   get databaseUrl(): string {
