@@ -90,6 +90,10 @@ model User {
   lastActiveAt            DateTime         @default(now()) @map("last_active_at") @db.Timestamptz(3)
   createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt               DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  // levels: written only by LevelsService (XP via xp_entries, level via level_ups); never lowered.
+  level                   Int              @default(1)
+  xpTotal                 Int              @default(0) @map("xp_total")
+  levelReachedAt          DateTime         @default(now()) @map("level_reached_at") @db.Timestamptz(3)
 
   refreshTokens    RefreshToken[]
   smsCodes         SmsCode[]
@@ -99,6 +103,9 @@ model User {
   closuresEnded    Closure[]           @relation("ClosureEndedBy")
   overridesCreated ConditionOverride[] @relation("OverrideCreatedBy")
   overridesEnded   ConditionOverride[] @relation("OverrideEndedBy")
+  xpEntries        XpEntry[]
+  levelFacts       LevelFact[]
+  levelUps         LevelUp[]
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -330,4 +337,81 @@ model ConditionOverride {
 
   @@index([placeId, endedAt])
   @@map("condition_overrides")
+}
+
+// --- levels ---
+
+// Numbers the doc calls "decided after testing" (level table, XP caps); validated by zod at use.
+model GameConfig {
+  key       String   @id @db.VarChar(100)
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("game_config")
+}
+
+enum XpSource {
+  lesson
+  check_in
+  waypoint
+  discoverer
+  top_shots
+  post
+  game
+  campfire
+  qa_grant
+}
+
+// Append-only XP ledger; User.xpTotal is the running sum. One row per (user, source, refId).
+model XpEntry {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  source    XpSource
+  refId     String   @map("ref_id") @db.VarChar(200)
+  amount    Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, refId])
+  @@index([userId, source, createdAt])
+  @@map("xp_entries")
+}
+
+enum LevelFactKind {
+  lesson
+  check_in
+  verified_spot
+}
+
+// Facts the level gates count (lessons done, check-ins, verified spots). One row per (user, kind, refId).
+model LevelFact {
+  id         String        @id @default(uuid(7)) @db.Uuid
+  userId     String        @map("user_id") @db.Uuid
+  kind       LevelFactKind
+  refId      String        @map("ref_id") @db.VarChar(200)
+  tier       String?       @db.VarChar(50)
+  difficulty Int?
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, refId])
+  @@index([userId, kind])
+  @@map("level_facts")
+}
+
+// One row per level step (a 2→4 jump writes 2→3 and 3→4). seenAt set when the app shows it.
+model LevelUp {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  fromLevel Int       @map("from_level")
+  toLevel   Int       @map("to_level")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  seenAt    DateTime? @map("seen_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, seenAt])
+  @@map("level_ups")
 }

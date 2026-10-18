@@ -1,5 +1,6 @@
 /**
- * Idempotent seed: upserts every place from places.data.ts by slug.
+ * Idempotent seed: upserts every place from places.data.ts by slug and the GameConfig rows
+ * from game-config.data.ts by key.
  *
  *   npm run db:seed
  *
@@ -9,6 +10,7 @@
 import { pathToFileURL } from 'node:url';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
+import { gameConfigRows } from './game-config.data.js';
 import { toSeedRows } from './place-seed.rules.js';
 import { modifiedLocations } from './places.data.js';
 
@@ -27,6 +29,20 @@ export async function seedPlaces(prisma: PrismaClient): Promise<number> {
   return rows.length;
 }
 
+/** Upserts the GameConfig rows by key in one transaction; returns the row count seeded. */
+export async function seedGameConfig(prisma: PrismaClient): Promise<number> {
+  await prisma.$transaction(
+    gameConfigRows.map(({ key, value }) =>
+      prisma.gameConfig.upsert({
+        where: { key },
+        create: { key, value },
+        update: { value },
+      }),
+    ),
+  );
+  return gameConfigRows.length;
+}
+
 async function main(): Promise<void> {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error('DATABASE_URL is not set');
@@ -37,8 +53,9 @@ async function main(): Promise<void> {
   try {
     const seeded = await seedPlaces(prisma);
     const total = await prisma.place.count();
+    const configRows = await seedGameConfig(prisma);
     process.stdout.write(
-      `Seeded ${seeded} places; ${total} in the database.\n`,
+      `Seeded ${seeded} places; ${total} in the database. Seeded ${configRows} game config rows.\n`,
     );
   } finally {
     await prisma.$disconnect();
