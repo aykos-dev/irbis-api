@@ -42,7 +42,15 @@ export interface Reason {
   value?: number;
 }
 
-export type HazardLevelCode = 'low' | 'raised' | 'high' | 'open' | 'closed';
+export const HAZARD_LEVELS = [
+  'low',
+  'raised',
+  'high',
+  'open',
+  'closed',
+] as const;
+
+export type HazardLevelCode = (typeof HAZARD_LEVELS)[number];
 
 export interface HazardLevel {
   hazard: HazardCode;
@@ -88,3 +96,19 @@ export const OPEN_METEO_FORECAST_DAYS = 7;
 export const CONDITIONS_CRON = '5 * * * *';
 export const CONDITIONS_TIME_ZONE = 'Asia/Tashkent';
 export const CONDITIONS_JOB_NAME = 'conditions-forecast';
+
+export const CLOSURE_SOURCES = ['official', 'admin'] as const;
+export type ClosureSourceCode = (typeof CLOSURE_SOURCES)[number];
+
+/** Admin list filter: a status, or `none` for places without one. */
+export const ADMIN_STATUS_FILTERS = [...CONDITION_STATUSES, 'none'] as const;
+export type AdminStatusFilter = (typeof ADMIN_STATUS_FILTERS)[number];
+
+export const ADMIN_CONDITIONS_DEFAULT_LIMIT = 50;
+export const ADMIN_CONDITIONS_MAX_LIMIT = 200;
+
+/** Closure / override reason text, per language, after trimming. */
+export const REASON_TEXT_MAX = 280;
+
+/** An override must expire within this many days of its creation. */
+export const OVERRIDE_MAX_DAYS = 14;

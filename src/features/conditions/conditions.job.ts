@@ -41,6 +41,7 @@ export class ConditionsJob {
     timeZone: CONDITIONS_TIME_ZONE,
   })
   async handleCron(): Promise<void> {
+    if (!this.service.jobEnabled) return;
     try {
       const ran = await this.runNow();
       if (!ran) {

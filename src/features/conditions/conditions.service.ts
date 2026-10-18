@@ -9,11 +9,20 @@ import {
   pickWeekend,
   type ForecastWindow,
 } from './condition.rules.js';
+import { PlaceNotFoundError } from '../places/places.errors.js';
+import type {
+  ConditionSourceCode,
+  ConditionStatusCode,
+  HazardLevel,
+  Reason,
+  WeekendDay,
+} from './conditions.constants.js';
 import {
   ConditionsRepository,
   type ConditionInput,
   type ConditionRow,
   type ForecastRow,
+  type LocalizedText,
 } from './conditions.repository.js';
 import {
   OpenMeteoClient,
@@ -31,6 +40,21 @@ export interface ComputedCondition extends ConditionRow {
   opensMonth: number | null;
 }
 
+/** What the public condition endpoint returns. */
+export interface PlaceConditionResult {
+  placeId: string;
+  status: ConditionStatusCode | null;
+  source: ConditionSourceCode | null;
+  reasons: Reason[];
+  /** Active closure / override reason when the source is closure / manual. */
+  text: LocalizedText | null;
+  opensMonth: number | null;
+  hazards: HazardLevel[];
+  weekend: WeekendDay[];
+  forecastAt: Date | null;
+  computedAt: Date | null;
+}
+
 export interface FetchSummary {
   batches: number;
   failedBatches: number;
@@ -45,6 +69,56 @@ export class ConditionsService {
     private readonly client: OpenMeteoClient,
     private readonly config: AppConfig,
   ) {}
+
+  /** False in tests: the hourly cron does nothing. */
+  get jobEnabled(): boolean {
+    return this.config.conditionsJobEnabled;
+  }
+
+  /** The stored condition of one place; every field empty when none was computed yet. */
+  async getCondition(
+    placeId: string,
+    now: Date = new Date(),
+  ): Promise<PlaceConditionResult> {
+    const view = await this.repo.findConditionView(placeId, now);
+    if (!view) throw new PlaceNotFoundError();
+    const c = view.condition;
+    if (!c) {
+      return {
+        placeId,
+        status: null,
+        source: null,
+        reasons: [],
+        text: null,
+        opensMonth: null,
+        hazards: [],
+        weekend: [],
+        forecastAt: null,
+        computedAt: null,
+      };
+    }
+    const text =
+      c.source === 'manual'
+        ? view.activeOverrideReason
+        : c.source === 'closure'
+          ? view.activeClosureReason
+          : null;
+    return {
+      placeId,
+      status: c.status,
+      source: c.source,
+      reasons: c.reasons,
+      text,
+      opensMonth:
+        c.status === 'seasonal_lock'
+          ? nextOpenMonth(view.season, tashkentMonth(now))
+          : null,
+      hazards: c.hazardLevels,
+      weekend: c.weekend,
+      forecastAt: c.forecastAt,
+      computedAt: c.computedAt,
+    };
+  }
 
   /**
    * Fetches the forecast for every place in batches. A failed batch keeps its previous rows and

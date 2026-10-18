@@ -153,6 +153,11 @@ export class AppConfig {
     };
   }
 
+  /** False turns the hourly conditions cron into a no-op (tests). */
+  get conditionsJobEnabled(): boolean {
+    return this.get('CONDITIONS_JOB_ENABLED');
+  }
+
   /** A forecast older than this keeps the last status (read side, slice 2). */
   get conditionsStaleHours(): number {
     return this.get('COND_STALE_HOURS');

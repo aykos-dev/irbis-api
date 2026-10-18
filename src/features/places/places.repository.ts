@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Place } from '../../generated/prisma/client.js';
+import type { ConditionStatus, Place } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import type { PlaceTypeCode } from './places.constants.js';
 
@@ -9,7 +9,10 @@ export interface PlaceFilter {
   difficultyMax?: number;
 }
 
-export type PlaceRow = Place;
+/** `condition` is loaded by `findCandidates` only: null when no condition was computed yet. */
+export type PlaceRow = Place & {
+  condition?: { status: ConditionStatus | null } | null;
+};
 
 @Injectable()
 export class PlacesRepository {
@@ -22,6 +25,7 @@ export class PlacesRepository {
         ...(filter.types?.length ? { type: { in: filter.types } } : {}),
         difficulty: { gte: filter.difficultyMin, lte: filter.difficultyMax },
       },
+      include: { condition: { select: { status: true } } },
     });
   }
 

@@ -1,4 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
+import {
+  CONDITION_STATUSES,
+  type ConditionStatusCode,
+} from '../../conditions/conditions.constants.js';
 import {
   HAZARDS,
   PLACE_ORIGINS,
@@ -50,6 +54,15 @@ export class PlaceListItemDto {
     description: 'Great-circle distance from the origin, metres.',
   })
   distanceM: number;
+
+  @ApiPropertyOptional({
+    enum: CONDITION_STATUSES,
+    enumName: 'ConditionStatus',
+    nullable: true,
+    description:
+      'Weekend condition. Absent until one was computed for the place; null when there is no status.',
+  })
+  conditionStatus?: ConditionStatusCode | null;
 }
 
 export class PlaceListResponseDto {
@@ -72,7 +85,9 @@ export class PlaceViewerDto {
   qualifies: boolean;
 }
 
-export class PlaceDetailDto extends PlaceListItemDto {
+export class PlaceDetailDto extends OmitType(PlaceListItemDto, [
+  'conditionStatus',
+] as const) {
   @ApiProperty({ type: String, nullable: true }) region: string | null;
 
   @ApiProperty({ type: PlaceDescriptionDto })

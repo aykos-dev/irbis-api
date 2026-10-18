@@ -36,7 +36,10 @@ export class PlacesService {
     const page = ranked.slice(offset, offset + limit);
     const next = offset + limit;
     return {
-      items: page.map((row) => toListItem(row, row.distanceM)),
+      items: page.map((row) => ({
+        ...toListItem(row, row.distanceM),
+        ...conditionStatusOf(row),
+      })),
       nextCursor: next < ranked.length ? encodeCursor({ offset: next }) : null,
       origin,
       total: ranked.length,
@@ -81,7 +84,17 @@ export class PlacesService {
   }
 }
 
-function toListItem(row: PlaceRow, distanceM: number): PlaceListItemDto {
+/** Present once a condition was computed for the place (its status may still be null). */
+function conditionStatusOf(
+  row: PlaceRow,
+): Pick<PlaceListItemDto, 'conditionStatus'> {
+  return row.condition ? { conditionStatus: row.condition.status } : {};
+}
+
+function toListItem(
+  row: PlaceRow,
+  distanceM: number,
+): Omit<PlaceListItemDto, 'conditionStatus'> {
   return {
     id: row.id,
     slug: row.slug,

@@ -1882,6 +1882,627 @@
           "Places"
         ]
       }
+    },
+    "/v1/places/{id}/condition": {
+      "get": {
+        "operationId": "Conditions_getForPlace",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceConditionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A place's weekend condition",
+        "tags": [
+          "Conditions"
+        ]
+      }
+    },
+    "/v1/admin/conditions": {
+      "get": {
+        "operationId": "Admin_listConditions",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "A status, or `none` for places without one.",
+            "schema": {
+              "$ref": "#/components/schemas/AdminConditionStatusFilter"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque; the previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminConditionListResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Every place with its condition, by name",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/conditions/recompute": {
+      "post": {
+        "operationId": "Admin_recomputeConditions",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecomputeStartedDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: RECOMPUTE_RUNNING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Fetch forecasts and recompute every place, in the background",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/places/{id}/condition-controls": {
+      "get": {
+        "operationId": "Admin_getConditionControls",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConditionControlsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A place's condition with its closures and overrides",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/places/{id}/closures": {
+      "post": {
+        "operationId": "Admin_createClosure",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClosureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Close a place",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/closures/{id}/end": {
+      "post": {
+        "operationId": "Admin_endClosure",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: CLOSURE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: CLOSURE_ALREADY_ENDED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "End a closure",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/places/{id}/overrides": {
+      "post": {
+        "operationId": "Admin_createOverride",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOverrideDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverrideDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Override a place's status (ends the current override)",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/overrides/{id}/end": {
+      "post": {
+        "operationId": "Admin_endOverride",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverrideDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: OVERRIDE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: OVERRIDE_ALREADY_ENDED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "End an override",
+        "tags": [
+          "Admin"
+        ]
+      }
     }
   },
   "info": {
@@ -2884,6 +3505,16 @@
           "en"
         ]
       },
+      "ConditionStatus": {
+        "type": "string",
+        "enum": [
+          "go",
+          "caution",
+          "not_now",
+          "seasonal_lock"
+        ],
+        "description": "Weekend condition. Absent until one was computed for the place; null when there is no status."
+      },
       "PlaceListItemDto": {
         "type": "object",
         "properties": {
@@ -2927,6 +3558,15 @@
           "distanceM": {
             "type": "integer",
             "description": "Great-circle distance from the origin, metres."
+          },
+          "conditionStatus": {
+            "nullable": true,
+            "description": "Weekend condition. Absent until one was computed for the place; null when there is no status.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionStatus"
+              }
+            ]
           }
         },
         "required": [
@@ -3133,6 +3773,587 @@
           "hazards",
           "origin",
           "viewer"
+        ]
+      },
+      "ConditionSource": {
+        "type": "string",
+        "enum": [
+          "forecast",
+          "hazard_rule",
+          "closure",
+          "season",
+          "manual"
+        ]
+      },
+      "ConditionReasonCode": {
+        "type": "string",
+        "enum": [
+          "THUNDERSTORM",
+          "GUSTS",
+          "HEAVY_PRECIP",
+          "WIND",
+          "PRECIP_LIKELY",
+          "HEAT",
+          "COLD",
+          "MUDSLIDE_RISK",
+          "FLOOD_RISK",
+          "AVALANCHE_RISK",
+          "GOOD_WEATHER",
+          "OVERRIDE",
+          "CLOSURE"
+        ]
+      },
+      "WeekendDayName": {
+        "type": "string",
+        "enum": [
+          "sat",
+          "sun"
+        ]
+      },
+      "ConditionReasonDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionReasonCode"
+              }
+            ]
+          },
+          "day": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WeekendDayName"
+              }
+            ]
+          },
+          "value": {
+            "type": "integer",
+            "description": "The measured value (km/h, mm, %, °C, cm or WMO code)."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "LocalizedTextDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true
+          },
+          "en": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "HazardLevel": {
+        "type": "string",
+        "enum": [
+          "low",
+          "raised",
+          "high",
+          "open",
+          "closed"
+        ]
+      },
+      "HazardLevelDto": {
+        "type": "object",
+        "properties": {
+          "hazard": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Hazard"
+              }
+            ]
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HazardLevel"
+              }
+            ]
+          }
+        },
+        "required": [
+          "hazard",
+          "level"
+        ]
+      },
+      "WeekendDayDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-10-24"
+          },
+          "day": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WeekendDayName"
+              }
+            ]
+          },
+          "weatherCode": {
+            "type": "integer"
+          },
+          "tMaxC": {
+            "type": "integer"
+          },
+          "tMinC": {
+            "type": "integer"
+          },
+          "windKmh": {
+            "type": "integer"
+          },
+          "gustKmh": {
+            "type": "integer"
+          },
+          "precipMm": {
+            "type": "integer"
+          },
+          "precipProbPct": {
+            "type": "integer"
+          },
+          "snowCm": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "day",
+          "weatherCode",
+          "tMaxC",
+          "tMinC",
+          "windKmh",
+          "gustKmh",
+          "precipMm",
+          "precipProbPct",
+          "snowCm"
+        ]
+      },
+      "PlaceConditionDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionStatus"
+              }
+            ]
+          },
+          "source": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionSource"
+              }
+            ]
+          },
+          "reasons": {
+            "description": "Worst first, at most 3.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConditionReasonDto"
+            }
+          },
+          "text": {
+            "nullable": true,
+            "description": "Closure / override reason when source is closure / manual.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LocalizedTextDto"
+              }
+            ]
+          },
+          "opensMonth": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "nullable": true,
+            "description": "Next open month (Asia/Tashkent) for seasonal_lock."
+          },
+          "hazards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HazardLevelDto"
+            }
+          },
+          "weekend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeekendDayDto"
+            }
+          },
+          "forecastAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "placeId",
+          "status",
+          "source",
+          "reasons",
+          "text",
+          "opensMonth",
+          "hazards",
+          "weekend",
+          "forecastAt",
+          "computedAt"
+        ]
+      },
+      "AdminConditionStatusFilter": {
+        "type": "string",
+        "enum": [
+          "go",
+          "caution",
+          "not_now",
+          "seasonal_lock",
+          "none"
+        ]
+      },
+      "AdminConditionRowDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/LocalizedTextDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "status": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionStatus"
+              }
+            ]
+          },
+          "source": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionSource"
+              }
+            ]
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "forecastAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "activeClosureId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "activeOverrideId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "placeId",
+          "slug",
+          "name",
+          "type",
+          "status",
+          "source",
+          "computedAt",
+          "forecastAt",
+          "activeClosureId",
+          "activeOverrideId"
+        ]
+      },
+      "AdminConditionListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminConditionRowDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "description": "Places matching the filter."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "total"
+        ]
+      },
+      "RecomputeStartedDto": {
+        "type": "object",
+        "properties": {
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "startedAt"
+        ]
+      },
+      "ClosureSource": {
+        "type": "string",
+        "enum": [
+          "official",
+          "admin"
+        ]
+      },
+      "ClosureDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reason": {
+            "$ref": "#/components/schemas/LocalizedTextDto"
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClosureSource"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Not ended, started, and endsAt not passed."
+          }
+        },
+        "required": [
+          "id",
+          "placeId",
+          "startsAt",
+          "endsAt",
+          "reason",
+          "source",
+          "createdAt",
+          "endedAt",
+          "active"
+        ]
+      },
+      "OverrideDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionStatus"
+              }
+            ]
+          },
+          "reason": {
+            "$ref": "#/components/schemas/LocalizedTextDto"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Not ended and not expired."
+          }
+        },
+        "required": [
+          "id",
+          "placeId",
+          "status",
+          "reason",
+          "expiresAt",
+          "createdAt",
+          "endedAt",
+          "active"
+        ]
+      },
+      "ConditionControlsDto": {
+        "type": "object",
+        "properties": {
+          "condition": {
+            "$ref": "#/components/schemas/PlaceConditionDto"
+          },
+          "closures": {
+            "description": "Newest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosureDto"
+            }
+          },
+          "overrides": {
+            "description": "Newest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverrideDto"
+            }
+          }
+        },
+        "required": [
+          "condition",
+          "closures",
+          "overrides"
+        ]
+      },
+      "ReasonInputDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 280
+          },
+          "ru": {
+            "type": "string",
+            "maxLength": 280
+          },
+          "en": {
+            "type": "string",
+            "maxLength": 280
+          }
+        },
+        "required": [
+          "uz"
+        ]
+      },
+      "CreateClosureDto": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "After startsAt. Omit for an open-ended closure."
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReasonInputDto"
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClosureSource"
+              }
+            ]
+          }
+        },
+        "required": [
+          "startsAt",
+          "reason",
+          "source"
+        ]
+      },
+      "CreateOverrideDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionStatus"
+              }
+            ]
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReasonInputDto"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "After now and at most 14 days ahead."
+          }
+        },
+        "required": [
+          "status",
+          "reason",
+          "expiresAt"
         ]
       }
     }

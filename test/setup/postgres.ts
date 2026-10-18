@@ -33,6 +33,8 @@ export function e2eEnv(
     THROTTLE_LIMIT: '100000',
     AUTH_THROTTLE_LIMIT: '100000',
     LOOKUP_THROTTLE_LIMIT: '100000',
+    // The hourly cron would call the real Open-Meteo.
+    CONDITIONS_JOB_ENABLED: 'false',
     ...overrides,
   };
 }

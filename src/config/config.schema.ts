@@ -68,6 +68,11 @@ export const configSchema = z.object({
     .positive()
     .default(10_000),
   CONDITIONS_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(50),
+  // Hourly cron on/off. Off in tests so nothing calls Open-Meteo; a manual recompute still runs.
+  CONDITIONS_JOB_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
   COND_GUST_NOT_NOW_KMH: z.coerce.number().default(60),
   COND_PRECIP_NOT_NOW_MM: z.coerce.number().default(20),
   COND_WIND_CAUTION_KMH: z.coerce.number().default(35),
