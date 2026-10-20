@@ -142,3 +142,21 @@ export class PathDto {
 
   @ApiProperty({ type: PathWeatherDto }) weather: PathWeatherDto;
 }
+
+export class PathLevelUpDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty({ type: 'integer' }) fromLevel: number;
+  @ApiProperty({ type: 'integer' }) toLevel: number;
+}
+
+export class PathChestOpenDto {
+  @ApiProperty() opened: boolean;
+
+  @ApiProperty({
+    type: 'integer',
+    description: 'XP this call awarded; 0 when the chest was already open.',
+  })
+  xp: number;
+
+  @ApiProperty({ type: [PathLevelUpDto] }) levelUps: PathLevelUpDto[];
+}

@@ -11,6 +11,7 @@ import { GameConfigService } from '../levels/game-config.service.js';
 import { LevelsService } from '../levels/levels.service.js';
 import { GUEST_LEVEL } from '../places/places.constants.js';
 import type {
+  PathChestOpenDto,
   PathDto,
   PathNodeDto,
   PathPlaceDto,
@@ -26,8 +27,14 @@ import {
 } from './path.picker.js';
 import { WEATHER_POINT_KEY } from './weekly-path.constants.js';
 import {
+  PathChestLockedError,
+  PathNotFoundError,
+  PlaceNotOnPathError,
+} from './weekly-path.errors.js';
+import {
   WeeklyPathRepository,
   type StoredPathMonth,
+  type StoredPathNode,
 } from './weekly-path.repository.js';
 
 interface MonthContext {
@@ -38,6 +45,12 @@ interface MonthContext {
   firstWeekendDay: WeekendDayName;
   places: PathPlace[];
 }
+
+/** YYYY-MM, Asia/Tashkent. */
+const monthOf = (at: Date): string => tashkentDate(at).slice(0, 7);
+
+const isDone = (node: StoredPathNode, monthKey: string): boolean =>
+  node.visitedAt !== null && monthOf(node.visitedAt) === monthKey;
 
 const toPlaceDto = (p: PathPlace): PathPlaceDto => ({
   id: p.id,
@@ -75,7 +88,7 @@ export class WeeklyPathService {
         : Promise.resolve(GUEST_LEVEL),
     ]);
     const ctx: MonthContext = {
-      monthKey: tashkentDate(now).slice(0, 7),
+      monthKey: monthOf(now),
       month: tashkentMonth(now),
       level,
       firstWeekendDay: weekendWindow(now)[0].day,
@@ -128,6 +141,74 @@ export class WeeklyPathService {
     };
   }
 
+  /**
+   * Marks `placeId` done on the user's path for the Tashkent month of `at`, once. A no-op when
+   * there is no path that month, the place is not on it, or it is already done. Gives no XP.
+   */
+  async recordVisit(
+    userId: string,
+    placeId: string,
+    at: Date = new Date(),
+  ): Promise<{ recorded: boolean }> {
+    const node = await this.repo.findPathNode(userId, monthOf(at), placeId);
+    if (!node || node.visitedAt !== null) return { recorded: false };
+    return { recorded: await this.repo.markNodeVisited(node.id, at) };
+  }
+
+  /** QA: builds the month's path if missing, records a visit to `placeId`, returns the path. */
+  async visitForQa(
+    userId: string,
+    placeId: string,
+    now: Date = new Date(),
+  ): Promise<PathDto> {
+    await this.getPath(userId, [], now);
+    const node = await this.repo.findPathNode(userId, monthOf(now), placeId);
+    if (!node) throw new PlaceNotOnPathError();
+    await this.recordVisit(userId, placeId, now);
+    return this.getPath(userId, [], now);
+  }
+
+  /**
+   * Opens this month's chest once every node is done. The ledger key (user, path_chest, month)
+   * awards once; a repeat or a losing concurrent call gets 0 XP.
+   */
+  async openChest(
+    userId: string,
+    now: Date = new Date(),
+  ): Promise<PathChestOpenDto> {
+    const monthKey = monthOf(now);
+    const stored = await this.repo.findPathMonth(userId, monthKey);
+    if (!stored) throw new PathNotFoundError();
+    if (stored.chestOpenedAt !== null) {
+      return { opened: true, xp: 0, levelUps: [] };
+    }
+    const allDone =
+      stored.nodes.length > 0 &&
+      stored.nodes.every((node) => isDone(node, monthKey));
+    if (!allDone) throw new PathChestLockedError();
+
+    const config = await this.gameConfig.pathConfig();
+    const award = await this.levels.award(
+      {
+        userId,
+        source: 'path_chest',
+        refId: monthKey,
+        amount: config.chestXp,
+      },
+      now,
+    );
+    await this.repo.markChestOpened(userId, monthKey, now);
+    return {
+      opened: true,
+      xp: award.created ? (award.entry?.amount ?? 0) : 0,
+      levelUps: award.levelUps.map(({ id, fromLevel, toLevel }) => ({
+        id,
+        fromLevel,
+        toLevel,
+      })),
+    };
+  }
+
   private async storedMonth(
     userId: string,
     ctx: MonthContext,
@@ -171,9 +252,7 @@ export class WeeklyPathService {
             place.status === 'seasonal_lock'
               ? nextOpenMonth(place.season, ctx.month)
               : null,
-          done:
-            node.visitedAt !== null &&
-            tashkentDate(node.visitedAt).slice(0, 7) === ctx.monthKey,
+          done: isDone(node, ctx.monthKey),
           swap:
             place.status === 'not_now'
               ? this.swapFor(place, onPath, ctx)

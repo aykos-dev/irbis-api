@@ -1,6 +1,12 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsIn, IsOptional } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 import { INTERESTS, type InterestCode } from '../../auth/auth.constants.js';
 
 /** Accepts `interests=peaks&interests=lakes` and `interests=peaks,lakes`. */
@@ -27,4 +33,10 @@ export class PathQueryDto {
   @ArrayMaxSize(INTERESTS.length)
   @IsIn(INTERESTS, { each: true })
   interests?: InterestCode[];
+}
+
+export class PathVisitDto {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
+  placeId: string;
 }

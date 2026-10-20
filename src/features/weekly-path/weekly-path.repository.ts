@@ -121,6 +121,39 @@ export class WeeklyPathRepository {
     }
   }
 
+  /** The node of `placeId` in the user's path for `month`, or null (no path, or not on it). */
+  findPathNode(
+    userId: string,
+    month: string,
+    placeId: string,
+  ): Promise<{ id: string; visitedAt: Date | null } | null> {
+    return this.prisma.pathNode.findFirst({
+      where: { placeId, pathMonth: { userId, month } },
+      select: { id: true, visitedAt: true },
+    });
+  }
+
+  /** Sets `visitedAt` only while it is still null. True when this call set it. */
+  async markNodeVisited(nodeId: string, at: Date): Promise<boolean> {
+    const { count } = await this.prisma.pathNode.updateMany({
+      where: { id: nodeId, visitedAt: null },
+      data: { visitedAt: at },
+    });
+    return count > 0;
+  }
+
+  /** Sets `chestOpenedAt` only while it is still null. */
+  async markChestOpened(
+    userId: string,
+    month: string,
+    at: Date,
+  ): Promise<void> {
+    await this.prisma.pathMonth.updateMany({
+      where: { userId, month, chestOpenedAt: null },
+      data: { chestOpenedAt: at },
+    });
+  }
+
   async findPointForecast(key: string): Promise<OpenMeteoDaily | null> {
     const row = await this.prisma.pointForecast.findUnique({
       where: { key },

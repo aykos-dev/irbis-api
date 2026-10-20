@@ -4062,6 +4062,152 @@
           "Path"
         ]
       }
+    },
+    "/v1/path/chest/open": {
+      "post": {
+        "description": "Awards path.config.chestXp once per month. Already opened: 200 with xp 0.",
+        "operationId": "Path_openChest",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathChestOpenDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PATH_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: PATH_CHEST_LOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open this month's chest once every node is done",
+        "tags": [
+          "Path"
+        ]
+      }
+    },
+    "/v1/qa/path/visits": {
+      "post": {
+        "description": "Builds this month's path if missing, then records the visit (no XP). Answers 404 NOT_FOUND unless QA_TOOLS_ENABLED=true.",
+        "operationId": "QaPath_visit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PathVisitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: NOT_FOUND | PLACE_NOT_ON_PATH",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "QA only: mark a place visited on your path this month",
+        "tags": [
+          "QA"
+        ]
+      }
     }
   },
   "info": {
@@ -7512,6 +7658,61 @@
           "nodes",
           "chest",
           "weather"
+        ]
+      },
+      "PathLevelUpDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromLevel": {
+            "type": "integer"
+          },
+          "toLevel": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "fromLevel",
+          "toLevel"
+        ]
+      },
+      "PathChestOpenDto": {
+        "type": "object",
+        "properties": {
+          "opened": {
+            "type": "boolean"
+          },
+          "xp": {
+            "type": "integer",
+            "description": "XP this call awarded; 0 when the chest was already open."
+          },
+          "levelUps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PathLevelUpDto"
+            }
+          }
+        },
+        "required": [
+          "opened",
+          "xp",
+          "levelUps"
+        ]
+      },
+      "PathVisitDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "placeId"
         ]
       }
     }
