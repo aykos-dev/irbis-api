@@ -3876,6 +3876,146 @@
           "Admin"
         ]
       }
+    },
+    "/v1/lessons": {
+      "get": {
+        "operationId": "lessonsList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonCatalog"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Lesson config, tiers with their published lessons, and progress when signed in",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/v1/lessons/{id}": {
+      "get": {
+        "operationId": "lessonsGet",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicLesson"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: LESSON_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A published lesson with its questions",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/v1/me/lesson-completions": {
+      "post": {
+        "operationId": "lessonsComplete",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: LESSON_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Report a finished lesson run; the first valid completion awards XP",
+        "tags": [
+          "lessons"
+        ]
+      }
     }
   },
   "info": {
@@ -4329,6 +4469,21 @@
           }
         }
       },
+      "GuestLessonsDto": {
+        "type": "object",
+        "properties": {
+          "completions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompletionInput"
+            },
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "completions"
+        ]
+      },
       "GuestMergeDto": {
         "type": "object",
         "properties": {
@@ -4342,6 +4497,9 @@
           },
           "onboarding": {
             "$ref": "#/components/schemas/GuestOnboardingDto"
+          },
+          "lessons": {
+            "$ref": "#/components/schemas/GuestLessonsDto"
           }
         }
       },
@@ -6615,6 +6773,389 @@
           "url",
           "width",
           "height"
+        ]
+      },
+      "LessonsConfig": {
+        "type": "object",
+        "properties": {
+          "heartsPerDay": {
+            "type": "integer",
+            "example": 5
+          },
+          "xpFirst": {
+            "type": "integer",
+            "example": 10
+          },
+          "xpPerfect": {
+            "type": "integer",
+            "example": 15
+          },
+          "dailyGoal": {
+            "type": "integer",
+            "example": 3
+          }
+        },
+        "required": [
+          "heartsPerDay",
+          "xpFirst",
+          "xpPerfect",
+          "dailyGoal"
+        ]
+      },
+      "LessonText": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "CatalogLesson": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/LessonText"
+          },
+          "icon": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LessonIcon"
+              }
+            ]
+          },
+          "order": {
+            "type": "integer"
+          },
+          "questionCount": {
+            "type": "integer"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "icon",
+          "order",
+          "questionCount",
+          "updatedAt"
+        ]
+      },
+      "CatalogTier": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "$ref": "#/components/schemas/LessonText"
+          },
+          "colour": {
+            "type": "string",
+            "example": "#58CC02"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "lessons": {
+            "description": "Published only.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogLesson"
+            }
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "colour",
+          "order",
+          "lessons"
+        ]
+      },
+      "LessonProgress": {
+        "type": "object",
+        "properties": {
+          "completedLessonIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "doneToday": {
+            "type": "integer",
+            "description": "Lessons completed since 00:00 Asia/Tashkent."
+          }
+        },
+        "required": [
+          "completedLessonIds",
+          "doneToday"
+        ]
+      },
+      "LessonCatalog": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/LessonsConfig"
+          },
+          "tiers": {
+            "description": "Tiers with at least one published lesson, by order.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogTier"
+            }
+          },
+          "progress": {
+            "nullable": true,
+            "description": "Null for guests.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LessonProgress"
+              }
+            ]
+          }
+        },
+        "required": [
+          "config",
+          "tiers",
+          "progress"
+        ]
+      },
+      "PublicLessonImage": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "example": "https://cdn.example.com/lessons/<uuid>.webp"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "PublicQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "prompt": {
+            "$ref": "#/components/schemas/LessonText"
+          },
+          "hint": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LessonText"
+              }
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LessonText"
+            }
+          },
+          "correctIndex": {
+            "type": "integer"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/LessonText"
+          },
+          "wrongExplanation": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LessonText"
+              }
+            ]
+          },
+          "image": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicLessonImage"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "order",
+          "prompt",
+          "hint",
+          "options",
+          "correctIndex",
+          "explanation",
+          "wrongExplanation",
+          "image"
+        ]
+      },
+      "PublicLesson": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tierKey": {
+            "type": "string"
+          },
+          "title": {
+            "$ref": "#/components/schemas/LessonText"
+          },
+          "icon": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LessonIcon"
+              }
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicQuestion"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "tierKey",
+          "title",
+          "icon",
+          "updatedAt",
+          "questions"
+        ]
+      },
+      "CompletionAttempt": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "optionIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "questionId",
+          "optionIndex"
+        ]
+      },
+      "CompletionInput": {
+        "type": "object",
+        "properties": {
+          "lessonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the run finished on the device; the server time is used when it is in the future or older than 7 days."
+          },
+          "attempts": {
+            "minItems": 1,
+            "maxItems": 75,
+            "description": "Every answer given in the run, wrong ones included.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompletionAttempt"
+            }
+          }
+        },
+        "required": [
+          "lessonId",
+          "completedAt",
+          "attempts"
+        ]
+      },
+      "CompletionLevelUp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromLevel": {
+            "type": "integer"
+          },
+          "toLevel": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "fromLevel",
+          "toLevel"
+        ]
+      },
+      "CompletionResult": {
+        "type": "object",
+        "properties": {
+          "firstCompletion": {
+            "type": "boolean"
+          },
+          "perfect": {
+            "type": "boolean"
+          },
+          "xpAwarded": {
+            "type": "integer",
+            "description": "0 for a repeat."
+          },
+          "doneToday": {
+            "type": "integer"
+          },
+          "dailyGoal": {
+            "type": "integer"
+          },
+          "levelUps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompletionLevelUp"
+            }
+          }
+        },
+        "required": [
+          "firstCompletion",
+          "perfect",
+          "xpAwarded",
+          "doneToday",
+          "dailyGoal",
+          "levelUps"
         ]
       }
     }

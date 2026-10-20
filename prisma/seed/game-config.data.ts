@@ -38,7 +38,18 @@ export const levelTable = [
 
 export const xpDailyCaps = { post: 5, game: 30, campfire: 30 };
 
+/** Lessons (features/lessons.md): hearts per day, XP for a first / perfect first completion, daily goal. */
+export const lessonsConfig = {
+  heartsPerDay: 5,
+  xpFirst: 10,
+  xpPerfect: 15,
+  dailyGoal: 3,
+};
+
 export const gameConfigRows = [
   { key: 'levels.table', value: levelTable },
   { key: 'xp.dailyCaps', value: xpDailyCaps },
 ];
+
+/** Owned by lessons; upserted by `seedLessonsConfig`. */
+export const lessonsConfigRow = { key: 'lessons.config', value: lessonsConfig };

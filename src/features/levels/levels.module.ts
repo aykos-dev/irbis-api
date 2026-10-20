@@ -9,6 +9,6 @@ import { QaToolsGuard } from './qa-tools.guard.js';
 @Module({
   controllers: [LevelsController, MeLevelController, QaGrantController],
   providers: [LevelsService, LevelsRepository, GameConfigService, QaToolsGuard],
-  exports: [LevelsService],
+  exports: [LevelsService, GameConfigService],
 })
 export class LevelsModule {}

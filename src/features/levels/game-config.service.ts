@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 import type { z } from 'zod';
 import {
   dailyCapsSchema,
+  lessonsConfigSchema,
   levelTableSchema,
   type DailyCaps,
+  type LessonsConfig,
   type LevelTable,
 } from './game-config.schema.js';
 import {
@@ -44,6 +46,10 @@ export class GameConfigService {
 
   dailyCaps(now = Date.now()): Promise<DailyCaps> {
     return this.load(GAME_CONFIG_KEYS.dailyCaps, dailyCapsSchema, now);
+  }
+
+  lessonsConfig(now = Date.now()): Promise<LessonsConfig> {
+    return this.load(GAME_CONFIG_KEYS.lessonsConfig, lessonsConfigSchema, now);
   }
 
   private async publishedLessons(now: number): Promise<PublishedLessonCounts> {

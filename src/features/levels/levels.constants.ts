@@ -26,6 +26,7 @@ export const MAX_DIFFICULTY = 5;
 export const GAME_CONFIG_KEYS = {
   levelTable: 'levels.table',
   dailyCaps: 'xp.dailyCaps',
+  lessonsConfig: 'lessons.config',
 } as const;
 
 /** How long a loaded GameConfig value is reused before it is read again. */

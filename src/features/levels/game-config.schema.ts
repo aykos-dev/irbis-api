@@ -52,6 +52,20 @@ export const dailyCapsSchema = z.partialRecord(
   z.number().int().positive(),
 );
 
+/** `lessons.config`: hearts per day, XP for a first / perfect first completion, daily lesson goal. */
+export const lessonsConfigSchema = z
+  .object({
+    heartsPerDay: z.number().int().min(1),
+    xpFirst: z.number().int().min(1),
+    xpPerfect: z.number().int().min(1),
+    dailyGoal: z.number().int().min(1),
+  })
+  .refine((config) => config.xpPerfect >= config.xpFirst, {
+    message: 'xpPerfect must be at least xpFirst',
+    path: ['xpPerfect'],
+  });
+
+export type LessonsConfig = z.infer<typeof lessonsConfigSchema>;
 export type LevelRow = z.infer<typeof levelRowSchema>;
 export type LevelTable = z.infer<typeof levelTableSchema>;
 export type DailyCaps = z.infer<typeof dailyCapsSchema>;

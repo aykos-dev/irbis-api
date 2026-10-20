@@ -11,7 +11,7 @@
 import { pathToFileURL } from 'node:url';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
-import { gameConfigRows } from './game-config.data.js';
+import { gameConfigRows, lessonsConfigRow } from './game-config.data.js';
 import { toLessonSeedRows, type LessonSeedRow } from './lesson-seed.rules.js';
 import { lessonSources } from './lessons.data.js';
 import { toSeedRows } from './place-seed.rules.js';
@@ -44,6 +44,16 @@ export async function seedGameConfig(prisma: PrismaClient): Promise<number> {
     ),
   );
   return gameConfigRows.length;
+}
+
+/** Upserts the `lessons.config` GameConfig row by key. */
+export async function seedLessonsConfig(prisma: PrismaClient): Promise<void> {
+  const { key, value } = lessonsConfigRow;
+  await prisma.gameConfig.upsert({
+    where: { key },
+    create: { key, value },
+    update: { value },
+  });
 }
 
 /**
@@ -102,7 +112,8 @@ async function main(): Promise<void> {
   try {
     const seeded = await seedPlaces(prisma);
     const total = await prisma.place.count();
-    const configRows = await seedGameConfig(prisma);
+    await seedLessonsConfig(prisma);
+    const configRows = (await seedGameConfig(prisma)) + 1;
     const lessons = await seedLessons(prisma);
     process.stdout.write(
       `Seeded ${seeded} places; ${total} in the database. Seeded ${configRows} game config rows. Created ${lessons} draft lessons.\n`,

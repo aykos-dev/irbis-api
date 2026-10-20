@@ -95,17 +95,18 @@ model User {
   xpTotal                 Int              @default(0) @map("xp_total")
   levelReachedAt          DateTime         @default(now()) @map("level_reached_at") @db.Timestamptz(3)
 
-  refreshTokens    RefreshToken[]
-  smsCodes         SmsCode[]
-  auditAsAdmin     AdminAuditLog[]     @relation("AuditAdmin")
-  auditAsTarget    AdminAuditLog[]     @relation("AuditTarget")
-  closuresCreated  Closure[]           @relation("ClosureCreatedBy")
-  closuresEnded    Closure[]           @relation("ClosureEndedBy")
-  overridesCreated ConditionOverride[] @relation("OverrideCreatedBy")
-  overridesEnded   ConditionOverride[] @relation("OverrideEndedBy")
-  xpEntries        XpEntry[]
-  levelFacts       LevelFact[]
-  levelUps         LevelUp[]
+  refreshTokens     RefreshToken[]
+  smsCodes          SmsCode[]
+  auditAsAdmin      AdminAuditLog[]     @relation("AuditAdmin")
+  auditAsTarget     AdminAuditLog[]     @relation("AuditTarget")
+  closuresCreated   Closure[]           @relation("ClosureCreatedBy")
+  closuresEnded     Closure[]           @relation("ClosureEndedBy")
+  overridesCreated  ConditionOverride[] @relation("OverrideCreatedBy")
+  overridesEnded    ConditionOverride[] @relation("OverrideEndedBy")
+  xpEntries         XpEntry[]
+  levelFacts        LevelFact[]
+  levelUps          LevelUp[]
+  lessonCompletions LessonCompletion[]
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -449,8 +450,9 @@ model Lesson {
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  tier      LessonTier       @relation(fields: [tierId], references: [id], onDelete: Restrict)
-  questions LessonQuestion[]
+  tier        LessonTier         @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  questions   LessonQuestion[]
+  completions LessonCompletion[]
 
   @@index([tierId, status, order])
   @@map("lessons")
@@ -472,4 +474,23 @@ model LessonQuestion {
 
   @@unique([lessonId, order])
   @@map("lesson_questions")
+}
+
+// First completion of a lesson per user (features/lessons.md AC2). Repeats write nothing.
+model LessonCompletion {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  lessonId    String   @map("lesson_id") @db.Uuid
+  completedAt DateTime @map("completed_at") @db.Timestamptz(3)
+  wrongCount  Int      @map("wrong_count")
+  perfect     Boolean
+  xp          Int
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, completedAt])
+  @@map("lesson_completions")
 }

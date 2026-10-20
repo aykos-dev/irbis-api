@@ -20,6 +20,7 @@ import { AccountStatusGuard } from './features/auth/guards/account-status.guard.
 import { AuthModule } from './features/auth/auth.module.js';
 import { ConditionsModule } from './features/conditions/conditions.module.js';
 import { LessonsAdminModule } from './features/lessons-admin/lessons-admin.module.js';
+import { LessonsModule } from './features/lessons/lessons.module.js';
 import { LevelsModule } from './features/levels/levels.module.js';
 import { PlacesModule } from './features/places/places.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -66,6 +67,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     ConditionsModule,
     LevelsModule,
     LessonsAdminModule,
+    LessonsModule,
   ],
   providers: [
     // Guards run in this order: rate limit → authentication → account status (blocked, current role) → roles.

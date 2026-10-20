@@ -5,6 +5,7 @@ import {
   ArrayUnique,
   IsArray,
   IsIn,
+  IsObject,
   IsOptional,
   ValidateNested,
 } from 'class-validator';
@@ -40,6 +41,21 @@ export class GuestOnboardingDto {
   interests?: InterestCode[];
 }
 
+export const GUEST_LESSON_COMPLETIONS_MAX = 200;
+
+/** Lesson runs finished as a guest. Each item is checked by the lessons handler; bad items are skipped. */
+export class GuestLessonsDto {
+  @ApiProperty({
+    type: 'array',
+    items: { $ref: '#/components/schemas/CompletionInput' },
+    maxItems: GUEST_LESSON_COMPLETIONS_MAX,
+  })
+  @IsArray()
+  @ArrayMaxSize(GUEST_LESSON_COMPLETIONS_MAX)
+  @IsObject({ each: true })
+  completions: object[];
+}
+
 /** Guest data kept on the device. Features add their own optional property and register a handler. */
 export class GuestMergeDto {
   @ApiPropertyOptional({
@@ -57,6 +73,12 @@ export class GuestMergeDto {
   @ValidateNested()
   @Type(() => GuestOnboardingDto)
   onboarding?: GuestOnboardingDto;
+
+  @ApiPropertyOptional({ type: GuestLessonsDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => GuestLessonsDto)
+  lessons?: GuestLessonsDto;
 }
 
 export class GuestMergeResponseDto {
