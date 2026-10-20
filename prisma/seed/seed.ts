@@ -1,6 +1,7 @@
 /**
  * Idempotent seed: upserts every place from places.data.ts by slug and the GameConfig rows
- * from game-config.data.ts by key.
+ * from game-config.data.ts by key; adds the draft lessons from lessons.data.ts to every tier
+ * that has no lesson yet.
  *
  *   npm run db:seed
  *
@@ -11,6 +12,8 @@ import { pathToFileURL } from 'node:url';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
 import { gameConfigRows } from './game-config.data.js';
+import { toLessonSeedRows, type LessonSeedRow } from './lesson-seed.rules.js';
+import { lessonSources } from './lessons.data.js';
 import { toSeedRows } from './place-seed.rules.js';
 import { modifiedLocations } from './places.data.js';
 
@@ -43,6 +46,52 @@ export async function seedGameConfig(prisma: PrismaClient): Promise<number> {
   return gameConfigRows.length;
 }
 
+/**
+ * Creates the draft lessons of every tier that has no lesson yet (admin edits are never touched);
+ * returns the lesson count created. Throws when a tier key is missing.
+ */
+export async function seedLessons(prisma: PrismaClient): Promise<number> {
+  const byTier = new Map<string, LessonSeedRow[]>();
+  for (const row of toLessonSeedRows(lessonSources)) {
+    byTier.set(row.tierKey, [...(byTier.get(row.tierKey) ?? []), row]);
+  }
+  let created = 0;
+  for (const [key, rows] of byTier) {
+    const tier = await prisma.lessonTier.findUnique({
+      where: { key },
+      select: { id: true, _count: { select: { lessons: true } } },
+    });
+    if (!tier) throw new Error(`Lesson tier "${key}" not found`);
+    if (tier._count.lessons > 0) continue;
+    await prisma.$transaction(
+      rows.map((row) =>
+        prisma.lesson.create({
+          data: {
+            tierId: tier.id,
+            title: { ...row.title },
+            icon: row.icon,
+            order: row.order,
+            status: 'draft',
+            questions: {
+              create: row.questions.map((q) => ({
+                order: q.order,
+                prompt: { ...q.prompt },
+                ...(q.hint ? { hint: { ...q.hint } } : {}),
+                options: q.options.map((o) => ({ ...o })),
+                correctIndex: q.correctIndex,
+                explanation: { ...q.explanation },
+                wrongExplanation: { ...q.wrongExplanation },
+              })),
+            },
+          },
+        }),
+      ),
+    );
+    created += rows.length;
+  }
+  return created;
+}
+
 async function main(): Promise<void> {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error('DATABASE_URL is not set');
@@ -54,8 +103,9 @@ async function main(): Promise<void> {
     const seeded = await seedPlaces(prisma);
     const total = await prisma.place.count();
     const configRows = await seedGameConfig(prisma);
+    const lessons = await seedLessons(prisma);
     process.stdout.write(
-      `Seeded ${seeded} places; ${total} in the database. Seeded ${configRows} game config rows.\n`,
+      `Seeded ${seeded} places; ${total} in the database. Seeded ${configRows} game config rows. Created ${lessons} draft lessons.\n`,
     );
   } finally {
     await prisma.$disconnect();
