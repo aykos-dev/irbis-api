@@ -415,3 +415,61 @@ model LevelUp {
   @@index([userId, seenAt])
   @@map("level_ups")
 }
+
+// Lessons (admin content). Tier `key` never changes: level gates read it.
+model LessonTier {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  key       String   @unique @db.VarChar(20)
+  title     Json
+  colour    String   @db.VarChar(7)
+  order     Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  lessons Lesson[]
+
+  @@map("lesson_tiers")
+}
+
+enum LessonStatus {
+  draft
+  published
+
+  @@map("lesson_status")
+}
+
+model Lesson {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  tierId      String       @map("tier_id") @db.Uuid
+  title       Json
+  icon        String       @db.VarChar(20)
+  order       Int
+  status      LessonStatus @default(draft)
+  publishedAt DateTime?    @map("published_at") @db.Timestamptz(3)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tier      LessonTier       @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  questions LessonQuestion[]
+
+  @@index([tierId, status, order])
+  @@map("lessons")
+}
+
+model LessonQuestion {
+  id               String  @id @default(uuid(7)) @db.Uuid
+  lessonId         String  @map("lesson_id") @db.Uuid
+  order            Int
+  prompt           Json
+  hint             Json?
+  options          Json
+  correctIndex     Int     @map("correct_index")
+  explanation      Json
+  wrongExplanation Json?   @map("wrong_explanation")
+  imageKey         String? @map("image_key") @db.VarChar(200)
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, order])
+  @@map("lesson_questions")
+}
