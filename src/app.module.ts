@@ -23,6 +23,7 @@ import { LessonsAdminModule } from './features/lessons-admin/lessons-admin.modul
 import { LessonsModule } from './features/lessons/lessons.module.js';
 import { LevelsModule } from './features/levels/levels.module.js';
 import { PlacesModule } from './features/places/places.module.js';
+import { WeeklyPathModule } from './features/weekly-path/weekly-path.module.js';
 import { HealthModule } from './health/health.module.js';
 import { loggerParams } from './logging.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -68,6 +69,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     LevelsModule,
     LessonsAdminModule,
     LessonsModule,
+    WeeklyPathModule,
   ],
   providers: [
     // Guards run in this order: rate limit → authentication → account status (blocked, current role) → roles.

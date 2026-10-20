@@ -4016,6 +4016,52 @@
           "lessons"
         ]
       }
+    },
+    "/v1/path": {
+      "get": {
+        "description": "Public. Signed in: the stored month (picked on the first call, then frozen) and `interests` is ignored. Guest: level 1, picked from `interests`, nothing stored.",
+        "operationId": "Path_get",
+        "parameters": [
+          {
+            "name": "interests",
+            "required": false,
+            "in": "query",
+            "description": "Guests only (ignored when signed in). Comma list; empty or absent means every type.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Interest"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "This month's path, chest and weekend weather",
+        "tags": [
+          "Path"
+        ]
+      }
     }
   },
   "info": {
@@ -7156,6 +7202,316 @@
           "doneToday",
           "dailyGoal",
           "levelUps"
+        ]
+      },
+      "PathPlaceNameDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true
+          },
+          "en": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "PathPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/PathPlaceNameDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "requiredLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "elevationM": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "type",
+          "difficulty",
+          "requiredLevel",
+          "elevationM"
+        ]
+      },
+      "PathReasonDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionReasonCode"
+              }
+            ]
+          },
+          "day": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WeekendDayName"
+              }
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "PathSwapDto": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "$ref": "#/components/schemas/PathPlaceDto"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "go"
+            ]
+          },
+          "day": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WeekendDayName"
+              }
+            ]
+          },
+          "distanceFromOriginalKm": {
+            "type": "integer",
+            "description": "From the original node, km."
+          },
+          "elevationDiffM": {
+            "type": "integer",
+            "description": "Swap elevation minus the original, metres."
+          }
+        },
+        "required": [
+          "place",
+          "status",
+          "day",
+          "distanceFromOriginalKm",
+          "elevationDiffM"
+        ]
+      },
+      "PathNodeDto": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "place": {
+            "$ref": "#/components/schemas/PathPlaceDto"
+          },
+          "status": {
+            "nullable": true,
+            "description": "Current condition; null when none was computed.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionStatus"
+              }
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PathReasonDto"
+            }
+          },
+          "weekendDay": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WeekendDayName"
+              }
+            ]
+          },
+          "opensMonth": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Next open month when the status is seasonal_lock."
+          },
+          "done": {
+            "type": "boolean",
+            "description": "Visited this month."
+          },
+          "swap": {
+            "nullable": true,
+            "description": "Only for a not_now node; null when no go place fits.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PathSwapDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "position",
+          "place",
+          "status",
+          "reasons",
+          "weekendDay",
+          "opensMonth",
+          "done",
+          "swap"
+        ]
+      },
+      "PathChestDto": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "integer"
+          },
+          "done": {
+            "type": "integer"
+          },
+          "opened": {
+            "type": "boolean"
+          },
+          "xp": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "required",
+          "done",
+          "opened",
+          "xp"
+        ]
+      },
+      "PathWeatherDayName": {
+        "type": "string",
+        "enum": [
+          "fri",
+          "sat",
+          "sun"
+        ]
+      },
+      "PathWeatherDayDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "day": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PathWeatherDayName"
+              }
+            ]
+          },
+          "weatherCode": {
+            "type": "integer",
+            "description": "WMO weather code."
+          },
+          "tMaxC": {
+            "type": "integer"
+          },
+          "windKmh": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "day",
+          "weatherCode",
+          "tMaxC",
+          "windKmh"
+        ]
+      },
+      "PathWeatherDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PathWeatherDayDto"
+            }
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "PathDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "Asia/Tashkent month."
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PathNodeDto"
+            }
+          },
+          "chest": {
+            "nullable": true,
+            "description": "Null when the path has no nodes.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PathChestDto"
+              }
+            ]
+          },
+          "weather": {
+            "$ref": "#/components/schemas/PathWeatherDto"
+          }
+        },
+        "required": [
+          "month",
+          "level",
+          "nodes",
+          "chest",
+          "weather"
         ]
       }
     }
