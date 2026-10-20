@@ -1,4 +1,7 @@
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import sharp from 'sharp';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import request from 'supertest';
 import { createE2eApp } from './setup/app.js';
@@ -29,6 +32,50 @@ const question = (over: Record<string, unknown> = {}) => ({
 });
 
 type Item = { id: string; key: string; order: number };
+
+const BUCKET = 'lessons-e2e';
+const PUBLIC_BASE = 'http://localhost:9000/lessons-e2e';
+type S3Stub = { server: Server; objects: Map<string, Buffer> };
+
+/** Minimal path-style S3 endpoint (PUT / HEAD) so the real S3 client is exercised without MinIO. */
+function startS3Stub(): Promise<S3Stub> {
+  const objects = new Map<string, Buffer>();
+  const server = createServer((req, res) => {
+    const path = decodeURIComponent((req.url ?? '').split('?')[0]);
+    const prefix = `/${BUCKET}/`;
+    const objectKey = path.startsWith(prefix)
+      ? path.slice(prefix.length)
+      : null;
+    if (objectKey === null) {
+      res.writeHead(404).end();
+      return;
+    }
+    if (req.method === 'PUT') {
+      const chunks: Buffer[] = [];
+      req.on('data', (chunk: Buffer) => chunks.push(chunk));
+      req.on('end', () => {
+        objects.set(objectKey, Buffer.concat(chunks));
+        res.writeHead(200, { ETag: '"e2e"' }).end();
+      });
+      return;
+    }
+    const stored = objects.get(objectKey);
+    if (req.method === 'HEAD' && stored) {
+      res.writeHead(200, { 'Content-Length': stored.length }).end();
+      return;
+    }
+    res.writeHead(404).end();
+  });
+  return new Promise((resolve) =>
+    server.listen(0, '127.0.0.1', () => resolve({ server, objects })),
+  );
+}
+
+const pngWithGps = (width: number, height: number): Promise<Buffer> =>
+  sharp({ create: { width, height, channels: 3, background: '#336699' } })
+    .withExif({ IFD3: { GPSLatitudeRef: 'N', GPSLatitude: '41/1 17/1 58/1' } })
+    .png()
+    .toBuffer();
 const items = (res: request.Response): Item[] =>
   (res.body as { items: Item[] }).items;
 
@@ -37,6 +84,7 @@ describe('lessons admin API (e2e) - AC1-AC3', () => {
   let app: NestExpressApplication;
   let admin: Account;
   let user: Account;
+  let s3: S3Stub;
 
   const server = () => app.getHttpServer();
   const call = (
@@ -51,6 +99,15 @@ describe('lessons admin API (e2e) - AC1-AC3', () => {
     );
     return body ? req.send(body) : req;
   };
+  const upload = (
+    bytes: Buffer,
+    filename = 'photo.png',
+    who: Account = admin,
+  ) =>
+    request(server())
+      .post('/v1/admin/lesson-images')
+      .set(...bearer(who.accessToken))
+      .attach('file', bytes, filename);
   const tierIds = async (): Promise<string[]> =>
     items(await call('get', '/lesson-tiers').expect(200)).map((t) => t.id);
   const newLesson = async (tierId: string): Promise<string> =>
@@ -64,7 +121,15 @@ describe('lessons admin API (e2e) - AC1-AC3', () => {
 
   beforeAll(async () => {
     db = await startPostgres();
-    app = await createE2eApp(e2eEnv(db.getConnectionUri()));
+    s3 = await startS3Stub();
+    const { port } = s3.server.address() as AddressInfo;
+    app = await createE2eApp(
+      e2eEnv(db.getConnectionUri(), {
+        S3_ENDPOINT: `http://127.0.0.1:${port}`,
+        S3_BUCKET: BUCKET,
+        S3_PUBLIC_BASE_URL: PUBLIC_BASE,
+      }),
+    );
     admin = await makeAdmin(app);
     user = await signUp(app);
   });
@@ -72,6 +137,7 @@ describe('lessons admin API (e2e) - AC1-AC3', () => {
   afterAll(async () => {
     await app?.close();
     await db?.stop();
+    await new Promise((resolve) => s3?.server.close(resolve));
   });
 
   beforeEach(async () => {
@@ -183,10 +249,22 @@ describe('lessons admin API (e2e) - AC1-AC3', () => {
       'title.uz',
     ]);
 
-    const saved = await call('put', `/lessons/${first}`, {
+    // A key that was never uploaded (wrong shape) is refused; an uploaded key saves with its url (AC4).
+    const badKey = await call('put', `/lessons/${first}`, {
       title: { uz: 'draft', ru: '', en: '' },
       icon: 'leaf',
       questions: [question({ image: { key: 'lessons/example.webp' } })],
+    }).expect(400);
+    expect(badKey.body).toMatchObject({
+      code: 'VALIDATION_FAILED',
+      fieldErrors: { 'questions.0.image': ['invalidKey'] },
+    });
+    const uploaded = await upload(await pngWithGps(40, 30)).expect(201);
+    const imageKey = String(uploaded.body.key);
+    const saved = await call('put', `/lessons/${first}`, {
+      title: { uz: 'draft', ru: '', en: '' },
+      icon: 'leaf',
+      questions: [question({ image: { key: imageKey } })],
     }).expect(200);
     expect(saved.body).toMatchObject({
       status: 'draft',
@@ -196,7 +274,7 @@ describe('lessons admin API (e2e) - AC1-AC3', () => {
         {
           order: 1,
           correctIndex: 1,
-          image: { key: 'lessons/example.webp', url: null },
+          image: { key: imageKey, url: `${PUBLIC_BASE}/${imageKey}` },
         },
       ],
     });
@@ -261,5 +339,27 @@ describe('lessons admin API (e2e) - AC1-AC3', () => {
     await call('post', `/lessons/${id}/unpublish`).expect(200);
     await call('delete', `/lessons/${id}`).expect(204);
     await call('get', `/lessons/${id}`).expect(404);
+  });
+
+  it('AC4: upload stores a clean re-encoded image; 415 by content, 413 above 2 MB, 403 for a user', async () => {
+    const res = await upload(await pngWithGps(2400, 1200)).expect(201);
+    expect(res.body).toMatchObject({ width: 1600, height: 800 });
+    const objectKey = String(res.body.key);
+    expect(objectKey).toMatch(/^lessons\/[0-9a-f-]{36}\.png$/);
+    expect(res.body.url).toBe(`${PUBLIC_BASE}/${objectKey}`);
+    const stored = await sharp(s3.objects.get(objectKey)).metadata();
+    expect(stored).toMatchObject({ format: 'png', width: 1600, height: 800 });
+    expect(stored.exif).toBeUndefined();
+
+    const notImage = await upload(
+      Buffer.from('plain text'),
+      'photo.jpg',
+    ).expect(415);
+    expect(notImage.body.code).toBe('IMAGE_TYPE');
+    const tooLarge = await upload(Buffer.alloc(2 * 1024 * 1024 + 1)).expect(
+      413,
+    );
+    expect(tooLarge.body.code).toBe('IMAGE_TOO_LARGE');
+    await upload(Buffer.from('x'), 'a.png', user).expect(403);
   });
 });

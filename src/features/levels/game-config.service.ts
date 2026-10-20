@@ -6,6 +6,10 @@ import {
   type DailyCaps,
   type LevelTable,
 } from './game-config.schema.js';
+import {
+  withPublishedLessonGates,
+  type PublishedLessonCounts,
+} from './level-engine.js';
 import { GAME_CONFIG_CACHE_MS, GAME_CONFIG_KEYS } from './levels.constants.js';
 import { GameConfigInvalidError } from './levels.errors.js';
 import { LevelsRepository } from './levels.repository.js';
@@ -15,6 +19,8 @@ interface CacheEntry {
   loadedAt: number;
 }
 
+const PUBLISHED_LESSONS_CACHE_KEY = 'lessons.published';
+
 /** Typed GameConfig loader. Missing or invalid rows throw at use; valid values are reused for ≤ 60 s. */
 @Injectable()
 export class GameConfigService {
@@ -22,12 +28,32 @@ export class GameConfigService {
 
   constructor(private readonly repository: LevelsRepository) {}
 
-  levelTable(now = Date.now()): Promise<LevelTable> {
-    return this.load(GAME_CONFIG_KEYS.levelTable, levelTableSchema, now);
+  /** The effective level table: config rows with `tier`/`all` lesson gates sized by published lessons. */
+  async levelTable(now = Date.now()): Promise<LevelTable> {
+    const [table, published] = await Promise.all([
+      this.load(GAME_CONFIG_KEYS.levelTable, levelTableSchema, now),
+      this.publishedLessons(now),
+    ]);
+    return withPublishedLessonGates(table, published);
+  }
+
+  /** Publish / unpublish changed the lesson counts: the next read reloads them. */
+  invalidatePublishedLessons(): void {
+    this.cache.delete(PUBLISHED_LESSONS_CACHE_KEY);
   }
 
   dailyCaps(now = Date.now()): Promise<DailyCaps> {
     return this.load(GAME_CONFIG_KEYS.dailyCaps, dailyCapsSchema, now);
+  }
+
+  private async publishedLessons(now: number): Promise<PublishedLessonCounts> {
+    const hit = this.cache.get(PUBLISHED_LESSONS_CACHE_KEY);
+    if (hit && now - hit.loadedAt < GAME_CONFIG_CACHE_MS) {
+      return hit.value as PublishedLessonCounts;
+    }
+    const value = await this.repository.publishedLessonCounts();
+    this.cache.set(PUBLISHED_LESSONS_CACHE_KEY, { value, loadedAt: now });
+    return value;
   }
 
   private async load<S extends z.ZodType>(

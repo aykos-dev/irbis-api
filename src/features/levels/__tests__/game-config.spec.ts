@@ -11,7 +11,11 @@ function service(rows: Record<string, unknown>) {
   const findGameConfig = vi.fn((key: string) =>
     Promise.resolve(key in rows ? { value: rows[key] } : null),
   );
-  const repository = { findGameConfig } as unknown as LevelsRepository;
+  const publishedLessonCounts = () => Promise.resolve({ byTier: {}, total: 0 });
+  const repository = {
+    findGameConfig,
+    publishedLessonCounts,
+  } as unknown as LevelsRepository;
   return { config: new GameConfigService(repository), findGameConfig };
 }
 

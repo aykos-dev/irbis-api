@@ -46,7 +46,13 @@ export class AdminLessonSummaryListDto {
 
 export class LessonImageDto {
   @ApiProperty() key: string;
-  @ApiProperty({ type: String, nullable: true }) url: string | null;
+  @ApiProperty({ example: 'https://cdn.example.com/lessons/<uuid>.webp' })
+  url: string;
+}
+
+export class LessonImageUploadDto extends LessonImageDto {
+  @ApiProperty({ type: 'integer' }) width: number;
+  @ApiProperty({ type: 'integer' }) height: number;
 }
 
 export class AdminQuestionDto {

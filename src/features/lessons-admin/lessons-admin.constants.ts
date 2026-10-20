@@ -36,3 +36,8 @@ export interface L10n {
   ru: string;
   en: string;
 }
+
+/** Question images (ADR-005): upload limit, longest stored side, and the only key shape a lesson may hold. */
+export const IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+export const IMAGE_MAX_SIDE = 1600;
+export const IMAGE_KEY_PATTERN = /^lessons\/[0-9a-f-]{36}\.(jpg|png|webp)$/;

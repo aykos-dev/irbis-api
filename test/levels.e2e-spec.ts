@@ -85,6 +85,21 @@ describe('levels engine on Postgres (e2e) - AC1, AC2', () => {
         difficulty: 3,
       });
     }
+    // Tier gates are sized by published lessons (lessons-admin AC5): publish 6 in tier 2.
+    const tier2 = await prisma.lessonTier.findUniqueOrThrow({
+      where: { key: '2' },
+    });
+    await prisma.lesson.createMany({
+      data: Array.from({ length: 6 }, (_, i) => ({
+        tierId: tier2.id,
+        title: { uz: `lesson_${i}`, ru: `lesson_${i}`, en: `lesson_${i}` },
+        icon: 'compass',
+        order: i + 1,
+        status: 'published' as const,
+        publishedAt: new Date(),
+      })),
+    });
+    levels.lessonCatalogChanged();
     const result = await levels.award({
       userId,
       source: 'qa_grant',

@@ -35,6 +35,12 @@ export function e2eEnv(
     LOOKUP_THROTTLE_LIMIT: '100000',
     // The hourly cron would call the real Open-Meteo.
     CONDITIONS_JOB_ENABLED: 'false',
+    // Object storage placeholders (nothing listens there); files that store images override them.
+    S3_ENDPOINT: 'http://127.0.0.1:9',
+    S3_BUCKET: 'S3_BUCKET',
+    S3_ACCESS_KEY_ID: 'S3_ACCESS_KEY_ID',
+    S3_SECRET_ACCESS_KEY: 'S3_SECRET_ACCESS_KEY',
+    S3_PUBLIC_BASE_URL: 'http://localhost:9000/S3_BUCKET',
     ...overrides,
   };
 }

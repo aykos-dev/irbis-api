@@ -67,7 +67,8 @@ describe('levels API (e2e) - AC3, AC4', () => {
     ]);
     expect(items.map((i) => i.newPlacesCount)).toEqual([2, 1, 1, 0, 0, 0, 0]);
     expect(res.body.items[2]).toMatchObject({
-      lessons: { kind: 'tier', tier: '2', required: 6 },
+      // No lesson of tier 2 is published in this DB: the gate shows 0 and is unmet (lessons-admin AC5).
+      lessons: { kind: 'tier', tier: '2', required: 0 },
       checkIns: { required: 5, minDifficulty: 2 },
       maxDifficulty: 3,
     });
@@ -89,7 +90,7 @@ describe('levels API (e2e) - AC3, AC4', () => {
       next: {
         level: 3,
         xp: { current: 300, required: 1000 },
-        lessons: { current: 0, required: 6, kind: 'tier', tier: '2' },
+        lessons: { current: 0, required: 0, kind: 'tier', tier: '2' },
         checkIns: { current: 0, required: 5, minDifficulty: 2 },
         verifiedSpots: null,
       },

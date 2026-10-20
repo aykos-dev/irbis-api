@@ -25,6 +25,36 @@ export function lessonsDone(row: LevelRow, state: ProgressState): number {
   return state.lessonsTotal;
 }
 
+/** Published lessons, per tier key and in total; they size the `tier` and `all` lesson gates. */
+export interface PublishedLessonCounts {
+  byTier: Record<string, number>;
+  total: number;
+}
+
+/**
+ * The effective table: a `tier` gate requires every published lesson of its tier, an `all` gate
+ * every published lesson; `count` gates keep the configured number.
+ */
+export function withPublishedLessonGates(
+  table: LevelTable,
+  published: PublishedLessonCounts,
+): LevelTable {
+  return table.map((row) => {
+    if (row.lessons.kind === 'count') return row;
+    const required =
+      row.lessons.kind === 'tier' && row.lessons.tier !== null
+        ? (published.byTier[row.lessons.tier] ?? 0)
+        : published.total;
+    return { ...row, lessons: { ...row.lessons, required } };
+  });
+}
+
+/** A `tier`/`all` gate with nothing published is not met; otherwise enough lessons must be done. */
+export function lessonGateMet(row: LevelRow, state: ProgressState): boolean {
+  if (row.lessons.kind !== 'count' && row.lessons.required === 0) return false;
+  return lessonsDone(row, state) >= row.lessons.required;
+}
+
 /** Check-ins at places of at least `minDifficulty`. */
 export function checkInsAtLeast(
   minDifficulty: number,
@@ -39,7 +69,7 @@ export function checkInsAtLeast(
 export function meetsLevel(row: LevelRow, state: ProgressState): boolean {
   return (
     state.xpTotal >= row.xp &&
-    lessonsDone(row, state) >= row.lessons.required &&
+    lessonGateMet(row, state) &&
     checkInsAtLeast(row.checkIns.minDifficulty, state) >=
       row.checkIns.required &&
     state.verifiedSpots >= row.verifiedSpots

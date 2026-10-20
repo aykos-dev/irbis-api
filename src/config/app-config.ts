@@ -18,6 +18,17 @@ export interface ConditionThresholds {
   snowNotNowCm: number;
 }
 
+/** S3-compatible object storage (ADR-005). */
+export interface StorageConfig {
+  endpoint: string | undefined;
+  region: string;
+  bucket: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  forcePathStyle: boolean;
+  publicBaseUrl: string;
+}
+
 /** Typed, validated configuration. Inject this instead of reading the environment. */
 @Injectable()
 export class AppConfig {
@@ -161,6 +172,26 @@ export class AppConfig {
   /** A forecast older than this keeps the last status (read side, slice 2). */
   get conditionsStaleHours(): number {
     return this.get('COND_STALE_HOURS');
+  }
+
+  /** Null when bucket, credentials or public URL are missing (allowed only outside staging/prod). */
+  get storage(): StorageConfig | null {
+    const bucket = this.get('S3_BUCKET');
+    const accessKeyId = this.get('S3_ACCESS_KEY_ID');
+    const secretAccessKey = this.get('S3_SECRET_ACCESS_KEY');
+    const publicBaseUrl = this.get('S3_PUBLIC_BASE_URL');
+    if (!bucket || !accessKeyId || !secretAccessKey || !publicBaseUrl) {
+      return null;
+    }
+    return {
+      endpoint: this.get('S3_ENDPOINT'),
+      region: this.get('S3_REGION'),
+      bucket,
+      accessKeyId,
+      secretAccessKey,
+      forcePathStyle: this.get('S3_FORCE_PATH_STYLE'),
+      publicBaseUrl: publicBaseUrl.replace(/\/+$/, ''),
+    };
   }
 
   get databaseUrl(): string {

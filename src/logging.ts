@@ -15,6 +15,9 @@ const SENSITIVE_KEYS = [
   'recoveryPhone',
   'lat',
   'lng',
+  'accessKeyId',
+  'secretAccessKey',
+  'credentials',
 ];
 
 /** Paths pino replaces with "[REDACTED]": auth headers, cookies, and sensitive fields up to 3 levels deep. */

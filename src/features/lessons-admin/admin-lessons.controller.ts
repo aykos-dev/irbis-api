@@ -20,6 +20,8 @@ import {
 } from '@nestjs/swagger';
 import { ApiErrorResponses } from '../../common/decorators/api-error-responses.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { LevelsService } from '../levels/levels.service.js';
+import { LessonImagesService } from './lesson-images.service.js';
 import type { LessonRecord } from './lessons-admin.repository.js';
 import { LessonsAdminService } from './lessons-admin.service.js';
 import {
@@ -44,15 +46,6 @@ const ADMIN_ERRORS = {
   403: ['FORBIDDEN', 'ACCOUNT_BLOCKED'],
 };
 
-/** `url` stays null until image storage lands (lessons-admin slice 2). */
-const toLessonDto = (lesson: LessonRecord): AdminLessonDto => ({
-  ...lesson,
-  questions: lesson.questions.map(({ imageKey, ...q }) => ({
-    ...q,
-    image: imageKey === null ? null : { key: imageKey, url: null },
-  })),
-});
-
 const toQuestion = (q: QuestionInputDto): QuestionContent => ({
   prompt: q.prompt,
   hint: q.hint ?? null,
@@ -69,7 +62,21 @@ const toQuestion = (q: QuestionInputDto): QuestionContent => ({
 @Roles('admin')
 @Controller('admin')
 export class AdminLessonsController {
-  constructor(private readonly lessons: LessonsAdminService) {}
+  constructor(
+    private readonly lessons: LessonsAdminService,
+    private readonly images: LessonImagesService,
+    private readonly levels: LevelsService,
+  ) {}
+
+  private toLessonDto(lesson: LessonRecord): AdminLessonDto {
+    return {
+      ...lesson,
+      questions: lesson.questions.map(({ imageKey, ...q }) => ({
+        ...q,
+        image: imageKey === null ? null : this.images.imageOf(imageKey),
+      })),
+    };
+  }
 
   // --- tiers ---
 
@@ -196,7 +203,7 @@ export class AdminLessonsController {
     404: ['TIER_NOT_FOUND'],
   })
   async createLesson(@Body() dto: CreateLessonDto): Promise<AdminLessonDto> {
-    return toLessonDto(await this.lessons.createLesson(dto));
+    return this.toLessonDto(await this.lessons.createLesson(dto));
   }
 
   @Get('lessons/:id')
@@ -209,9 +216,10 @@ export class AdminLessonsController {
     ...ADMIN_ERRORS,
     400: ['VALIDATION_FAILED'],
     404: ['LESSON_NOT_FOUND'],
+    503: ['STORAGE_UNAVAILABLE'],
   })
   async getLesson(@Param() { id }: IdParamDto): Promise<AdminLessonDto> {
-    return toLessonDto(await this.lessons.getLesson(id));
+    return this.toLessonDto(await this.lessons.getLesson(id));
   }
 
   @Put('lessons/:id')
@@ -226,17 +234,20 @@ export class AdminLessonsController {
     400: ['VALIDATION_FAILED'],
     404: ['LESSON_NOT_FOUND'],
     422: ['LESSON_NOT_PUBLISHABLE'],
+    503: ['STORAGE_UNAVAILABLE'],
   })
   async replaceLesson(
     @Param() { id }: IdParamDto,
     @Body() dto: ReplaceLessonDto,
   ): Promise<AdminLessonDto> {
+    const questions = dto.questions.map(toQuestion);
+    await this.images.checkKeys(questions);
     const lesson = await this.lessons.replaceLesson(id, {
       title: dto.title,
       icon: dto.icon,
-      questions: dto.questions.map(toQuestion),
+      questions,
     });
-    return toLessonDto(lesson);
+    return this.toLessonDto(lesson);
   }
 
   @Post('lessons/:id/publish')
@@ -251,9 +262,12 @@ export class AdminLessonsController {
     400: ['VALIDATION_FAILED'],
     404: ['LESSON_NOT_FOUND'],
     422: ['LESSON_NOT_PUBLISHABLE'],
+    503: ['STORAGE_UNAVAILABLE'],
   })
   async publish(@Param() { id }: IdParamDto): Promise<AdminLessonDto> {
-    return toLessonDto(await this.lessons.publish(id));
+    const lesson = await this.lessons.publish(id);
+    this.levels.lessonCatalogChanged();
+    return this.toLessonDto(lesson);
   }
 
   @Post('lessons/:id/unpublish')
@@ -267,9 +281,12 @@ export class AdminLessonsController {
     ...ADMIN_ERRORS,
     400: ['VALIDATION_FAILED'],
     404: ['LESSON_NOT_FOUND'],
+    503: ['STORAGE_UNAVAILABLE'],
   })
   async unpublish(@Param() { id }: IdParamDto): Promise<AdminLessonDto> {
-    return toLessonDto(await this.lessons.unpublish(id));
+    const lesson = await this.lessons.unpublish(id);
+    this.levels.lessonCatalogChanged();
+    return this.toLessonDto(lesson);
   }
 
   @Delete('lessons/:id')

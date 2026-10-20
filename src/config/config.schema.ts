@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+/** An empty value (as copied from .env.example) counts as unset. */
+const optionalString = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 const csv = z
   .string()
   .min(1)
@@ -88,6 +94,24 @@ export const configSchema = z.object({
   COND_SNOW_CAUTION_CM: z.coerce.number().default(10),
   COND_SNOW_NOT_NOW_CM: z.coerce.number().default(30),
   COND_STALE_HOURS: z.coerce.number().positive().default(6),
+  // Object storage (ADR-005): any S3-compatible endpoint. Required in staging/prod.
+  S3_ENDPOINT: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.url().optional(),
+  ),
+  S3_REGION: z.string().min(1).default('us-east-1'),
+  S3_BUCKET: optionalString,
+  S3_ACCESS_KEY_ID: optionalString,
+  S3_SECRET_ACCESS_KEY: optionalString,
+  S3_FORCE_PATH_STYLE: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
+  // Public read URL of the bucket; image urls are `<this>/<key>`.
+  S3_PUBLIC_BASE_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.url().optional(),
+  ),
   DATABASE_URL: z
     .string()
     .regex(/^postgres(ql)?:\/\//, 'expected a postgresql:// connection string'),
@@ -96,6 +120,13 @@ export const configSchema = z.object({
 export type Env = z.infer<typeof configSchema>;
 
 const PHONE_KEY_BYTES = 32;
+
+const STORAGE_REQUIRED_WHEN_DEPLOYED = [
+  'S3_BUCKET',
+  'S3_ACCESS_KEY_ID',
+  'S3_SECRET_ACCESS_KEY',
+  'S3_PUBLIC_BASE_URL',
+] as const;
 
 /**
  * Validates raw environment variables. Throws (and so stops the boot) when anything
@@ -141,6 +172,11 @@ function crossFieldIssues(env: Env): string[] {
     Buffer.from(env.PHONE_ENCRYPTION_KEY, 'base64').length !== PHONE_KEY_BYTES
   ) {
     issues.push('PHONE_ENCRYPTION_KEY: expected base64 of 32 bytes');
+  }
+  if (isDeployedEnv(env)) {
+    for (const key of STORAGE_REQUIRED_WHEN_DEPLOYED) {
+      if (!env[key]) issues.push(`${key}: required in staging and production`);
+    }
   }
   if (env.QA_TOOLS_ENABLED && env.NODE_ENV === 'production') {
     issues.push(

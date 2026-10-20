@@ -3381,6 +3381,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Error. code: STORAGE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3469,6 +3479,16 @@
           },
           "422": {
             "description": "Error. code: LESSON_NOT_PUBLISHABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Error. code: STORAGE_UNAVAILABLE",
             "content": {
               "application/json": {
                 "schema": {
@@ -3641,6 +3661,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Error. code: STORAGE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3718,6 +3748,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Error. code: STORAGE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3726,6 +3766,112 @@
           }
         ],
         "summary": "Back to draft (publishedAt keeps the first publish time)",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/lesson-images": {
+      "post": {
+        "operationId": "Admin_uploadLessonImage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonImageUploadDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED | BAD_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error. code: IMAGE_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error. code: IMAGE_TYPE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Error. code: STORAGE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a question image (JPEG/PNG/WebP, ≤ 2 MB); stored re-encoded, longest side ≤ 1600 px, no metadata",
         "tags": [
           "Admin"
         ]
@@ -6192,7 +6338,7 @@
           },
           "url": {
             "type": "string",
-            "nullable": true
+            "example": "https://cdn.example.com/lessons/<uuid>.webp"
           }
         },
         "required": [
@@ -6445,6 +6591,30 @@
           "title",
           "icon",
           "questions"
+        ]
+      },
+      "LessonImageUploadDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://cdn.example.com/lessons/<uuid>.webp"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "url",
+          "width",
+          "height"
         ]
       }
     }

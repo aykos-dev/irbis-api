@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import type { PublishedLessonCounts } from './level-engine.js';
 import type { LevelFactKindCode, XpSourceCode } from './levels.constants.js';
 
 /** Handle of an open database transaction; opaque to services. */
@@ -79,6 +80,23 @@ export class LevelsRepository {
       where: { key },
       select: { value: true },
     });
+  }
+
+  /** Published lessons per tier key, and in total. */
+  async publishedLessonCounts(): Promise<PublishedLessonCounts> {
+    const tiers = await this.prisma.lessonTier.findMany({
+      select: {
+        key: true,
+        _count: { select: { lessons: { where: { status: 'published' } } } },
+      },
+    });
+    const byTier: Record<string, number> = {};
+    let total = 0;
+    for (const tier of tiers) {
+      byTier[tier.key] = tier._count.lessons;
+      total += tier._count.lessons;
+    }
+    return { byTier, total };
   }
 
   /** Locks the user row until the transaction ends (serialises awards, caps and level-ups per user). */

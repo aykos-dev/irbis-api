@@ -55,3 +55,21 @@ export class LessonNotPublishableError extends DomainError {
     super('The lesson is not ready to publish');
   }
 }
+
+export class ImageTypeError extends DomainError {
+  readonly code = 'IMAGE_TYPE';
+  readonly status = HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+
+  constructor() {
+    super('Only JPEG, PNG or WebP images are accepted');
+  }
+}
+
+export class ImageTooLargeError extends DomainError {
+  readonly code = 'IMAGE_TOO_LARGE';
+  readonly status = HttpStatus.PAYLOAD_TOO_LARGE;
+
+  constructor() {
+    super('The image is larger than 2 MB');
+  }
+}

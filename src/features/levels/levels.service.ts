@@ -243,6 +243,11 @@ export class LevelsService {
     };
   }
 
+  /** Lessons were published or unpublished: the tier/all gates are recounted on the next read. */
+  lessonCatalogChanged(): void {
+    this.config.invalidatePublishedLessons();
+  }
+
   /** Marks the user's level-up as seen; repeating it is a no-op. */
   async markLevelUpSeen(
     userId: string,
