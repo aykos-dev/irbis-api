@@ -51,3 +51,21 @@ export class TripNotEditableError extends ConflictError {
     super('This trip can no longer be changed');
   }
 }
+
+/** 409: location pings need an active or alerted trip. */
+export class TripNotActiveError extends ConflictError {
+  override readonly code = 'TRIP_NOT_ACTIVE';
+
+  constructor() {
+    super('This trip is not active');
+  }
+}
+
+/** 404: no live trip behind this link (unknown token or a trip that has not started). */
+export class LiveNotFoundError extends NotFoundError {
+  override readonly code = 'LIVE_NOT_FOUND';
+
+  constructor() {
+    super('Live trip not found');
+  }
+}

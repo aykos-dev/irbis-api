@@ -5,11 +5,13 @@ import {
   lessonsConfigSchema,
   levelTableSchema,
   pathConfigSchema,
+  tripActiveConfigSchema,
   tripConfigSchema,
   type DailyCaps,
   type LessonsConfig,
   type LevelTable,
   type PathConfig,
+  type TripActiveConfig,
   type TripConfig,
 } from './game-config.schema.js';
 import {
@@ -62,6 +64,10 @@ export class GameConfigService {
 
   tripConfig(now = Date.now()): Promise<TripConfig> {
     return this.load(GAME_CONFIG_KEYS.tripConfig, tripConfigSchema, now);
+  }
+
+  tripActiveConfig(now = Date.now()): Promise<TripActiveConfig> {
+    return this.load(GAME_CONFIG_KEYS.tripActive, tripActiveConfigSchema, now);
   }
 
   private async publishedLessons(now: number): Promise<PublishedLessonCounts> {

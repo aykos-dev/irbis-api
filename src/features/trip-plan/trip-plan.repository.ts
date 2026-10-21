@@ -52,6 +52,47 @@ export interface TripRecord {
   place: TripPlace;
 }
 
+/** Active-trip columns of a trip (live link, last fix time, totals, waypoints). */
+export interface TripLiveFields {
+  liveToken: string | null;
+  lastLocationAt: Date | null;
+  distanceM: number;
+  climbM: number;
+  waypoints: TripWaypointRecord[];
+}
+
+/** A trip as the repository reads it. */
+export type TripRow = TripRecord & TripLiveFields;
+
+export interface TripWaypointRecord {
+  n: number;
+  lat: number;
+  lng: number;
+  recordedAt: Date;
+}
+
+/** One location ping with the client's running totals. */
+export interface TripPing {
+  lat: number;
+  lng: number;
+  accuracyM: number;
+  recordedAt: Date;
+  distanceM: number;
+  climbM: number;
+}
+
+/** What the public live page reads for a token. */
+export interface LiveTripRecord {
+  status: TripStatusCode;
+  backBy: Date;
+  checkedOutAt: Date | null;
+  lastLat: number | null;
+  lastLng: number | null;
+  lastLocationAt: Date | null;
+  user: { username: string; displayName: string | null };
+  place: { nameUz: string; nameRu: string | null; nameEn: string | null };
+}
+
 export interface NewTrip {
   userId: string;
   placeId: string;
@@ -62,6 +103,7 @@ export interface NewTrip {
   contact: StoredContact;
   startedAt: Date | null;
   location: { lat: number; lng: number; accuracyM: number } | null;
+  liveToken: string | null;
 }
 
 export interface TripLocation {
@@ -79,6 +121,9 @@ export interface TripChange {
   startedAt?: Date;
   checkedOutAt?: Date;
   location?: TripLocation | null;
+  liveToken?: string;
+  distanceM?: number;
+  climbM?: number;
 }
 
 /** Only apply the change while the trip still is in one of `statuses` (and, with `alertNotSent`, unalerted). */
@@ -96,6 +141,9 @@ export interface DueAlert {
   alertAttempts: number;
   startLat: number | null;
   startLng: number | null;
+  /** Last location ping (active-trip); listDueAlerts always selects it. */
+  lastLat?: number | null;
+  lastLng?: number | null;
   user: { username: string; displayName: string | null; locale: LocaleCode };
   place: {
     nameUz: string;
@@ -118,6 +166,14 @@ const tripSelect = {
   startedAt: true,
   checkedOutAt: true,
   alertSentAt: true,
+  liveToken: true,
+  lastLocationAt: true,
+  distanceM: true,
+  climbM: true,
+  waypoints: {
+    select: { n: true, lat: true, lng: true, recordedAt: true },
+    orderBy: { n: 'asc' },
+  },
   place: {
     select: {
       id: true,
@@ -195,7 +251,7 @@ export class TripPlanRepository {
   }
 
   /** Throws TRIP_ALREADY_ACTIVE when the one-active-trip index rejects the row. */
-  async createTrip(trip: NewTrip): Promise<TripRecord> {
+  async createTrip(trip: NewTrip): Promise<TripRow> {
     try {
       return await this.prisma.trip.create({
         data: {
@@ -213,6 +269,7 @@ export class TripPlanRepository {
           startLat: trip.location?.lat ?? null,
           startLng: trip.location?.lng ?? null,
           startAccuracyM: trip.location?.accuracyM ?? null,
+          liveToken: trip.liveToken,
         },
         select: tripSelect,
       });
@@ -222,7 +279,7 @@ export class TripPlanRepository {
     }
   }
 
-  findActiveTrip(userId: string): Promise<TripRecord | null> {
+  findActiveTrip(userId: string): Promise<TripRow | null> {
     return this.prisma.trip.findFirst({
       where: { userId, status: 'active' },
       select: tripSelect,
@@ -230,7 +287,7 @@ export class TripPlanRepository {
   }
 
   /** The user's planned trips starting at or after `since`, earliest first. */
-  listPlannedTrips(userId: string, since: Date): Promise<TripRecord[]> {
+  listPlannedTrips(userId: string, since: Date): Promise<TripRow[]> {
     return this.prisma.trip.findMany({
       where: { userId, status: 'planned', startAt: { gte: since } },
       orderBy: [{ startAt: 'asc' }, { id: 'asc' }],
@@ -238,7 +295,7 @@ export class TripPlanRepository {
     });
   }
 
-  findOwnTrip(userId: string, id: string): Promise<TripRecord | null> {
+  findOwnTrip(userId: string, id: string): Promise<TripRow | null> {
     return this.prisma.trip.findFirst({
       where: { id, userId },
       select: tripSelect,
@@ -254,7 +311,7 @@ export class TripPlanRepository {
     id: string,
     guard: TripGuard,
     change: TripChange,
-  ): Promise<TripRecord | null> {
+  ): Promise<TripRow | null> {
     const { location, ...fields } = change;
     try {
       const { count } = await this.prisma.trip.updateMany({
@@ -280,6 +337,65 @@ export class TripPlanRepository {
       throw error;
     }
     return this.prisma.trip.findUnique({ where: { id }, select: tripSelect });
+  }
+
+  /** Gives a trip without a live token this one; returns the token the trip has afterwards. */
+  async backfillLiveToken(id: string, token: string): Promise<string | null> {
+    await this.prisma.trip.updateMany({
+      where: { id, liveToken: null },
+      data: { liveToken: token },
+    });
+    const row = await this.prisma.trip.findUnique({
+      where: { id },
+      select: { liveToken: true },
+    });
+    return row?.liveToken ?? null;
+  }
+
+  /**
+   * Stores the ping as the trip's last fix and totals while the trip still takes pings and the
+   * fix is not older than the stored one; false when nothing was written.
+   */
+  async recordPing(
+    id: string,
+    statuses: TripStatusCode[],
+    ping: TripPing,
+  ): Promise<boolean> {
+    const { count } = await this.prisma.trip.updateMany({
+      where: {
+        id,
+        status: { in: statuses },
+        OR: [
+          { lastLocationAt: null },
+          { lastLocationAt: { lte: ping.recordedAt } },
+        ],
+      },
+      data: {
+        lastLat: ping.lat,
+        lastLng: ping.lng,
+        lastAccuracyM: ping.accuracyM,
+        lastLocationAt: ping.recordedAt,
+        distanceM: ping.distanceM,
+        climbM: ping.climbM,
+      },
+    });
+    return count === 1;
+  }
+
+  findLiveTrip(token: string): Promise<LiveTripRecord | null> {
+    return this.prisma.trip.findUnique({
+      where: { liveToken: token },
+      select: {
+        status: true,
+        backBy: true,
+        checkedOutAt: true,
+        lastLat: true,
+        lastLng: true,
+        lastLocationAt: true,
+        user: { select: { username: true, displayName: true } },
+        place: { select: { nameUz: true, nameRu: true, nameEn: true } },
+      },
+    });
   }
 
   /** Deletes the trip only while it is planned; false when it was not. */
@@ -309,6 +425,8 @@ export class TripPlanRepository {
         alertAttempts: true,
         startLat: true,
         startLng: true,
+        lastLat: true,
+        lastLng: true,
         user: { select: { username: true, displayName: true, locale: true } },
         place: {
           select: {

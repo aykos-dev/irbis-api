@@ -30,6 +30,7 @@ export const GAME_CONFIG_KEYS = {
   lessonsConfig: 'lessons.config',
   pathConfig: 'path.config',
   tripConfig: 'trip.config',
+  tripActive: 'trip.active',
 } as const;
 
 /** How long a loaded GameConfig value is reused before it is read again. */

@@ -3,6 +3,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsISO8601,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -16,7 +17,10 @@ import {
 } from 'class-validator';
 import {
   ACCURACY_MAX_M,
+  CLIMB_MAX_M,
+  DISTANCE_MAX_M,
   NAME_MAX,
+  PING_ACCURACY_MAX_M,
   RELATION_MAX,
 } from '../trip-plan.constants.js';
 
@@ -140,4 +144,62 @@ export class UpdateTripDto {
   @IsOptional()
   @IsBoolean()
   alertEnabled?: boolean;
+}
+
+/** AC3: one location ping with the client's running trip totals. */
+export class PostTripLocationDto {
+  @ApiProperty({ minimum: -90, maximum: 90 })
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat: number;
+
+  @ApiProperty({ minimum: -180, maximum: 180 })
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lng: number;
+
+  @ApiProperty({ minimum: 0, maximum: PING_ACCURACY_MAX_M })
+  @IsNumber()
+  @Min(0)
+  @Max(PING_ACCURACY_MAX_M)
+  accuracyM: number;
+
+  @ApiProperty({
+    format: 'date-time',
+    description:
+      'When the fix was taken: not before startedAt, at most 2 min ahead of the server.',
+  })
+  @IsISO8601({ strict: true })
+  recordedAt: string;
+
+  @ApiProperty({ type: 'integer', minimum: 0, maximum: DISTANCE_MAX_M })
+  @IsInt()
+  @Min(0)
+  @Max(DISTANCE_MAX_M)
+  distanceM: number;
+
+  @ApiProperty({ type: 'integer', minimum: 0, maximum: CLIMB_MAX_M })
+  @IsInt()
+  @Min(0)
+  @Max(CLIMB_MAX_M)
+  climbM: number;
+}
+
+/** AC8: optional final trip totals sent with check-out. */
+export class CheckOutTripDto {
+  @ApiPropertyOptional({ type: 'integer', minimum: 0, maximum: DISTANCE_MAX_M })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(DISTANCE_MAX_M)
+  distanceM?: number;
+
+  @ApiPropertyOptional({ type: 'integer', minimum: 0, maximum: CLIMB_MAX_M })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(CLIMB_MAX_M)
+  climbM?: number;
 }

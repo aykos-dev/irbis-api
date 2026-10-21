@@ -671,13 +671,62 @@ model Trip {
   checkedOutAt      DateTime?  @map("checked_out_at") @db.Timestamptz(3)
   alertSentAt       DateTime?  @map("alert_sent_at") @db.Timestamptz(3)
   alertAttempts     Int        @default(0) @map("alert_attempts")
+  liveToken         String?    @unique @map("live_token") @db.Char(22)
+  lastLat           Float?     @map("last_lat")
+  lastLng           Float?     @map("last_lng")
+  lastAccuracyM     Float?     @map("last_accuracy_m")
+  lastLocationAt    DateTime?  @map("last_location_at") @db.Timestamptz(3)
+  distanceM         Int        @default(0) @map("distance_m")
+  climbM            Int        @default(0) @map("climb_m")
   createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place     Place          @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  waypoints TripWaypoint[]
+  sos       TripSos[]
 
   @@index([userId, startAt])
   @@index([status, backBy])
   @@map("trips")
+}
+
+/// A waypoint reached on an active trip (XP awarded per trip.active.waypoint rules).
+model TripWaypoint {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  tripId     String   @map("trip_id") @db.Uuid
+  n          Int
+  lat        Float
+  lng        Float
+  accuracyM  Float    @map("accuracy_m")
+  recordedAt DateTime @map("recorded_at") @db.Timestamptz(3)
+  xpAwarded  Int      @map("xp_awarded")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, n])
+  @@map("trip_waypoints")
+}
+
+enum TripSosStatus {
+  sent
+  failed
+
+  @@map("trip_sos_status")
+}
+
+/// An SOS sent from an active trip.
+model TripSos {
+  id     String        @id @default(uuid(7)) @db.Uuid
+  tripId String        @map("trip_id") @db.Uuid
+  lat    Float?
+  lng    Float?
+  sentAt DateTime      @map("sent_at") @db.Timestamptz(3)
+  status TripSosStatus
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, sentAt])
+  @@map("trip_sos")
 }

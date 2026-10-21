@@ -6,18 +6,19 @@ import { tashkentDate } from '../conditions/weekend-window.js';
 import { GameConfigService } from '../levels/game-config.service.js';
 import { PlaceNotFoundError } from '../places/places.errors.js';
 import type {
+  CheckOutTripDto,
   CreateTripDto,
   PutEmergencyContactDto,
   StartTripDto,
   UpdateTripDto,
 } from './dto/trip-plan.request.dto.js';
 import type {
-  CurrentTripsDto,
   EmergencyContactDto,
   TripDto,
   TripPreviewDto,
 } from './dto/trip-plan.response.dto.js';
 import { gearList } from './gear.rules.js';
+import { newLiveToken } from './live-token.js';
 import { sunsetAt } from './sunset.js';
 import { PLANNED_TRIP_LOOKBACK_MS } from './trip-plan.constants.js';
 import {
@@ -32,12 +33,22 @@ import {
   type TripChange,
   type TripGuard,
   type PreviewPlace,
-  type TripRecord,
+  type TripRow,
 } from './trip-plan.repository.js';
 import { assertTripTimes } from './trip-times.js';
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
+
+/** A trip as this service returns it; TripActiveService.present turns it into the response TripDto. */
+export type TripView = Omit<TripDto, 'liveUrl' | 'pingEveryMin'> & {
+  liveToken: string | null;
+};
+
+export interface CurrentTripsView {
+  active: TripView | null;
+  planned: TripView[];
+}
 
 /** Forecast min/max °C for `date` from the stored Open-Meteo daily block; null when the day is missing. */
 function forecastFor(
@@ -129,7 +140,7 @@ export class TripPlanService {
     userId: string,
     dto: CreateTripDto,
     now = new Date(),
-  ): Promise<TripDto> {
+  ): Promise<TripView> {
     const startAt = new Date(dto.startAt);
     const backBy = new Date(dto.backBy);
     const config = await this.gameConfig.tripConfig(now.getTime());
@@ -152,12 +163,16 @@ export class TripPlanService {
       contact,
       startedAt: dto.start ? now : null,
       location: dto.start && dto.location ? dto.location : null,
+      liveToken: dto.start ? newLiveToken() : null,
     });
     return this.toDto(trip, config.alertDelayMin);
   }
 
-  /** AC6: the active trip and planned trips that started at most a day ago, earliest first. */
-  async current(userId: string, now = new Date()): Promise<CurrentTripsDto> {
+  /**
+   * AC6: the active trip and planned trips that started at most a day ago, earliest first.
+   * An active trip started before live links existed gets its token here (active-trip AC4).
+   */
+  async current(userId: string, now = new Date()): Promise<CurrentTripsView> {
     const config = await this.gameConfig.tripConfig(now.getTime());
     const [active, planned] = await Promise.all([
       this.repository.findActiveTrip(userId),
@@ -166,6 +181,12 @@ export class TripPlanService {
         addMs(now, -PLANNED_TRIP_LOOKBACK_MS),
       ),
     ]);
+    if (active && !active.liveToken) {
+      active.liveToken = await this.repository.backfillLiveToken(
+        active.id,
+        newLiveToken(),
+      );
+    }
     return {
       active: active ? this.toDto(active, config.alertDelayMin) : null,
       planned: planned.map((t) => this.toDto(t, config.alertDelayMin)),
@@ -178,7 +199,7 @@ export class TripPlanService {
     id: string,
     dto: StartTripDto,
     now = new Date(),
-  ): Promise<TripDto> {
+  ): Promise<TripView> {
     const trip = await this.ownTrip(userId, id);
     if (trip.status !== 'planned') throw new TripNotEditableError();
     if (trip.backBy.getTime() <= now.getTime()) {
@@ -190,7 +211,12 @@ export class TripPlanService {
     return this.apply(
       id,
       { statuses: ['planned'] },
-      { status: 'active', startedAt: now, location: dto.location ?? null },
+      {
+        status: 'active',
+        startedAt: now,
+        location: dto.location ?? null,
+        liveToken: newLiveToken(),
+      },
       now,
     );
   }
@@ -204,7 +230,7 @@ export class TripPlanService {
     id: string,
     dto: UpdateTripDto,
     now = new Date(),
-  ): Promise<TripDto> {
+  ): Promise<TripView> {
     const trip = await this.ownTrip(userId, id);
     const config = await this.gameConfig.tripConfig(now.getTime());
     const startAt = dto.startAt ? new Date(dto.startAt) : undefined;
@@ -246,12 +272,13 @@ export class TripPlanService {
     );
   }
 
-  /** AC7: active or alerted → checked_out. */
+  /** AC7: active or alerted → checked_out; optional final totals are stored (active-trip AC8). */
   async checkOut(
     userId: string,
     id: string,
+    stats: CheckOutTripDto = {},
     now = new Date(),
-  ): Promise<TripDto> {
+  ): Promise<TripView> {
     const trip = await this.ownTrip(userId, id);
     if (trip.status !== 'active' && trip.status !== 'alerted') {
       throw new TripNotEditableError();
@@ -259,7 +286,12 @@ export class TripPlanService {
     return this.apply(
       id,
       { statuses: ['active', 'alerted'] },
-      { status: 'checked_out', checkedOutAt: now },
+      {
+        status: 'checked_out',
+        checkedOutAt: now,
+        distanceM: stats.distanceM,
+        climbM: stats.climbM,
+      },
       now,
     );
   }
@@ -275,7 +307,7 @@ export class TripPlanService {
     }
   }
 
-  private async ownTrip(userId: string, id: string): Promise<TripRecord> {
+  private async ownTrip(userId: string, id: string): Promise<TripRow> {
     const trip = await this.repository.findOwnTrip(userId, id);
     if (!trip) throw new TripNotFoundError();
     return trip;
@@ -287,14 +319,14 @@ export class TripPlanService {
     guard: TripGuard,
     change: TripChange,
     now: Date,
-  ): Promise<TripDto> {
+  ): Promise<TripView> {
     const updated = await this.repository.updateIf(id, guard, change);
     if (!updated) throw new TripNotEditableError();
     const config = await this.gameConfig.tripConfig(now.getTime());
     return this.toDto(updated, config.alertDelayMin);
   }
 
-  private toDto(trip: TripRecord, alertDelayMin: number): TripDto {
+  private toDto(trip: TripRow, alertDelayMin: number): TripView {
     return {
       id: trip.id,
       place: trip.place,
@@ -312,6 +344,11 @@ export class TripPlanService {
         // maskPhone only reads the last two digits.
         phoneMasked: maskPhone(trip.contactPhoneLast2),
       },
+      liveToken: trip.liveToken,
+      lastLocationAt: trip.lastLocationAt,
+      distanceM: trip.distanceM,
+      climbM: trip.climbM,
+      waypoints: trip.waypoints,
     };
   }
 }

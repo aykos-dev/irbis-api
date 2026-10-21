@@ -27,7 +27,9 @@ import { ApiErrorResponses } from '../../common/decorators/api-error-responses.d
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { RequestValidationError } from '../../common/errors/validation.error.js';
 import {
+  CheckOutTripDto,
   CreateTripDto,
+  PostTripLocationDto,
   PutEmergencyContactDto,
   StartTripDto,
   TripPreviewQueryDto,
@@ -39,6 +41,7 @@ import {
   TripDto,
   TripPreviewDto,
 } from './dto/trip-plan.response.dto.js';
+import { TripActiveService } from './trip-active.service.js';
 import { TripPlanService } from './trip-plan.service.js';
 
 /** Non-uuid ids answer 400 VALIDATION_FAILED like every other bad input. */
@@ -126,7 +129,10 @@ export class EmergencyContactController {
 @ApiBearerAuth()
 @Controller('trips')
 export class TripsController {
-  constructor(private readonly trips: TripPlanService) {}
+  constructor(
+    private readonly trips: TripPlanService,
+    private readonly active: TripActiveService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -144,11 +150,11 @@ export class TripsController {
     409: ['TRIP_ALREADY_ACTIVE'],
     422: ['TRIP_TIMES_INVALID', 'EMERGENCY_CONTACT_REQUIRED'],
   })
-  create(
+  async create(
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateTripDto,
   ): Promise<TripDto> {
-    return this.trips.create(user.id, dto);
+    return this.active.present(await this.trips.create(user.id, dto));
   }
 
   @Get('current')
@@ -158,8 +164,8 @@ export class TripsController {
   })
   @ApiOkResponse({ type: CurrentTripsDto })
   @ApiErrorResponses(SIGNED_IN_ERRORS)
-  current(@CurrentUser() user: AuthUser): Promise<CurrentTripsDto> {
-    return this.trips.current(user.id);
+  async current(@CurrentUser() user: AuthUser): Promise<CurrentTripsDto> {
+    return this.active.presentCurrent(await this.trips.current(user.id));
   }
 
   @Post(':id/start')
@@ -176,12 +182,35 @@ export class TripsController {
     409: ['TRIP_NOT_EDITABLE', 'TRIP_ALREADY_ACTIVE'],
     422: ['TRIP_TIMES_INVALID'],
   })
-  start(
+  async start(
     @CurrentUser() user: AuthUser,
     @Param('id', uuidPipe()) id: string,
     @Body() dto: StartTripDto,
   ): Promise<TripDto> {
-    return this.trips.start(user.id, id, dto);
+    return this.active.present(await this.trips.start(user.id, id, dto));
+  }
+
+  @Post(':id/locations')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    operationId: 'tripsPostLocation',
+    summary: 'Send the current location and running totals of an active trip',
+    description:
+      'Active or alerted trips only. A fix older than the stored one is ignored (still 204).',
+  })
+  @ApiNoContentResponse({ description: 'Stored or ignored as stale.' })
+  @ApiErrorResponses({
+    400: ['VALIDATION_FAILED'],
+    ...SIGNED_IN_ERRORS,
+    404: ['TRIP_NOT_FOUND'],
+    409: ['TRIP_NOT_ACTIVE'],
+  })
+  postLocation(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe()) id: string,
+    @Body() dto: PostTripLocationDto,
+  ): Promise<void> {
+    return this.active.postLocation(user.id, id, dto);
   }
 
   @Patch(':id')
@@ -199,12 +228,12 @@ export class TripsController {
     409: ['TRIP_NOT_EDITABLE'],
     422: ['TRIP_TIMES_INVALID'],
   })
-  update(
+  async update(
     @CurrentUser() user: AuthUser,
     @Param('id', uuidPipe()) id: string,
     @Body() dto: UpdateTripDto,
   ): Promise<TripDto> {
-    return this.trips.update(user.id, id, dto);
+    return this.active.present(await this.trips.update(user.id, id, dto));
   }
 
   @Post(':id/check-out')
@@ -212,6 +241,7 @@ export class TripsController {
   @ApiOperation({
     operationId: 'checkOutTrip',
     summary: 'Mark an active or alerted trip as safely back',
+    description: 'Optional final distanceM / climbM totals are stored.',
   })
   @ApiOkResponse({ type: TripDto })
   @ApiErrorResponses({
@@ -220,11 +250,12 @@ export class TripsController {
     404: ['TRIP_NOT_FOUND'],
     409: ['TRIP_NOT_EDITABLE'],
   })
-  checkOut(
+  async checkOut(
     @CurrentUser() user: AuthUser,
     @Param('id', uuidPipe()) id: string,
+    @Body() dto: CheckOutTripDto,
   ): Promise<TripDto> {
-    return this.trips.checkOut(user.id, id);
+    return this.active.present(await this.trips.checkOut(user.id, id, dto));
   }
 
   @Delete(':id')

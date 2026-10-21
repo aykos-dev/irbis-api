@@ -21,12 +21,19 @@ function placeName(place: DueAlert['place'], locale: LocaleCode): string {
   return place.nameUz;
 }
 
-/** The start fix when the user shared one, else the place's own coordinates. */
+const isFix = (lat: unknown, lng: unknown): [number, number] | null =>
+  typeof lat === 'number' && typeof lng === 'number' ? [lat, lng] : null;
+
+/** The last ping, else the start fix, else the place's own coordinates. */
 function mapLink(alert: DueAlert): string {
-  const { startLat, startLng, place } = alert;
-  const fix = startLat !== null && startLng !== null;
-  const lat = fix ? startLat : place.latitude;
-  const lng = fix ? startLng : place.longitude;
+  const { place } = alert;
+  const [lat, lng] = isFix(alert.lastLat, alert.lastLng) ??
+    isFix(alert.startLat, alert.startLng) ?? [place.latitude, place.longitude];
+  return mapsUrl(lat, lng);
+}
+
+/** Google Maps link to a point, 5 decimals (about 1 m). */
+export function mapsUrl(lat: number, lng: number): string {
   return `https://maps.google.com/?q=${lat.toFixed(5)},${lng.toFixed(5)}`;
 }
 

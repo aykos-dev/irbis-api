@@ -39,3 +39,34 @@ export const ACCURACY_MAX_M = 100_000;
 
 /** AC8: the alert job stops retrying a trip after this many failed sends. */
 export const ALERT_MAX_ATTEMPTS = 5;
+
+/** Public live-page states (active-trip AC5). */
+export const LIVE_TRIP_STATUSES = [
+  'on_trip',
+  'late',
+  'alerted',
+  'back_safe',
+  'ended',
+] as const;
+export type LiveTripStatusCode = (typeof LIVE_TRIP_STATUSES)[number];
+
+/** Trip statuses that have a live link. */
+export const LIVE_LINK_STATUSES: readonly TripStatusCode[] = [
+  'active',
+  'alerted',
+  'checked_out',
+];
+
+/** Trip statuses that accept location pings. */
+export const PING_STATUSES: TripStatusCode[] = ['active', 'alerted'];
+
+/** Live token: base64url of this many random bytes (22 characters). */
+export const LIVE_TOKEN_BYTES = 16;
+export const LIVE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{22}$/;
+
+export const PING_ACCURACY_MAX_M = 5000;
+export const DISTANCE_MAX_M = 1_000_000;
+export const CLIMB_MAX_M = 20_000;
+
+/** A ping may be stamped at most this far ahead of the server clock. */
+export const PING_FUTURE_SKEW_MS = 120_000;

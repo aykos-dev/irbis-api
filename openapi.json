@@ -5169,6 +5169,96 @@
         ]
       }
     },
+    "/v1/trips/{id}/locations": {
+      "post": {
+        "description": "Active or alerted trips only. A fix older than the stored one is ignored (still 204).",
+        "operationId": "tripsPostLocation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostTripLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Stored or ignored as stale."
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send the current location and running totals of an active trip",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
     "/v1/trips/{id}": {
       "patch": {
         "description": "Planned: startAt, backBy, alertEnabled. Active (until the alert is sent): backBy and alertEnabled only.",
@@ -5355,6 +5445,7 @@
     },
     "/v1/trips/{id}/check-out": {
       "post": {
+        "description": "Optional final distanceM / climbM totals are stored.",
         "operationId": "checkOutTrip",
         "parameters": [
           {
@@ -5366,6 +5457,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckOutTripDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -5436,6 +5537,57 @@
         "summary": "Mark an active or alerted trip as safely back",
         "tags": [
           "Trips"
+        ]
+      }
+    },
+    "/v1/live/{token}": {
+      "get": {
+        "operationId": "liveGet",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveTripDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: LIVE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Public live view of a trip by its live-link token",
+        "tags": [
+          "Live"
         ]
       }
     }
@@ -9651,6 +9803,30 @@
           "alerted"
         ]
       },
+      "TripWaypointDto": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "integer"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "n",
+          "lat",
+          "lng",
+          "recordedAt"
+        ]
+      },
       "TripDto": {
         "type": "object",
         "properties": {
@@ -9701,6 +9877,32 @@
           },
           "contact": {
             "$ref": "#/components/schemas/EmergencyContactDto"
+          },
+          "liveUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Public live page link for active, alerted and checked-out trips."
+          },
+          "lastLocationAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "distanceM": {
+            "type": "integer"
+          },
+          "climbM": {
+            "type": "integer"
+          },
+          "waypoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripWaypointDto"
+            }
+          },
+          "pingEveryMin": {
+            "type": "integer",
+            "description": "trip.active pingEveryMin: how often the app sends a location."
           }
         },
         "required": [
@@ -9714,7 +9916,13 @@
           "startedAt",
           "checkedOutAt",
           "alertSentAt",
-          "contact"
+          "contact",
+          "liveUrl",
+          "lastLocationAt",
+          "distanceM",
+          "climbM",
+          "waypoints",
+          "pingEveryMin"
         ]
       },
       "CurrentTripsDto": {
@@ -9754,6 +9962,49 @@
           }
         }
       },
+      "PostTripLocationDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fix was taken: not before startedAt, at most 2 min ahead of the server."
+          },
+          "distanceM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "climbM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "accuracyM",
+          "recordedAt",
+          "distanceM",
+          "climbM"
+        ]
+      },
       "UpdateTripDto": {
         "type": "object",
         "properties": {
@@ -9771,6 +10022,90 @@
             "type": "boolean"
           }
         }
+      },
+      "CheckOutTripDto": {
+        "type": "object",
+        "properties": {
+          "distanceM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "climbM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000
+          }
+        }
+      },
+      "LivePlaceNamesDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "description": "Falls back to uz."
+          },
+          "en": {
+            "type": "string",
+            "description": "Falls back to uz."
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "LiveTripStatus": {
+        "type": "string",
+        "enum": [
+          "on_trip",
+          "late",
+          "alerted",
+          "back_safe",
+          "ended"
+        ]
+      },
+      "LiveTripDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Display name, else username."
+          },
+          "placeNames": {
+            "$ref": "#/components/schemas/LivePlaceNamesDto"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LiveTripStatus"
+              }
+            ]
+          },
+          "lastLocationAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Absent once the link has ended."
+          },
+          "mapsUrl": {
+            "type": "string",
+            "description": "Absent once the link has ended."
+          }
+        },
+        "required": [
+          "displayName",
+          "placeNames",
+          "backBy",
+          "status"
+        ]
       }
     }
   }

@@ -112,6 +112,10 @@ export const configSchema = z.object({
     (value) => (value === '' ? undefined : value),
     z.url().optional(),
   ),
+  // Public web origin; live trip links are `<this>/t/<token>`.
+  WEB_PUBLIC_URL: z.url().default('http://localhost:3001'),
+  // Number the SOS screen dials (active-trip slice 2); empty = unset.
+  SOS_CALL_NUMBER: optionalString,
   DATABASE_URL: z
     .string()
     .regex(/^postgres(ql)?:\/\//, 'expected a postgresql:// connection string'),

@@ -7,6 +7,8 @@ import {
   TripPreviewController,
   TripsController,
 } from './trip-plan.controller.js';
+import { LiveController } from './live.controller.js';
+import { TripActiveService } from './trip-active.service.js';
 import { TripAlertJob } from './trip-alert.job.js';
 import { TripPlanRepository } from './trip-plan.repository.js';
 import { TripPlanService } from './trip-plan.service.js';
@@ -17,7 +19,14 @@ import { TripPlanService } from './trip-plan.service.js';
     TripPreviewController,
     EmergencyContactController,
     TripsController,
+    LiveController,
   ],
-  providers: [TripPlanService, TripPlanRepository, PhoneCipher, TripAlertJob],
+  providers: [
+    TripPlanService,
+    TripActiveService,
+    TripPlanRepository,
+    PhoneCipher,
+    TripAlertJob,
+  ],
 })
 export class TripPlanModule {}

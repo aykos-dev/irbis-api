@@ -47,7 +47,7 @@ export async function seedPathConfig(prisma: PrismaClient): Promise<number> {
   return upsertGameConfig(prisma, pathConfigRows);
 }
 
-/** Upserts the trip-plan GameConfig row (`trip.config`); returns the row count seeded. */
+/** Upserts the trip GameConfig rows (`trip.config`, `trip.active`); returns the row count seeded. */
 export async function seedTripConfig(prisma: PrismaClient): Promise<number> {
   return upsertGameConfig(prisma, tripConfigRows);
 }

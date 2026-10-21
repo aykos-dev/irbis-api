@@ -68,6 +68,20 @@ export const tripConfig = {
   },
 };
 
+/** active-trip: ping every 5 min, waypoint XP rules, 60 s SOS cooldown, live link 2 h after check-out. */
+export const tripActiveConfig = {
+  pingEveryMin: 5,
+  waypoint: {
+    xp: 10,
+    minDistanceM: 500,
+    minGapMin: 10,
+    maxPerTrip: 5,
+    maxAccuracyM: 50,
+  },
+  sosCooldownSec: 60,
+  liveAfterCheckoutH: 2,
+};
+
 export const gameConfigRows = [
   { key: 'levels.table', value: levelTable },
   { key: 'xp.dailyCaps', value: xpDailyCaps },
@@ -79,5 +93,8 @@ export const lessonsConfigRow = { key: 'lessons.config', value: lessonsConfig };
 /** GameConfig rows owned by weekly-path (seeded by seedPathConfig). */
 export const pathConfigRows = [{ key: 'path.config', value: pathConfig }];
 
-/** GameConfig rows owned by trip-plan (seeded by seedTripConfig). */
-export const tripConfigRows = [{ key: 'trip.config', value: tripConfig }];
+/** GameConfig rows owned by trip-plan and active-trip (seeded by seedTripConfig). */
+export const tripConfigRows = [
+  { key: 'trip.config', value: tripConfig },
+  { key: 'trip.active', value: tripActiveConfig },
+];
