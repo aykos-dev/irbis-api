@@ -16,6 +16,6 @@ import { OpenMeteoClient } from './open-meteo.client.js';
     OpenMeteoClient,
     ConditionsJob,
   ],
-  exports: [ConditionsService, ConditionsJob],
+  exports: [ConditionsService, ConditionsJob, OpenMeteoClient],
 })
 export class ConditionsModule {}

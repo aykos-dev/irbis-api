@@ -66,6 +66,18 @@ export const lessonsConfigSchema = z
   });
 
 export type LessonsConfig = z.infer<typeof lessonsConfigSchema>;
+
+/** `path.config` (weekly-path): nodes per monthly path, chest XP and the distance origin. */
+export const pathConfigSchema = z.object({
+  nodes: z.number().int().min(1).max(7),
+  chestXp: z.number().int().min(0),
+  origin: z.object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+  }),
+});
+
+export type PathConfig = z.infer<typeof pathConfigSchema>;
 export type LevelRow = z.infer<typeof levelRowSchema>;
 export type LevelTable = z.infer<typeof levelTableSchema>;
 export type DailyCaps = z.infer<typeof dailyCapsSchema>;

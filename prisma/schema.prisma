@@ -170,6 +170,7 @@ model User {
   levelUps          LevelUp[]
   lessonCompletions LessonCompletion[]
   notifications     Notification[]
+  pathMonths        PathMonth[]
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -305,6 +306,7 @@ model Place {
   forecast  PlaceForecast?
   closures  Closure[]
   overrides ConditionOverride[]
+  pathNodes PathNode[]
 
   @@index([type])
   @@map("places")
@@ -424,6 +426,7 @@ enum XpSource {
   game
   campfire
   qa_grant
+  path_chest
 }
 
 // Append-only XP ledger; User.xpTotal is the running sum. One row per (user, source, refId).
@@ -575,4 +578,48 @@ model Notification {
   @@index([userId, createdAt, id])
   @@index([userId, readAt])
   @@map("notifications")
+}
+
+// --- weekly-path ---
+
+// A user's path for one Asia/Tashkent month (YYYY-MM). Picked once, then frozen.
+model PathMonth {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  month         String    @db.VarChar(7)
+  // The user's level when the path was picked.
+  level         Int
+  chestOpenedAt DateTime? @map("chest_opened_at") @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes PathNode[]
+
+  @@unique([userId, month])
+  @@map("path_months")
+}
+
+model PathNode {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  pathMonthId String    @map("path_month_id") @db.Uuid
+  position    Int
+  placeId     String    @map("place_id") @db.Uuid
+  visitedAt   DateTime? @map("visited_at") @db.Timestamptz(3)
+
+  pathMonth PathMonth @relation(fields: [pathMonthId], references: [id], onDelete: Cascade)
+  place     Place     @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@unique([pathMonthId, position])
+  @@unique([pathMonthId, placeId])
+  @@index([placeId])
+  @@map("path_nodes")
+}
+
+// Last successful Open-Meteo daily forecast for a fixed point (key `tashkent`), not a place.
+model PointForecast {
+  key       String   @id @db.VarChar(50)
+  daily     Json
+  fetchedAt DateTime @map("fetched_at") @db.Timestamptz(3)
+
+  @@map("point_forecasts")
 }

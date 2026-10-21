@@ -9,6 +9,7 @@ export const XP_SOURCES = [
   'game',
   'campfire',
   'qa_grant',
+  'path_chest',
 ] as const;
 export type XpSourceCode = (typeof XP_SOURCES)[number];
 
@@ -27,6 +28,7 @@ export const GAME_CONFIG_KEYS = {
   levelTable: 'levels.table',
   dailyCaps: 'xp.dailyCaps',
   lessonsConfig: 'lessons.config',
+  pathConfig: 'path.config',
 } as const;
 
 /** How long a loaded GameConfig value is reused before it is read again. */

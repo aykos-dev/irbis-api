@@ -11,7 +11,11 @@
 import { pathToFileURL } from 'node:url';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
-import { gameConfigRows, lessonsConfigRow } from './game-config.data.js';
+import {
+  gameConfigRows,
+  lessonsConfigRow,
+  pathConfigRows,
+} from './game-config.data.js';
 import { toLessonSeedRows, type LessonSeedRow } from './lesson-seed.rules.js';
 import { lessonSources } from './lessons.data.js';
 import { toSeedRows } from './place-seed.rules.js';
@@ -32,10 +36,22 @@ export async function seedPlaces(prisma: PrismaClient): Promise<number> {
   return rows.length;
 }
 
-/** Upserts the GameConfig rows by key in one transaction; returns the row count seeded. */
+/** Upserts the levels GameConfig rows by key in one transaction; returns the row count seeded. */
 export async function seedGameConfig(prisma: PrismaClient): Promise<number> {
+  return upsertGameConfig(prisma, gameConfigRows);
+}
+
+/** Upserts the weekly-path GameConfig row (`path.config`); returns the row count seeded. */
+export async function seedPathConfig(prisma: PrismaClient): Promise<number> {
+  return upsertGameConfig(prisma, pathConfigRows);
+}
+
+async function upsertGameConfig(
+  prisma: PrismaClient,
+  rows: readonly { key: string; value: object }[],
+): Promise<number> {
   await prisma.$transaction(
-    gameConfigRows.map(({ key, value }) =>
+    rows.map(({ key, value }) =>
       prisma.gameConfig.upsert({
         where: { key },
         create: { key, value },
@@ -43,7 +59,7 @@ export async function seedGameConfig(prisma: PrismaClient): Promise<number> {
       }),
     ),
   );
-  return gameConfigRows.length;
+  return rows.length;
 }
 
 /** Upserts the `lessons.config` GameConfig row by key. */
@@ -113,7 +129,8 @@ async function main(): Promise<void> {
     const seeded = await seedPlaces(prisma);
     const total = await prisma.place.count();
     await seedLessonsConfig(prisma);
-    const configRows = (await seedGameConfig(prisma)) + 1;
+    const configRows =
+      (await seedGameConfig(prisma)) + 1 + (await seedPathConfig(prisma));
     const lessons = await seedLessons(prisma);
     process.stdout.write(
       `Seeded ${seeded} places; ${total} in the database. Seeded ${configRows} game config rows. Created ${lessons} draft lessons.\n`,

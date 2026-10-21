@@ -46,6 +46,13 @@ export const lessonsConfig = {
   dailyGoal: 3,
 };
 
+/** weekly-path: 3 nodes, 50 XP chest, distances from central Tashkent. */
+export const pathConfig = {
+  nodes: 3,
+  chestXp: 50,
+  origin: { lat: 41.3111, lng: 69.2797 },
+};
+
 export const gameConfigRows = [
   { key: 'levels.table', value: levelTable },
   { key: 'xp.dailyCaps', value: xpDailyCaps },
@@ -53,3 +60,6 @@ export const gameConfigRows = [
 
 /** Owned by lessons; upserted by `seedLessonsConfig`. */
 export const lessonsConfigRow = { key: 'lessons.config', value: lessonsConfig };
+
+/** GameConfig rows owned by weekly-path (seeded by seedPathConfig). */
+export const pathConfigRows = [{ key: 'path.config', value: pathConfig }];
