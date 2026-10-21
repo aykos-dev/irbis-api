@@ -171,6 +171,8 @@ model User {
   lessonCompletions LessonCompletion[]
   notifications     Notification[]
   pathMonths        PathMonth[]
+  emergencyContact  EmergencyContact?
+  trips             Trip[]
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -307,6 +309,7 @@ model Place {
   closures  Closure[]
   overrides ConditionOverride[]
   pathNodes PathNode[]
+  trips     Trip[]
 
   @@index([type])
   @@map("places")
@@ -622,4 +625,59 @@ model PointForecast {
   fetchedAt DateTime @map("fetched_at") @db.Timestamptz(3)
 
   @@map("point_forecasts")
+}
+
+// trip-plan: one emergency contact per user; phone is PhoneCipher ciphertext, never logged or returned in full.
+model EmergencyContact {
+  userId     String   @id @map("user_id") @db.Uuid
+  name       String   @db.VarChar(60)
+  relation   String   @db.VarChar(30)
+  phone      String
+  phoneLast2 String   @map("phone_last2") @db.Char(2)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("emergency_contacts")
+}
+
+enum TripStatus {
+  planned
+  active
+  checked_out
+  alerted
+
+  @@map("trip_status")
+}
+
+// trip-plan: the contact is a snapshot taken at create. One `active` trip per user (partial unique index in SQL).
+model Trip {
+  id                String     @id @default(uuid(7)) @db.Uuid
+  userId            String     @map("user_id") @db.Uuid
+  placeId           String     @map("place_id") @db.Uuid
+  status            TripStatus
+  startAt           DateTime   @map("start_at") @db.Timestamptz(3)
+  backBy            DateTime   @map("back_by") @db.Timestamptz(3)
+  alertEnabled      Boolean    @map("alert_enabled")
+  contactName       String     @map("contact_name") @db.VarChar(60)
+  contactRelation   String     @map("contact_relation") @db.VarChar(30)
+  contactPhone      String     @map("contact_phone")
+  contactPhoneLast2 String     @map("contact_phone_last2") @db.Char(2)
+  startedAt         DateTime?  @map("started_at") @db.Timestamptz(3)
+  startLat          Float?     @map("start_lat")
+  startLng          Float?     @map("start_lng")
+  startAccuracyM    Float?     @map("start_accuracy_m")
+  checkedOutAt      DateTime?  @map("checked_out_at") @db.Timestamptz(3)
+  alertSentAt       DateTime?  @map("alert_sent_at") @db.Timestamptz(3)
+  alertAttempts     Int        @default(0) @map("alert_attempts")
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startAt])
+  @@index([status, backBy])
+  @@map("trips")
 }

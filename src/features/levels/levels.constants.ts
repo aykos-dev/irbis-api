@@ -29,6 +29,7 @@ export const GAME_CONFIG_KEYS = {
   dailyCaps: 'xp.dailyCaps',
   lessonsConfig: 'lessons.config',
   pathConfig: 'path.config',
+  tripConfig: 'trip.config',
 } as const;
 
 /** How long a loaded GameConfig value is reused before it is read again. */

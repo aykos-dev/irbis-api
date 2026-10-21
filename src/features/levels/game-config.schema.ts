@@ -78,6 +78,23 @@ export const pathConfigSchema = z.object({
 });
 
 export type PathConfig = z.infer<typeof pathConfigSchema>;
+
+/** `trip.config` (trip-plan): alert delay, time limits and the gear-list thresholds. */
+export const tripConfigSchema = z.object({
+  alertDelayMin: z.number().int().min(0),
+  maxDurationH: z.number().int().min(1),
+  planAheadDays: z.number().int().min(0),
+  startGraceMin: z.number().int().min(0),
+  gear: z.object({
+    waterLPerHour: z.number().positive(),
+    waterMinL: z.number().min(0),
+    frostMaxC: z.number(),
+    sunMinC: z.number(),
+    headlampWithinMinOfSunset: z.number().int().min(0),
+  }),
+});
+
+export type TripConfig = z.infer<typeof tripConfigSchema>;
 export type LevelRow = z.infer<typeof levelRowSchema>;
 export type LevelTable = z.infer<typeof levelTableSchema>;
 export type DailyCaps = z.infer<typeof dailyCapsSchema>;

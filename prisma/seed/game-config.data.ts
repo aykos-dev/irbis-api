@@ -53,6 +53,21 @@ export const pathConfig = {
   origin: { lat: 41.3111, lng: 69.2797 },
 };
 
+/** trip-plan: alert 60 min after back-by, trips ≤ 72 h, planned ≤ 14 days ahead, start ≤ 15 min in the past. */
+export const tripConfig = {
+  alertDelayMin: 60,
+  maxDurationH: 72,
+  planAheadDays: 14,
+  startGraceMin: 15,
+  gear: {
+    waterLPerHour: 0.5,
+    waterMinL: 1,
+    frostMaxC: 0,
+    sunMinC: 20,
+    headlampWithinMinOfSunset: 60,
+  },
+};
+
 export const gameConfigRows = [
   { key: 'levels.table', value: levelTable },
   { key: 'xp.dailyCaps', value: xpDailyCaps },
@@ -63,3 +78,6 @@ export const lessonsConfigRow = { key: 'lessons.config', value: lessonsConfig };
 
 /** GameConfig rows owned by weekly-path (seeded by seedPathConfig). */
 export const pathConfigRows = [{ key: 'path.config', value: pathConfig }];
+
+/** GameConfig rows owned by trip-plan (seeded by seedTripConfig). */
+export const tripConfigRows = [{ key: 'trip.config', value: tripConfig }];

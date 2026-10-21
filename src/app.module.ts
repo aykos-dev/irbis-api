@@ -24,6 +24,7 @@ import { LessonsModule } from './features/lessons/lessons.module.js';
 import { LevelsModule } from './features/levels/levels.module.js';
 import { PlacesModule } from './features/places/places.module.js';
 import { ProfileModule } from './features/profile/profile.module.js';
+import { TripPlanModule } from './features/trip-plan/trip-plan.module.js';
 import { WeeklyPathModule } from './features/weekly-path/weekly-path.module.js';
 import { HealthModule } from './health/health.module.js';
 import { loggerParams } from './logging.js';
@@ -72,6 +73,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     LessonsModule,
     ProfileModule,
     WeeklyPathModule,
+    TripPlanModule,
   ],
   providers: [
     // Guards run in this order: rate limit → authentication → account status (blocked, current role) → roles.

@@ -5,10 +5,12 @@ import {
   lessonsConfigSchema,
   levelTableSchema,
   pathConfigSchema,
+  tripConfigSchema,
   type DailyCaps,
   type LessonsConfig,
   type LevelTable,
   type PathConfig,
+  type TripConfig,
 } from './game-config.schema.js';
 import {
   withPublishedLessonGates,
@@ -56,6 +58,10 @@ export class GameConfigService {
 
   pathConfig(now = Date.now()): Promise<PathConfig> {
     return this.load(GAME_CONFIG_KEYS.pathConfig, pathConfigSchema, now);
+  }
+
+  tripConfig(now = Date.now()): Promise<TripConfig> {
+    return this.load(GAME_CONFIG_KEYS.tripConfig, tripConfigSchema, now);
   }
 
   private async publishedLessons(now: number): Promise<PublishedLessonCounts> {

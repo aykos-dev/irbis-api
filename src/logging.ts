@@ -13,6 +13,7 @@ const SENSITIVE_KEYS = [
   'otp',
   'phone',
   'recoveryPhone',
+  'contactPhone',
   'lat',
   'lng',
   'accessKeyId',

@@ -4697,6 +4697,371 @@
           "QA"
         ]
       }
+    },
+    "/v1/places/{id}/trip-preview": {
+      "get": {
+        "operationId": "getTripPreview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startAt",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "backBy",
+            "required": true,
+            "in": "query",
+            "description": "After startAt.",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripPreviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: TRIP_TIMES_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sunset, daylight buffer and gear list for a planned window",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/me/emergency-contact": {
+      "get": {
+        "operationId": "getEmergencyContact",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyContactDto"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No contact saved yet."
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The saved emergency contact (phone masked); 204 when none",
+        "tags": [
+          "Me"
+        ]
+      },
+      "put": {
+        "operationId": "putEmergencyContact",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutEmergencyContactDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyContactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save or replace the emergency contact (phone stored encrypted)",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/v1/trips": {
+      "post": {
+        "description": "Snapshots the emergency contact. `location` is stored only when `start` is true.",
+        "operationId": "createTrip",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTripDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_ALREADY_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: TRIP_TIMES_INVALID | EMERGENCY_CONTACT_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Plan a trip, or start it now with `start: true`",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/current": {
+      "get": {
+        "operationId": "getCurrentTrips",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentTripsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The user's active trip and upcoming planned trips",
+        "tags": [
+          "Trips"
+        ]
+      }
     }
   },
   "info": {
@@ -8667,6 +9032,337 @@
         },
         "required": [
           "placeId"
+        ]
+      },
+      "GearKey": {
+        "type": "string",
+        "enum": [
+          "water",
+          "warmLayer",
+          "firstAid",
+          "offlineMap",
+          "sun",
+          "headlamp",
+          "waterFilter"
+        ]
+      },
+      "GearNote": {
+        "type": "string",
+        "enum": [
+          "frost",
+          "sunset",
+          "streams"
+        ]
+      },
+      "GearItemDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GearKey"
+              }
+            ]
+          },
+          "litres": {
+            "type": "number",
+            "description": "Water only, litres in 0.5 steps."
+          },
+          "note": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GearNote"
+              }
+            ]
+          },
+          "noteTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "With note `sunset`: the sunset time."
+          }
+        },
+        "required": [
+          "key"
+        ]
+      },
+      "TripPreviewDto": {
+        "type": "object",
+        "properties": {
+          "sunsetAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Sunset at the place on the start date (Asia/Tashkent)."
+          },
+          "daylightBufferMin": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Minutes from backBy to sunset (negative = after dark); null when backBy is on a later day."
+          },
+          "gear": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GearItemDto"
+            }
+          }
+        },
+        "required": [
+          "sunsetAt",
+          "daylightBufferMin",
+          "gear"
+        ]
+      },
+      "EmergencyContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "relation": {
+            "type": "string"
+          },
+          "phoneMasked": {
+            "type": "string",
+            "example": "+998 •• ••• •• 41"
+          }
+        },
+        "required": [
+          "name",
+          "relation",
+          "phoneMasked"
+        ]
+      },
+      "PutEmergencyContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 30,
+            "example": "sister"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+998\\d{9}$",
+            "example": "+998XXXXXXXXX"
+          }
+        },
+        "required": [
+          "name",
+          "relation",
+          "phone"
+        ]
+      },
+      "TripLocationDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "accuracyM"
+        ]
+      },
+      "CreateTripDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time",
+            "description": "After startAt."
+          },
+          "alertEnabled": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "boolean",
+            "description": "true: the trip starts now (status active)."
+          },
+          "location": {
+            "description": "Device position; stored only when start is true.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripLocationDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "placeId",
+          "startAt",
+          "backBy",
+          "alertEnabled",
+          "start"
+        ]
+      },
+      "TripPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameUz": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "nameUz",
+          "nameRu",
+          "nameEn",
+          "type",
+          "latitude",
+          "longitude"
+        ]
+      },
+      "TripStatus": {
+        "type": "string",
+        "enum": [
+          "planned",
+          "active",
+          "checked_out",
+          "alerted"
+        ]
+      },
+      "TripDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "place": {
+            "$ref": "#/components/schemas/TripPlaceDto"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripStatus"
+              }
+            ]
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "alertAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "backBy + trip.config alertDelayMin."
+          },
+          "alertEnabled": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "checkedOutAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "alertSentAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "contact": {
+            "$ref": "#/components/schemas/EmergencyContactDto"
+          }
+        },
+        "required": [
+          "id",
+          "place",
+          "status",
+          "startAt",
+          "backBy",
+          "alertAt",
+          "alertEnabled",
+          "startedAt",
+          "checkedOutAt",
+          "alertSentAt",
+          "contact"
+        ]
+      },
+      "CurrentTripsDto": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripDto"
+              }
+            ]
+          },
+          "planned": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripDto"
+            }
+          }
+        },
+        "required": [
+          "active",
+          "planned"
         ]
       }
     }
