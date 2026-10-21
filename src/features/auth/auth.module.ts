@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AppConfig } from '../../config/app-config.js';
+import { StorageModule } from '../../lib/storage/storage.module.js';
 import { AdminAuthController } from './admin-auth.controller.js';
 import { AdminBootstrapService } from './admin-bootstrap.service.js';
 import { AdminUsersController } from './admin-users.controller.js';
@@ -21,7 +22,7 @@ import { FakeSmsSender, SmsSender } from './sms-sender.js';
 import { TokenService } from './token.service.js';
 
 @Module({
-  imports: [JwtModule.register({})],
+  imports: [JwtModule.register({}), StorageModule],
   controllers: [
     AuthController,
     MeController,
@@ -55,6 +56,7 @@ import { TokenService } from './token.service.js';
   ],
   // GuestMergeRegistry: later features register their guest-data handlers (AC8).
   // AuthService: the global account-status guard. AdminBootstrapService: the admin:create CLI.
-  exports: [AuthService, GuestMergeRegistry, AdminBootstrapService],
+  // MeService: the profile slice uses its mapping for PATCH /v1/me.
+  exports: [AuthService, GuestMergeRegistry, AdminBootstrapService, MeService],
 })
 export class AuthModule {}

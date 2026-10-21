@@ -72,6 +72,49 @@ enum AdminAction {
   @@map("admin_action")
 }
 
+enum HomeRegion {
+  tashkent_city
+  tashkent_region
+  andijan
+  bukhara
+  fergana
+  jizzakh
+  karakalpakstan
+  khorezm
+  namangan
+  navoiy
+  kashkadarya
+  samarkand
+  syrdarya
+  surkhandarya
+  other
+
+  @@map("home_region")
+}
+
+enum Units {
+  metric
+  imperial
+
+  @@map("units")
+}
+
+enum Appearance {
+  light
+  dark
+  auto
+
+  @@map("appearance")
+}
+
+enum NotificationCategory {
+  trips
+  social
+  rewards
+
+  @@map("notification_category")
+}
+
 // Usernames are stored lowercase; the unique index and CHECKs in the auth_init migration enforce it.
 model User {
   id                      String           @id @default(uuid(7)) @db.Uuid
@@ -95,6 +138,25 @@ model User {
   xpTotal                 Int              @default(0) @map("xp_total")
   levelReachedAt          DateTime         @default(now()) @map("level_reached_at") @db.Timestamptz(3)
 
+  // profile: edited through PATCH /v1/me; avatar bytes stay in object storage, the column holds the key.
+  displayName      String?      @map("display_name") @db.VarChar(40)
+  bio              String?      @db.VarChar(150)
+  homeRegion       HomeRegion?  @map("home_region")
+  avatarKey        String?      @map("avatar_key") @db.VarChar(255)
+  showStats        Boolean      @default(true) @map("show_stats")
+  showHomeRegion   Boolean      @default(false) @map("show_home_region")
+  units            Units        @default(metric)
+  appearance       Appearance   @default(auto)
+  notifyStreak     Boolean      @default(true) @map("notify_streak")
+  notifyDailyGame  Boolean      @default(true) @map("notify_daily_game")
+  dailyGameTime    String       @default("19:00") @map("daily_game_time") @db.VarChar(5)
+  notifyGroups     Boolean      @default(true) @map("notify_groups")
+  notifySocial     Boolean      @default(true) @map("notify_social")
+  notifyOffers     Boolean      @default(false) @map("notify_offers")
+  publicProfile    Boolean      @default(true) @map("public_profile")
+  findBuddies      Boolean      @default(true) @map("find_buddies")
+  deletedAt        DateTime?    @map("deleted_at") @db.Timestamptz(3)
+
   refreshTokens     RefreshToken[]
   smsCodes          SmsCode[]
   auditAsAdmin      AdminAuditLog[]     @relation("AuditAdmin")
@@ -107,6 +169,7 @@ model User {
   levelFacts        LevelFact[]
   levelUps          LevelUp[]
   lessonCompletions LessonCompletion[]
+  notifications     Notification[]
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -493,4 +556,23 @@ model LessonCompletion {
   @@unique([userId, lessonId])
   @@index([userId, completedAt])
   @@map("lesson_completions")
+}
+
+// In-app notification inbox (profile-4). Copy is pre-localised JSON; no producers exist yet.
+model Notification {
+  id        String               @id @default(uuid(7)) @db.Uuid
+  userId    String               @map("user_id") @db.Uuid
+  category  NotificationCategory
+  kind      String               @db.VarChar(50)
+  title     Json
+  body      Json?
+  data      Json?
+  readAt    DateTime?            @map("read_at") @db.Timestamptz(3)
+  createdAt DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt, id])
+  @@index([userId, readAt])
+  @@map("notifications")
 }

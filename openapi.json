@@ -520,6 +520,81 @@
         "tags": [
           "Me"
         ]
+      },
+      "patch": {
+        "operationId": "Me_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update the signed-in user profile fields",
+        "tags": [
+          "Me"
+        ]
       }
     },
     "/v1/me/recovery-phone": {
@@ -4016,6 +4091,57 @@
           "lessons"
         ]
       }
+    },
+    "/v1/users/{username}": {
+      "get": {
+        "operationId": "Users_getProfile",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProfileResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A public profile by username (case-insensitive)",
+        "tags": [
+          "Profile"
+        ]
+      }
     }
   },
   "info": {
@@ -4129,6 +4255,26 @@
           "acceptTerms"
         ]
       },
+      "HomeRegion": {
+        "type": "string",
+        "enum": [
+          "tashkent_city",
+          "tashkent_region",
+          "andijan",
+          "bukhara",
+          "fergana",
+          "jizzakh",
+          "karakalpakstan",
+          "khorezm",
+          "namangan",
+          "navoiy",
+          "kashkadarya",
+          "samarkand",
+          "syrdarya",
+          "surkhandarya",
+          "other"
+        ]
+      },
       "Experience": {
         "type": "string",
         "enum": [
@@ -4154,6 +4300,129 @@
           "admin"
         ]
       },
+      "Units": {
+        "type": "string",
+        "enum": [
+          "metric",
+          "imperial"
+        ]
+      },
+      "Appearance": {
+        "type": "string",
+        "enum": [
+          "light",
+          "dark",
+          "auto"
+        ]
+      },
+      "NotificationPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "tripSafety": {
+            "type": "boolean",
+            "description": "Trip & safety alerts; always on and not writable."
+          },
+          "streakReminders": {
+            "type": "boolean"
+          },
+          "dailyGame": {
+            "type": "boolean"
+          },
+          "dailyGameTime": {
+            "type": "string",
+            "example": "19:00",
+            "description": "Asia/Tashkent, HH:MM."
+          },
+          "groupsMessages": {
+            "type": "boolean"
+          },
+          "social": {
+            "type": "boolean"
+          },
+          "offers": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tripSafety",
+          "streakReminders",
+          "dailyGame",
+          "dailyGameTime",
+          "groupsMessages",
+          "social",
+          "offers"
+        ]
+      },
+      "ShareLocation": {
+        "type": "string",
+        "enum": [
+          "trips"
+        ],
+        "description": "Always trips for now; not writable."
+      },
+      "PrivacyPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "publicProfile": {
+            "type": "boolean"
+          },
+          "findBuddies": {
+            "type": "boolean"
+          },
+          "shareLocation": {
+            "description": "Always trips for now; not writable.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ShareLocation"
+              }
+            ]
+          }
+        },
+        "required": [
+          "publicProfile",
+          "findBuddies",
+          "shareLocation"
+        ]
+      },
+      "MePreferencesDto": {
+        "type": "object",
+        "properties": {
+          "showStats": {
+            "type": "boolean"
+          },
+          "showHomeRegion": {
+            "type": "boolean"
+          },
+          "units": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Units"
+              }
+            ]
+          },
+          "appearance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Appearance"
+              }
+            ]
+          },
+          "notifications": {
+            "$ref": "#/components/schemas/NotificationPreferencesDto"
+          },
+          "privacy": {
+            "$ref": "#/components/schemas/PrivacyPreferencesDto"
+          }
+        },
+        "required": [
+          "showStats",
+          "showHomeRegion",
+          "units",
+          "appearance",
+          "notifications",
+          "privacy"
+        ]
+      },
       "MeResponseDto": {
         "type": "object",
         "properties": {
@@ -4164,6 +4433,29 @@
           "username": {
             "type": "string",
             "example": "guest_1"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 150
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Derived from the stored avatar key; null when unset or storage is unavailable."
+          },
+          "homeRegion": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HomeRegion"
+              }
+            ]
           },
           "locale": {
             "allOf": [
@@ -4214,11 +4506,18 @@
           "xpTotal": {
             "type": "integer",
             "description": "Lifetime XP."
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/MePreferencesDto"
           }
         },
         "required": [
           "id",
           "username",
+          "displayName",
+          "bio",
+          "avatarUrl",
+          "homeRegion",
           "locale",
           "experience",
           "interests",
@@ -4227,7 +4526,8 @@
           "recoveryPhonePending",
           "createdAt",
           "level",
-          "xpTotal"
+          "xpTotal",
+          "preferences"
         ]
       },
       "AuthSessionResponseDto": {
@@ -7157,6 +7457,105 @@
           "dailyGoal",
           "levelUps"
         ]
+      },
+      "PublicProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "guest_1"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null when no avatar is set or storage is unavailable."
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 150
+          },
+          "homeRegion": {
+            "nullable": true,
+            "description": "Only returned when the owner shows their home region.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HomeRegion"
+              }
+            ]
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7,
+            "example": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "showStats": {
+            "type": "boolean",
+            "description": "The owner allows stats on the public profile."
+          }
+        },
+        "required": [
+          "username",
+          "displayName",
+          "avatarUrl",
+          "bio",
+          "homeRegion",
+          "level",
+          "createdAt",
+          "showStats"
+        ]
+      },
+      "UpdateMeDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 2,
+            "maxLength": 40,
+            "description": "2–40 characters; empty or null clears it."
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 150,
+            "description": "At most 150 characters; empty or null clears it."
+          },
+          "homeRegion": {
+            "nullable": true,
+            "description": "A region or null to clear it.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HomeRegion"
+              }
+            ]
+          },
+          "interests": {
+            "type": "array",
+            "maxItems": 5,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Interest"
+            }
+          },
+          "locale": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Locale"
+              }
+            ]
+          }
+        }
       }
     }
   }

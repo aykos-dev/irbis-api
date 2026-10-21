@@ -31,6 +31,23 @@ const userSelect = {
   lastActiveAt: true,
   level: true,
   xpTotal: true,
+  displayName: true,
+  bio: true,
+  homeRegion: true,
+  avatarKey: true,
+  showStats: true,
+  showHomeRegion: true,
+  units: true,
+  appearance: true,
+  notifyStreak: true,
+  notifyDailyGame: true,
+  dailyGameTime: true,
+  notifyGroups: true,
+  notifySocial: true,
+  notifyOffers: true,
+  publicProfile: true,
+  findBuddies: true,
+  deletedAt: true,
 } satisfies Prisma.UserSelect;
 
 export type UserRecord = Prisma.UserGetPayload<{ select: typeof userSelect }>;

@@ -456,13 +456,18 @@ describe('password reset, recovery phone, /me, guest merge (e2e) - AC5, AC6, AC8
         .expect(200);
       expect(Object.keys(res.body).sort()).toEqual(
         [
+          'avatarUrl',
+          'bio',
           'createdAt',
+          'displayName',
           'experience',
           'hasRecoveryPhone',
+          'homeRegion',
           'id',
           'interests',
           'level',
           'locale',
+          'preferences',
           'recoveryPhonePending',
           'role',
           'username',
