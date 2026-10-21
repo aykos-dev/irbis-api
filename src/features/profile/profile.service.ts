@@ -1,3 +1,4 @@
+import { randomBytes, randomUUID } from 'node:crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import {
   HOME_REGIONS,
@@ -16,14 +17,17 @@ import { AuthService } from '../auth/auth.service.js';
 import {
   UsernameInvalidError,
   UsernameReservedError,
+  UsernameTakenError,
 } from '../auth/auth.errors.js';
 import { MeService } from '../auth/me.service.js';
 import { PasswordService } from '../auth/password.service.js';
 import { normalizeUsername, usernameProblem } from '../auth/username.rules.js';
+import type { DeleteAccountDto } from './dto/delete-account.dto.js';
 import type { MePreferencesInputDto } from './dto/profile.request.dto.js';
 import type { MeResponseDto } from './dto/profile.response.dto.js';
 import type { PublicProfileResponseDto } from './dto/public-profile.response.dto.js';
 import type { UpdateMeDto } from './dto/profile.request.dto.js';
+import { ProfileAvatarService } from './profile-avatar.service.js';
 import {
   InvalidPasswordError,
   ProfileNotFoundError,
@@ -38,6 +42,8 @@ const MAX_INTERESTS = 5;
 const MAX_DISPLAY_NAME = 40;
 const MIN_DISPLAY_NAME = 2;
 const MAX_BIO = 150;
+/** 48 random bits; a collision is vanishingly rare, but the unique index still gets a retry. */
+const ANONYMIZED_USERNAME_ATTEMPTS = 3;
 
 /** Profile edits and the public profile view. */
 @Injectable()
@@ -48,6 +54,7 @@ export class ProfileService {
     private readonly storage: StorageService,
     private readonly auth: AuthService,
     private readonly passwords: PasswordService,
+    private readonly avatars: ProfileAvatarService,
   ) {}
 
   /** Applies only the fields present and answers the updated `/v1/me` body. */
@@ -70,6 +77,60 @@ export class ProfileService {
     }
     await this.repository.update(userId, data);
     return this.me.getMe(userId);
+  }
+
+  /** AC3: stores the re-encoded square JPEG under a fresh key and answers the updated `/v1/me`. */
+  async uploadAvatar(
+    userId: string,
+    file: Buffer | undefined,
+  ): Promise<MeResponseDto> {
+    if (!file) throw invalid('file', 'required');
+    const avatarKey = await this.avatars.upload(file);
+    await this.repository.update(userId, { avatarKey });
+    return this.me.getMe(userId);
+  }
+
+  /** AC3: clears the key only; the stored object is left orphaned (ADR-005). */
+  async removeAvatar(userId: string): Promise<MeResponseDto> {
+    await this.repository.update(userId, { avatarKey: null });
+    return this.me.getMe(userId);
+  }
+
+  /**
+   * AC8: confirms the password, then anonymises the account and ends every session in one
+   * transaction. The row and its avatar stay; access tokens die through `checkSession`.
+   */
+  async deleteAccount(userId: string, dto: DeleteAccountDto): Promise<void> {
+    if (!dto.currentPassword) {
+      throw invalid('currentPassword', 'required');
+    }
+    const identity = await this.repository.findIdentity(userId);
+    if (!identity) throw new UnauthorizedException();
+    if (
+      !(await this.passwords.verify(identity.passwordHash, dto.currentPassword))
+    ) {
+      throw new InvalidPasswordError();
+    }
+
+    const deletedAt = new Date();
+    const passwordHash = await this.passwords.hash(randomUUID() + randomUUID());
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        await this.repository.anonymizeAccount(userId, {
+          username: anonymizedUsername(),
+          passwordHash,
+          deletedAt,
+        });
+        return;
+      } catch (error) {
+        if (
+          !(error instanceof UsernameTakenError) ||
+          attempt >= ANONYMIZED_USERNAME_ATTEMPTS - 1
+        ) {
+          throw error;
+        }
+      }
+    }
   }
 
   /**
@@ -253,6 +314,11 @@ function preferencesUpdate(preferences: MePreferencesInputDto): ProfileUpdate {
     }
   }
   return data;
+}
+
+/** `deleted_` + 12 lowercase hex = 20 chars, matching the username column and rules. */
+function anonymizedUsername(): string {
+  return `deleted_${randomBytes(6).toString('hex')}`;
 }
 
 function invalid(field: string, problem: string): RequestValidationError {

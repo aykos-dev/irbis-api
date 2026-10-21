@@ -142,13 +142,13 @@ export class AuthService {
   }
 
   /**
-   * Per-request check for authenticated routes: the account must exist and not be blocked.
-   * Returns the current role (so promotions and demotions apply at once) and keeps
+   * Per-request check for authenticated routes: the account must exist, not be deleted and not
+   * be blocked. Returns the current role (so promotions and demotions apply at once) and keeps
    * `last_active_at` fresh to the hour.
    */
   async checkSession(userId: string): Promise<{ role: UserRole }> {
     const user = await this.repository.findById(userId);
-    if (!user) throw new UnauthorizedException();
+    if (!user || user.deletedAt !== null) throw new UnauthorizedException();
     if (user.blockedAt) {
       throw new AccountBlockedError(user.blockReasonCode ?? 'other');
     }

@@ -9,8 +9,10 @@ import type { MeService } from '../../auth/me.service.js';
 import type { PasswordService } from '../../auth/password.service.js';
 import { UpdateMeDto } from '../dto/profile.request.dto.js';
 import type { MeResponseDto } from '../dto/profile.response.dto.js';
+import type { ProfileAvatarService } from '../profile-avatar.service.js';
 import { ProfileService } from '../profile.service.js';
 import type {
+  AccountAnonymization,
   IdentityRecord,
   ProfileRepository,
   ProfileUpdate,
@@ -30,6 +32,7 @@ function setup(
     identity?: IdentityRecord | null;
     passwordOk?: boolean;
     usernameTaken?: boolean;
+    usernameTakenAttempts?: number;
   } = {},
 ) {
   const updates: ProfileUpdate[] = [];
@@ -39,6 +42,10 @@ function setup(
     sessionId: string | undefined;
   }[] = [];
   const verifies: { hash: string; password: string }[] = [];
+  const hashes: string[] = [];
+  const deletions: AccountAnonymization[] = [];
+  const avatarUploads: Buffer[] = [];
+  let takenAttempts = options.usernameTakenAttempts ?? 0;
   const repo = {
     update: (_id: string, data: ProfileUpdate) => {
       updates.push(data);
@@ -51,6 +58,14 @@ function setup(
           ? { username: 'guest_1', passwordHash: HASH }
           : options.identity,
       ),
+    anonymizeAccount: (_id: string, data: AccountAnonymization) => {
+      if (takenAttempts > 0) {
+        takenAttempts -= 1;
+        return Promise.reject(new UsernameTakenError());
+      }
+      deletions.push(data);
+      return Promise.resolve();
+    },
   };
   const me = {
     getMe: () => Promise.resolve({ id: USER } as MeResponseDto),
@@ -77,6 +92,16 @@ function setup(
           : options.passwordOk,
       );
     },
+    hash: (password: string) => {
+      hashes.push(password);
+      return Promise.resolve('new-hash');
+    },
+  };
+  const avatars = {
+    upload: (file: Buffer) => {
+      avatarUploads.push(file);
+      return Promise.resolve('avatars/new.jpg');
+    },
   };
   const storage = options.storage ?? {
     publicUrl: (key: string) => `https://cdn.example/${key}`,
@@ -87,8 +112,17 @@ function setup(
     storage as StorageService,
     auth as unknown as AuthService,
     passwords as unknown as PasswordService,
+    avatars as unknown as ProfileAvatarService,
   );
-  return { service, updates, changes, verifies };
+  return {
+    service,
+    updates,
+    changes,
+    verifies,
+    hashes,
+    deletions,
+    avatarUploads,
+  };
 }
 
 const publicUser: PublicProfileRecord = {
@@ -395,5 +429,67 @@ describe('ProfileService.updateMe preferences (AC6)', () => {
     ).toHaveProperty('isIn');
     const notifications = children.find((c) => c.property === 'notifications');
     expect(notifications?.children?.[0]?.constraints).toHaveProperty('matches');
+  });
+});
+
+describe('ProfileService avatars (AC3)', () => {
+  it('stores the uploaded bytes under a new key and answers the updated me', async () => {
+    const { service, updates, avatarUploads } = setup();
+    const file = Buffer.from('image-bytes');
+    expect((await service.uploadAvatar(USER, file)).id).toBe(USER);
+    expect(avatarUploads).toEqual([file]);
+    expect(updates).toEqual([{ avatarKey: 'avatars/new.jpg' }]);
+  });
+
+  it('rejects a missing file with fieldErrors.file', async () => {
+    const { service, avatarUploads } = setup();
+    await expect(service.uploadAvatar(USER, undefined)).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      fieldErrors: { file: ['required'] },
+    });
+    expect(avatarUploads).toEqual([]);
+  });
+
+  it('clears the key on remove and leaves the stored object alone', async () => {
+    const { service, updates } = setup();
+    await service.removeAvatar(USER);
+    expect(updates).toEqual([{ avatarKey: null }]);
+  });
+});
+
+describe('ProfileService.deleteAccount (AC8)', () => {
+  it('requires the current password and rejects a wrong one', async () => {
+    const { service, deletions, hashes } = setup();
+    await expect(service.deleteAccount(USER, {})).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      fieldErrors: { currentPassword: ['required'] },
+    });
+    await expect(
+      service.deleteAccount(USER, { currentPassword: 'wrong' }),
+    ).rejects.toMatchObject({ code: 'INVALID_PASSWORD', status: 401 });
+    expect(deletions).toEqual([]);
+    expect(hashes).toEqual([]);
+  });
+
+  it('anonymises the username, replaces the hash and clears the profile fields', async () => {
+    const { service, deletions, hashes, verifies } = setup();
+    await service.deleteAccount(USER, { currentPassword: PASSWORD });
+
+    expect(verifies).toEqual([{ hash: HASH, password: PASSWORD }]);
+    expect(hashes).toHaveLength(1);
+    expect(hashes[0]).not.toBe(PASSWORD);
+    expect(deletions).toHaveLength(1);
+    const deletion = deletions[0];
+    expect(deletion.username).toMatch(/^deleted_[0-9a-f]{12}$/);
+    expect(deletion.username).toHaveLength(20);
+    expect(deletion.passwordHash).toBe('new-hash');
+    expect(deletion.deletedAt).toBeInstanceOf(Date);
+  });
+
+  it('draws another anonymised username when the first one is taken', async () => {
+    const { service, deletions } = setup(null, { usernameTakenAttempts: 1 });
+    await service.deleteAccount(USER, { currentPassword: PASSWORD });
+    expect(deletions).toHaveLength(1);
+    expect(deletions[0].username).toMatch(/^deleted_[0-9a-f]{12}$/);
   });
 });
