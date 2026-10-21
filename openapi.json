@@ -546,7 +546,7 @@
             }
           },
           "400": {
-            "description": "Error. code: VALIDATION_FAILED",
+            "description": "Error. code: VALIDATION_FAILED | USERNAME_INVALID | USERNAME_RESERVED",
             "content": {
               "application/json": {
                 "schema": {
@@ -556,7 +556,7 @@
             }
           },
           "401": {
-            "description": "Error. code: UNAUTHENTICATED",
+            "description": "Error. code: UNAUTHENTICATED | INVALID_PASSWORD",
             "content": {
               "application/json": {
                 "schema": {
@@ -567,6 +567,16 @@
           },
           "403": {
             "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: USERNAME_TAKEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -591,7 +601,7 @@
             "bearer": []
           }
         ],
-        "summary": "Update the signed-in user profile fields",
+        "summary": "Update the signed-in user profile fields and settings",
         "tags": [
           "Me"
         ]
@@ -7515,9 +7525,90 @@
           "showStats"
         ]
       },
+      "NotificationPreferencesInputDto": {
+        "type": "object",
+        "properties": {
+          "streakReminders": {
+            "type": "boolean"
+          },
+          "dailyGame": {
+            "type": "boolean"
+          },
+          "dailyGameTime": {
+            "type": "string",
+            "example": "19:00",
+            "description": "24-hour HH:MM in Asia/Tashkent."
+          },
+          "groupsMessages": {
+            "type": "boolean"
+          },
+          "social": {
+            "type": "boolean"
+          },
+          "offers": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PrivacyPreferencesInputDto": {
+        "type": "object",
+        "properties": {
+          "publicProfile": {
+            "type": "boolean"
+          },
+          "findBuddies": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MePreferencesInputDto": {
+        "type": "object",
+        "properties": {
+          "showStats": {
+            "type": "boolean"
+          },
+          "showHomeRegion": {
+            "type": "boolean"
+          },
+          "units": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Units"
+              }
+            ]
+          },
+          "appearance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Appearance"
+              }
+            ]
+          },
+          "notifications": {
+            "$ref": "#/components/schemas/NotificationPreferencesInputDto"
+          },
+          "privacy": {
+            "$ref": "#/components/schemas/PrivacyPreferencesInputDto"
+          }
+        }
+      },
       "UpdateMeDto": {
         "type": "object",
         "properties": {
+          "username": {
+            "type": "string",
+            "description": "Case-insensitive; changing it requires currentPassword and ends other sessions.",
+            "maxLength": 20
+          },
+          "currentPassword": {
+            "type": "string",
+            "format": "password",
+            "writeOnly": true,
+            "description": "Required only when the username changes."
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/MePreferencesInputDto"
+          },
           "displayName": {
             "type": "string",
             "nullable": true,

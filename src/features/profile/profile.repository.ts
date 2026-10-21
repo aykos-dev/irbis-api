@@ -5,15 +5,41 @@ import type {
   Locale,
   Prisma,
 } from '../../generated/prisma/client.js';
+import {
+  type AppearanceCode,
+  type UnitsCode,
+} from '../../common/profile.constants.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
+/** The columns PATCH /v1/me may write. Username is changed through the auth service. */
 export interface ProfileUpdate {
   displayName?: string | null;
   bio?: string | null;
   homeRegion?: HomeRegion | null;
   interests?: Interest[];
   locale?: Locale;
+  showStats?: boolean;
+  showHomeRegion?: boolean;
+  units?: UnitsCode;
+  appearance?: AppearanceCode;
+  notifyStreak?: boolean;
+  notifyDailyGame?: boolean;
+  dailyGameTime?: string;
+  notifyGroups?: boolean;
+  notifySocial?: boolean;
+  notifyOffers?: boolean;
+  publicProfile?: boolean;
+  findBuddies?: boolean;
 }
+
+const identitySelect = {
+  username: true,
+  passwordHash: true,
+} satisfies Prisma.UserSelect;
+
+export type IdentityRecord = Prisma.UserGetPayload<{
+  select: typeof identitySelect;
+}>;
 
 const publicProfileSelect = {
   username: true,
@@ -41,6 +67,14 @@ export class ProfileRepository {
 
   async update(userId: string, data: ProfileUpdate): Promise<void> {
     await this.prisma.user.update({ where: { id: userId }, data });
+  }
+
+  /** The current username and password hash, for the AC2 confirmation check. */
+  findIdentity(userId: string): Promise<IdentityRecord | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: identitySelect,
+    });
   }
 
   /** Usernames are stored lowercase; callers normalise the parameter first. */

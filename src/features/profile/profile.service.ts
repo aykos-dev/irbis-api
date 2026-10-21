@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import {
   HOME_REGIONS,
   type HomeRegionCode,
@@ -12,11 +12,22 @@ import {
   type InterestCode,
   type LocaleCode,
 } from '../auth/auth.constants.js';
+import { AuthService } from '../auth/auth.service.js';
+import {
+  UsernameInvalidError,
+  UsernameReservedError,
+} from '../auth/auth.errors.js';
 import { MeService } from '../auth/me.service.js';
+import { PasswordService } from '../auth/password.service.js';
+import { normalizeUsername, usernameProblem } from '../auth/username.rules.js';
+import type { MePreferencesInputDto } from './dto/profile.request.dto.js';
 import type { MeResponseDto } from './dto/profile.response.dto.js';
 import type { PublicProfileResponseDto } from './dto/public-profile.response.dto.js';
 import type { UpdateMeDto } from './dto/profile.request.dto.js';
-import { ProfileNotFoundError } from './profile.errors.js';
+import {
+  InvalidPasswordError,
+  ProfileNotFoundError,
+} from './profile.errors.js';
 import {
   ProfileRepository,
   type ProfileUpdate,
@@ -35,12 +46,59 @@ export class ProfileService {
     private readonly repository: ProfileRepository,
     private readonly me: MeService,
     private readonly storage: StorageService,
+    private readonly auth: AuthService,
+    private readonly passwords: PasswordService,
   ) {}
 
   /** Applies only the fields present and answers the updated `/v1/me` body. */
-  async updateMe(userId: string, dto: UpdateMeDto): Promise<MeResponseDto> {
-    await this.repository.update(userId, toUpdate(dto));
+  async updateMe(
+    userId: string,
+    sessionId: string | undefined,
+    dto: UpdateMeDto,
+  ): Promise<MeResponseDto> {
+    const data = toUpdate(dto);
+    if (dto.preferences) {
+      Object.assign(data, preferencesUpdate(dto.preferences));
+    }
+    if (dto.username !== undefined) {
+      await this.changeUsername(
+        userId,
+        sessionId,
+        dto.username,
+        dto.currentPassword,
+      );
+    }
+    await this.repository.update(userId, data);
     return this.me.getMe(userId);
+  }
+
+  /**
+   * AC2: a different normalized username needs the current password, is stored lowercase and
+   * ends every other session (the auth service keeps this one through `sessionId`).
+   */
+  private async changeUsername(
+    userId: string,
+    sessionId: string | undefined,
+    rawUsername: string,
+    currentPassword: string | undefined,
+  ): Promise<void> {
+    const username = normalizeUsername(rawUsername.trim());
+    const identity = await this.repository.findIdentity(userId);
+    if (!identity) throw new UnauthorizedException();
+    if (username === identity.username) return;
+
+    const problem = usernameProblem(username);
+    if (problem === 'reserved') throw new UsernameReservedError();
+    if (problem) throw new UsernameInvalidError(problem);
+    if (currentPassword === undefined) {
+      throw new RequestValidationError({ currentPassword: ['required'] });
+    }
+    if (
+      !(await this.passwords.verify(identity.passwordHash, currentPassword))
+    ) {
+      throw new InvalidPasswordError();
+    }
+    await this.auth.changeUsername(userId, username, sessionId);
   }
 
   /** Case-insensitive lookup. Missing, deleted, blocked and private are one indistinguishable 404. */
@@ -148,6 +206,53 @@ function locale(value: LocaleCode): LocaleCode {
     throw invalid('locale', 'isIn');
   }
   return value;
+}
+
+/** AC6: maps only the keys the caller sent. Trip & safety and share location are read-only. */
+function preferencesUpdate(preferences: MePreferencesInputDto): ProfileUpdate {
+  const data: ProfileUpdate = {};
+  const { notifications, privacy } = preferences;
+  if (preferences.showStats !== undefined) {
+    data.showStats = preferences.showStats;
+  }
+  if (preferences.showHomeRegion !== undefined) {
+    data.showHomeRegion = preferences.showHomeRegion;
+  }
+  if (preferences.units !== undefined) {
+    data.units = preferences.units;
+  }
+  if (preferences.appearance !== undefined) {
+    data.appearance = preferences.appearance;
+  }
+  if (notifications) {
+    if (notifications.streakReminders !== undefined) {
+      data.notifyStreak = notifications.streakReminders;
+    }
+    if (notifications.dailyGame !== undefined) {
+      data.notifyDailyGame = notifications.dailyGame;
+    }
+    if (notifications.dailyGameTime !== undefined) {
+      data.dailyGameTime = notifications.dailyGameTime;
+    }
+    if (notifications.groupsMessages !== undefined) {
+      data.notifyGroups = notifications.groupsMessages;
+    }
+    if (notifications.social !== undefined) {
+      data.notifySocial = notifications.social;
+    }
+    if (notifications.offers !== undefined) {
+      data.notifyOffers = notifications.offers;
+    }
+  }
+  if (privacy) {
+    if (privacy.publicProfile !== undefined) {
+      data.publicProfile = privacy.publicProfile;
+    }
+    if (privacy.findBuddies !== undefined) {
+      data.findBuddies = privacy.findBuddies;
+    }
+  }
+  return data;
 }
 
 function invalid(field: string, problem: string): RequestValidationError {

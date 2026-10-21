@@ -14,6 +14,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
 interface AccessTokenPayload {
   sub?: unknown;
   role?: unknown;
+  sid?: unknown;
 }
 
 /**
@@ -66,7 +67,10 @@ export class JwtAuthGuard implements CanActivate {
     if (typeof payload.sub !== 'string' || !isRole(payload.role)) {
       throw new UnauthorizedException();
     }
-    return { id: payload.sub, role: payload.role };
+    // Old tokens predate `sid`: they authenticate without a current session family.
+    return typeof payload.sid === 'string'
+      ? { id: payload.sub, role: payload.role, sessionId: payload.sid }
+      : { id: payload.sub, role: payload.role };
   }
 
   private bearerTokenOrNull(req: Request): string | null {

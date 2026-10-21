@@ -31,7 +31,7 @@ export class AccountStatusGuard implements CanActivate {
     );
     try {
       const { role } = await this.auth.checkSession(req.user.id);
-      req.user = { id: req.user.id, role };
+      req.user = { ...req.user, role };
     } catch (error) {
       const refused =
         error instanceof UnauthorizedException ||

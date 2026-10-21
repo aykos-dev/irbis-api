@@ -5,6 +5,8 @@ export type Role = (typeof ROLES)[number];
 export interface AuthUser {
   id: string;
   role: Role;
+  /** The refresh-token family this access token was issued for; absent on old tokens. */
+  sessionId?: string;
 }
 
 export function isRole(value: unknown): value is Role {

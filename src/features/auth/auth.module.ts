@@ -55,8 +55,15 @@ import { TokenService } from './token.service.js';
     },
   ],
   // GuestMergeRegistry: later features register their guest-data handlers (AC8).
-  // AuthService: the global account-status guard. AdminBootstrapService: the admin:create CLI.
+  // AuthService: the global account-status guard and the profile username change.
+  // PasswordService: PATCH /v1/me verifies currentPassword. AdminBootstrapService: the admin:create CLI.
   // MeService: the profile slice uses its mapping for PATCH /v1/me.
-  exports: [AuthService, GuestMergeRegistry, AdminBootstrapService, MeService],
+  exports: [
+    AuthService,
+    GuestMergeRegistry,
+    AdminBootstrapService,
+    MeService,
+    PasswordService,
+  ],
 })
 export class AuthModule {}

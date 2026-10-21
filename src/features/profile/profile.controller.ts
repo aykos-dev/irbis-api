@@ -42,22 +42,24 @@ export class ProfileController {
 export class MeProfileController {
   constructor(private readonly profile: ProfileService) {}
 
+  @Throttled('auth')
   @Patch()
   @ApiOperation({
     operationId: 'Me_update',
-    summary: 'Update the signed-in user profile fields',
+    summary: 'Update the signed-in user profile fields and settings',
   })
   @ApiOkResponse({ type: MeResponseDto })
   @ApiErrorResponses({
-    400: ['VALIDATION_FAILED'],
-    401: ['UNAUTHENTICATED'],
+    400: ['VALIDATION_FAILED', 'USERNAME_INVALID', 'USERNAME_RESERVED'],
+    401: ['UNAUTHENTICATED', 'INVALID_PASSWORD'],
     403: ['ACCOUNT_BLOCKED'],
+    409: ['USERNAME_TAKEN'],
     429: ['RATE_LIMITED'],
   })
   update(
     @CurrentUser() user: AuthUser,
     @Body() dto: UpdateMeDto,
   ): Promise<MeResponseDto> {
-    return this.profile.updateMe(user.id, dto);
+    return this.profile.updateMe(user.id, user.sessionId, dto);
   }
 }

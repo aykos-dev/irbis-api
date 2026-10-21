@@ -41,9 +41,17 @@ export class TokenService {
     return this.config.refreshTtlDays * DAY_MS;
   }
 
-  signAccess(user: { id: string; role: UserRole }): Promise<string> {
+  signAccess(user: {
+    id: string;
+    role: UserRole;
+    sessionId?: string;
+  }): Promise<string> {
     return this.jwt.signAsync(
-      { sub: user.id, role: user.role },
+      {
+        sub: user.id,
+        role: user.role,
+        ...(user.sessionId ? { sid: user.sessionId } : {}),
+      },
       {
         secret: this.config.jwtAccessSecret,
         algorithm: 'HS256',
@@ -52,24 +60,25 @@ export class TokenService {
     );
   }
 
-  /** A new log-in: a new refresh-token family. */
+  /** A new log-in: a new refresh-token family, which the access token carries as `sid`. */
   async startSession(
     user: { id: string; role: UserRole },
     now = new Date(),
     tx?: Tx,
   ): Promise<IssuedTokens> {
     const refreshToken = newRefreshToken();
+    const familyId = randomUUID();
     await this.repository.createRefreshToken(
       {
         userId: user.id,
-        familyId: randomUUID(),
+        familyId,
         tokenHash: hashRefreshToken(refreshToken),
         expiresAt: addMs(now, this.refreshTtlMs),
       },
       tx,
     );
     return {
-      accessToken: await this.signAccess(user),
+      accessToken: await this.signAccess({ ...user, sessionId: familyId }),
       refreshToken,
       expiresIn: this.config.jwtAccessTtlSec,
     };
@@ -119,7 +128,10 @@ export class TokenService {
       throw new RefreshReusedError();
     }
     return {
-      accessToken: await this.signAccess(user),
+      accessToken: await this.signAccess({
+        ...user,
+        sessionId: record.familyId,
+      }),
       refreshToken,
       expiresIn: this.config.jwtAccessTtlSec,
     };

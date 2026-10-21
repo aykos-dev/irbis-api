@@ -216,6 +216,19 @@ export class AuthRepository {
     await (tx ?? this.prisma).user.update({ where: { id }, data: { role } });
   }
 
+  /** Writes the already-normalized username; a concurrent claim answers USERNAME_TAKEN. */
+  async updateUsername(id: string, username: string, tx?: Tx): Promise<void> {
+    try {
+      await (tx ?? this.prisma).user.update({
+        where: { id },
+        data: { username },
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new UsernameTakenError();
+      throw error;
+    }
+  }
+
   async setBlocked(
     id: string,
     block: { at: Date; reasonCode: BlockReason } | null,
@@ -330,6 +343,23 @@ export class AuthRepository {
   async revokeAllForUser(userId: string, now: Date, tx?: Tx): Promise<void> {
     await (tx ?? this.prisma).refreshToken.updateMany({
       where: { userId, revokedAt: null },
+      data: { revokedAt: now },
+    });
+  }
+
+  /** Ends every session except one refresh-token family (the caller's, when it has one). */
+  async revokeAllForUserExceptFamily(
+    userId: string,
+    keepFamilyId: string | null,
+    now: Date,
+    tx?: Tx,
+  ): Promise<void> {
+    await (tx ?? this.prisma).refreshToken.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+        ...(keepFamilyId ? { familyId: { not: keepFamilyId } } : {}),
+      },
       data: { revokedAt: now },
     });
   }

@@ -110,6 +110,27 @@ export class AuthService {
     await this.tokens.revoke(refreshToken, userId);
   }
 
+  /**
+   * Stores the already-normalized username and ends every refresh-token family except the
+   * caller's session (all of them when the caller's token has no `sid`), in one transaction.
+   */
+  async changeUsername(
+    userId: string,
+    username: string,
+    sessionId?: string,
+    now = new Date(),
+  ): Promise<void> {
+    await this.repository.transaction(async (tx) => {
+      await this.repository.updateUsername(userId, username, tx);
+      await this.repository.revokeAllForUserExceptFamily(
+        userId,
+        sessionId ?? null,
+        now,
+        tx,
+      );
+    });
+  }
+
   refreshAdmin(refreshToken: string): Promise<TokensResponseDto> {
     return this.tokens.refresh(refreshToken, { requireAdmin: true });
   }
