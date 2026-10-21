@@ -69,3 +69,68 @@ export class LiveNotFoundError extends NotFoundError {
     super('Live trip not found');
   }
 }
+
+/** 422: the fix is too inaccurate for a waypoint check-in. */
+export class LocationInaccurateError extends DomainError {
+  readonly code = 'LOCATION_INACCURATE';
+  readonly status = HttpStatus.UNPROCESSABLE_ENTITY;
+
+  constructor() {
+    super('Location is not accurate enough for a check-in');
+  }
+}
+
+/** 409: the trip already has the maximum number of waypoints. */
+export class WaypointLimitError extends ConflictError {
+  override readonly code = 'WAYPOINT_LIMIT';
+
+  constructor() {
+    super('This trip has no waypoint check-ins left');
+  }
+}
+
+/** 422: too close to an earlier waypoint; `details.remainingM` metres still to go. */
+export class WaypointTooCloseError extends DomainError {
+  readonly code = 'WAYPOINT_TOO_CLOSE';
+  readonly status = HttpStatus.UNPROCESSABLE_ENTITY;
+  override readonly details: { remainingM: number };
+
+  constructor(remainingM: number) {
+    super('Too close to an earlier waypoint');
+    this.details = { remainingM };
+  }
+}
+
+/** 422: too soon after the previous waypoint; `details.remainingMin` minutes still to wait. */
+export class WaypointTooSoonError extends DomainError {
+  readonly code = 'WAYPOINT_TOO_SOON';
+  readonly status = HttpStatus.UNPROCESSABLE_ENTITY;
+  override readonly details: { remainingMin: number };
+
+  constructor(remainingMin: number) {
+    super('Too soon after the previous waypoint');
+    this.details = { remainingMin };
+  }
+}
+
+/** 429: an SOS was sent moments ago; `details.retryInSec` seconds until the next one. */
+export class SosTooSoonError extends DomainError {
+  readonly code = 'SOS_TOO_SOON';
+  readonly status = HttpStatus.TOO_MANY_REQUESTS;
+  override readonly details: { retryInSec: number };
+
+  constructor(retryInSec: number) {
+    super('An SOS was sent moments ago');
+    this.details = { retryInSec };
+  }
+}
+
+/** 502: the SOS text could not be sent; the app falls back to the phone's SMS app. */
+export class SosSendFailedError extends DomainError {
+  readonly code = 'SOS_SEND_FAILED';
+  readonly status = HttpStatus.BAD_GATEWAY;
+
+  constructor() {
+    super('The SOS text could not be sent');
+  }
+}

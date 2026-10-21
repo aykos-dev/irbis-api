@@ -5259,6 +5259,316 @@
         ]
       }
     },
+    "/v1/trips/{id}/waypoints": {
+      "post": {
+        "description": "Rules in order: accuracy, per-trip limit, distance from every earlier waypoint, gap after the previous one.",
+        "operationId": "tripsCheckInWaypoint",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInWaypointDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaypointResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_ACTIVE | WAYPOINT_LIMIT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: WAYPOINT_TOO_CLOSE | WAYPOINT_TOO_SOON | LOCATION_INACCURATE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check in a waypoint on an active trip (earns XP)",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/{id}/sos": {
+      "post": {
+        "description": "Trip status is unchanged. On 502 SOS_SEND_FAILED the app opens the phone SMS app instead.",
+        "operationId": "tripsSendSos",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendSosDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SosResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: SOS_TOO_SOON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Error. code: SOS_SEND_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Text the emergency contact an SOS with the best known location",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/{id}/sos-contact": {
+      "get": {
+        "operationId": "tripsGetSosContact",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SosContactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The emergency contact's full phone and the rescue number",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
     "/v1/trips/{id}": {
       "patch": {
         "description": "Planned: startAt, backBy, alertEnabled. Active (until the alert is sent): backBy and alertEnabled only.",
@@ -6045,6 +6355,16 @@
             "type": "number",
             "example": 900,
             "description": "ACCOUNT_LOCKED, RATE_LIMITED: seconds until the client may retry."
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "example": {
+              "remainingM": 120
+            },
+            "description": "Code-specific numbers: WAYPOINT_TOO_CLOSE remainingM, WAYPOINT_TOO_SOON remainingMin, SOS_TOO_SOON retryInSec."
           },
           "requestId": {
             "type": "string",
@@ -10003,6 +10323,114 @@
           "recordedAt",
           "distanceM",
           "climbM"
+        ]
+      },
+      "CheckInWaypointDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000,
+            "description": "Above the configured maximum (50 m) → LOCATION_INACCURATE."
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fix was taken: not before startedAt, at most 2 min ahead of the server (queued check-ins may arrive late)."
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "accuracyM",
+          "recordedAt"
+        ]
+      },
+      "WaypointResultDto": {
+        "type": "object",
+        "properties": {
+          "waypoint": {
+            "$ref": "#/components/schemas/TripWaypointDto"
+          },
+          "xpAwarded": {
+            "type": "integer",
+            "description": "XP the ledger granted; 0 when the daily cap is used up."
+          }
+        },
+        "required": [
+          "waypoint",
+          "xpAwarded"
+        ]
+      },
+      "SendSosDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000
+          }
+        }
+      },
+      "SosResultDto": {
+        "type": "object",
+        "properties": {
+          "sentAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "sosCallNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Rescue number to dial (E.164); null when not configured."
+          }
+        },
+        "required": [
+          "sentAt",
+          "contactName",
+          "sosCallNumber"
+        ]
+      },
+      "SosContactDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Emergency contact phone, full E.164."
+          },
+          "sosCallNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Rescue number to dial (E.164); null when not configured."
+          }
+        },
+        "required": [
+          "phone",
+          "sosCallNumber"
         ]
       },
       "UpdateTripDto": {

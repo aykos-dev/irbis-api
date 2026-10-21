@@ -144,3 +144,34 @@ export class LiveTripDto {
   @ApiPropertyOptional({ description: 'Absent once the link has ended.' })
   mapsUrl?: string;
 }
+
+export class WaypointResultDto {
+  @ApiProperty({ type: TripWaypointDto }) waypoint: TripWaypointDto;
+  @ApiProperty({
+    type: 'integer',
+    description: 'XP the ledger granted; 0 when the daily cap is used up.',
+  })
+  xpAwarded: number;
+}
+
+export class SosResultDto {
+  @ApiProperty({ type: String, format: 'date-time' }) sentAt: Date;
+  @ApiProperty() contactName: string;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Rescue number to dial (E.164); null when not configured.',
+  })
+  sosCallNumber: string | null;
+}
+
+export class SosContactDto {
+  @ApiProperty({ description: 'Emergency contact phone, full E.164.' })
+  phone: string;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Rescue number to dial (E.164); null when not configured.',
+  })
+  sosCallNumber: string | null;
+}

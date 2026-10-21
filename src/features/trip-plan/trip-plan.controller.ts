@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -27,10 +28,12 @@ import { ApiErrorResponses } from '../../common/decorators/api-error-responses.d
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { RequestValidationError } from '../../common/errors/validation.error.js';
 import {
+  CheckInWaypointDto,
   CheckOutTripDto,
   CreateTripDto,
   PostTripLocationDto,
   PutEmergencyContactDto,
+  SendSosDto,
   StartTripDto,
   TripPreviewQueryDto,
   UpdateTripDto,
@@ -38,11 +41,15 @@ import {
 import {
   CurrentTripsDto,
   EmergencyContactDto,
+  SosContactDto,
+  SosResultDto,
   TripDto,
   TripPreviewDto,
+  WaypointResultDto,
 } from './dto/trip-plan.response.dto.js';
 import { TripActiveService } from './trip-active.service.js';
 import { TripPlanService } from './trip-plan.service.js';
+import { TripSafetyService } from './trip-safety.service.js';
 
 /** Non-uuid ids answer 400 VALIDATION_FAILED like every other bad input. */
 function uuidPipe(): ParseUUIDPipe {
@@ -132,6 +139,7 @@ export class TripsController {
   constructor(
     private readonly trips: TripPlanService,
     private readonly active: TripActiveService,
+    private readonly safety: TripSafetyService,
   ) {}
 
   @Post()
@@ -211,6 +219,75 @@ export class TripsController {
     @Body() dto: PostTripLocationDto,
   ): Promise<void> {
     return this.active.postLocation(user.id, id, dto);
+  }
+
+  @Post(':id/waypoints')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    operationId: 'tripsCheckInWaypoint',
+    summary: 'Check in a waypoint on an active trip (earns XP)',
+    description:
+      'Rules in order: accuracy, per-trip limit, distance from every earlier waypoint, gap after the previous one.',
+  })
+  @ApiOkResponse({ type: WaypointResultDto })
+  @ApiErrorResponses({
+    400: ['VALIDATION_FAILED'],
+    ...SIGNED_IN_ERRORS,
+    404: ['TRIP_NOT_FOUND'],
+    409: ['TRIP_NOT_ACTIVE', 'WAYPOINT_LIMIT'],
+    422: ['WAYPOINT_TOO_CLOSE', 'WAYPOINT_TOO_SOON', 'LOCATION_INACCURATE'],
+  })
+  checkInWaypoint(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe()) id: string,
+    @Body() dto: CheckInWaypointDto,
+  ): Promise<WaypointResultDto> {
+    return this.safety.checkInWaypoint(user.id, id, dto);
+  }
+
+  @Post(':id/sos')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    operationId: 'tripsSendSos',
+    summary: 'Text the emergency contact an SOS with the best known location',
+    description:
+      'Trip status is unchanged. On 502 SOS_SEND_FAILED the app opens the phone SMS app instead.',
+  })
+  @ApiOkResponse({ type: SosResultDto })
+  @ApiErrorResponses({
+    400: ['VALIDATION_FAILED'],
+    ...SIGNED_IN_ERRORS,
+    404: ['TRIP_NOT_FOUND'],
+    409: ['TRIP_NOT_ACTIVE'],
+    429: ['SOS_TOO_SOON'],
+    502: ['SOS_SEND_FAILED'],
+  })
+  sendSos(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe()) id: string,
+    @Body() dto: SendSosDto,
+  ): Promise<SosResultDto> {
+    return this.safety.sendSos(user.id, id, dto);
+  }
+
+  @Get(':id/sos-contact')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    operationId: 'tripsGetSosContact',
+    summary: "The emergency contact's full phone and the rescue number",
+  })
+  @ApiOkResponse({ type: SosContactDto })
+  @ApiErrorResponses({
+    400: ['VALIDATION_FAILED'],
+    ...SIGNED_IN_ERRORS,
+    404: ['TRIP_NOT_FOUND'],
+    409: ['TRIP_NOT_ACTIVE'],
+  })
+  sosContact(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe()) id: string,
+  ): Promise<SosContactDto> {
+    return this.safety.sosContact(user.id, id);
   }
 
   @Patch(':id')

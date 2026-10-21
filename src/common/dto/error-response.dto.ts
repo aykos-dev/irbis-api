@@ -37,6 +37,15 @@ export class ErrorResponseDto {
   })
   retryAfterSec?: number;
 
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'integer' },
+    example: { remainingM: 120 },
+    description:
+      'Code-specific numbers: WAYPOINT_TOO_CLOSE remainingM, WAYPOINT_TOO_SOON remainingMin, SOS_TOO_SOON retryInSec.',
+  })
+  details?: Record<string, number>;
+
   @ApiProperty({ example: '6f1c2a9e-4b7d-4c1e-9a55-0d2b8f3e7c10' })
   requestId: string;
 }

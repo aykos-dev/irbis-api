@@ -203,3 +203,59 @@ export class CheckOutTripDto {
   @Max(CLIMB_MAX_M)
   climbM?: number;
 }
+
+export class CheckInWaypointDto {
+  @ApiProperty({ minimum: -90, maximum: 90 })
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat: number;
+
+  @ApiProperty({ minimum: -180, maximum: 180 })
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lng: number;
+
+  @ApiProperty({
+    minimum: 0,
+    maximum: PING_ACCURACY_MAX_M,
+    description: 'Above the configured maximum (50 m) → LOCATION_INACCURATE.',
+  })
+  @IsNumber()
+  @Min(0)
+  @Max(PING_ACCURACY_MAX_M)
+  accuracyM: number;
+
+  @ApiProperty({
+    format: 'date-time',
+    description:
+      'When the fix was taken: not before startedAt, at most 2 min ahead of the server (queued check-ins may arrive late).',
+  })
+  @IsISO8601({ strict: true })
+  recordedAt: string;
+}
+
+/** Optional device fix; without one the SMS uses the last ping, the start fix or the place. */
+export class SendSosDto {
+  @ApiPropertyOptional({ minimum: -90, maximum: 90 })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat?: number;
+
+  @ApiPropertyOptional({ minimum: -180, maximum: 180 })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lng?: number;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: PING_ACCURACY_MAX_M })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(PING_ACCURACY_MAX_M)
+  accuracyM?: number;
+}

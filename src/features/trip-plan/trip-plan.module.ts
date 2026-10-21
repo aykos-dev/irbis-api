@@ -12,6 +12,7 @@ import { TripActiveService } from './trip-active.service.js';
 import { TripAlertJob } from './trip-alert.job.js';
 import { TripPlanRepository } from './trip-plan.repository.js';
 import { TripPlanService } from './trip-plan.service.js';
+import { TripSafetyService } from './trip-safety.service.js';
 
 @Module({
   imports: [LevelsModule, AuthModule],
@@ -24,6 +25,7 @@ import { TripPlanService } from './trip-plan.service.js';
   providers: [
     TripPlanService,
     TripActiveService,
+    TripSafetyService,
     TripPlanRepository,
     PhoneCipher,
     TripAlertJob,

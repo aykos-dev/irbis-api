@@ -11,6 +11,8 @@ export abstract class DomainError extends Error {
   readonly fieldErrors?: Record<string, string[]>;
   readonly reasonCode?: string;
   readonly retryAfterSec?: number;
+  /** Code-specific numbers the client shows (e.g. metres or seconds still to go). */
+  readonly details?: Record<string, number>;
 
   constructor(message: string) {
     super(message);

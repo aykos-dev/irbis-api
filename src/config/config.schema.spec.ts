@@ -82,3 +82,19 @@ describe('config: QA tools (levels AC3)', () => {
     ).toThrow(/QA_TOOLS_ENABLED/);
   });
 });
+
+describe('config: SOS call number (active-trip AC7)', () => {
+  it('is optional (empty = unset) and must be E.164 when set', () => {
+    expect(validateEnv({ ...base }).SOS_CALL_NUMBER).toBeUndefined();
+    expect(validateEnv({ ...base, SOS_CALL_NUMBER: '' }).SOS_CALL_NUMBER).toBe(
+      undefined,
+    );
+    expect(
+      validateEnv({ ...base, SOS_CALL_NUMBER: '+998000000000' })
+        .SOS_CALL_NUMBER,
+    ).toBe('+998000000000');
+    expect(() => validateEnv({ ...base, SOS_CALL_NUMBER: '112' })).toThrow(
+      /SOS_CALL_NUMBER/,
+    );
+  });
+});

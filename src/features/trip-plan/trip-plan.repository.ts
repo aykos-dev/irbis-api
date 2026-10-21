@@ -154,6 +154,45 @@ export interface DueAlert {
   };
 }
 
+/** What waypoint check-ins and SOS read for an own trip. `contactPhone` is PhoneCipher ciphertext. */
+export interface SafetyTripRecord {
+  id: string;
+  status: TripStatusCode;
+  startedAt: Date | null;
+  contactName: string;
+  contactPhone: string;
+  startLat: number | null;
+  startLng: number | null;
+  lastLat: number | null;
+  lastLng: number | null;
+  liveToken: string | null;
+  user: { username: string; locale: LocaleCode };
+  place: {
+    nameUz: string;
+    nameRu: string | null;
+    nameEn: string | null;
+    latitude: number;
+    longitude: number;
+  };
+}
+
+export interface NewWaypoint {
+  tripId: string;
+  n: number;
+  lat: number;
+  lng: number;
+  accuracyM: number;
+  recordedAt: Date;
+}
+
+export interface NewSos {
+  tripId: string;
+  lat: number;
+  lng: number;
+  sentAt: Date;
+  status: 'sent' | 'failed';
+}
+
 const tripSelect = {
   id: true,
   status: true,
@@ -396,6 +435,75 @@ export class TripPlanRepository {
         place: { select: { nameUz: true, nameRu: true, nameEn: true } },
       },
     });
+  }
+
+  findSafetyTrip(userId: string, id: string): Promise<SafetyTripRecord | null> {
+    return this.prisma.trip.findFirst({
+      where: { id, userId },
+      select: {
+        id: true,
+        status: true,
+        startedAt: true,
+        contactName: true,
+        contactPhone: true,
+        startLat: true,
+        startLng: true,
+        lastLat: true,
+        lastLng: true,
+        liveToken: true,
+        user: { select: { username: true, locale: true } },
+        place: {
+          select: {
+            nameUz: true,
+            nameRu: true,
+            nameEn: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+      },
+    });
+  }
+
+  listWaypoints(tripId: string): Promise<TripWaypointRecord[]> {
+    return this.prisma.tripWaypoint.findMany({
+      where: { tripId },
+      orderBy: { n: 'asc' },
+      select: { n: true, lat: true, lng: true, recordedAt: true },
+    });
+  }
+
+  /** Inserts waypoint n; null when another request took that n first (unique (tripId, n)). */
+  async insertWaypoint(waypoint: NewWaypoint): Promise<{ id: string } | null> {
+    try {
+      return await this.prisma.tripWaypoint.create({
+        data: { ...waypoint, xpAwarded: 0 },
+        select: { id: true },
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) return null;
+      throw error;
+    }
+  }
+
+  async setWaypointXp(id: string, xpAwarded: number): Promise<void> {
+    await this.prisma.tripWaypoint.update({
+      where: { id },
+      data: { xpAwarded },
+    });
+  }
+
+  async lastSosAt(tripId: string): Promise<Date | null> {
+    const row = await this.prisma.tripSos.findFirst({
+      where: { tripId },
+      orderBy: { sentAt: 'desc' },
+      select: { sentAt: true },
+    });
+    return row?.sentAt ?? null;
+  }
+
+  async insertSos(sos: NewSos): Promise<void> {
+    await this.prisma.tripSos.create({ data: sos });
   }
 
   /** Deletes the trip only while it is planned; false when it was not. */
