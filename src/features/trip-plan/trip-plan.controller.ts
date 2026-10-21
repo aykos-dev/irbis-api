@@ -1,11 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -27,7 +29,9 @@ import { RequestValidationError } from '../../common/errors/validation.error.js'
 import {
   CreateTripDto,
   PutEmergencyContactDto,
+  StartTripDto,
   TripPreviewQueryDto,
+  UpdateTripDto,
 } from './dto/trip-plan.request.dto.js';
 import {
   CurrentTripsDto,
@@ -156,5 +160,90 @@ export class TripsController {
   @ApiErrorResponses(SIGNED_IN_ERRORS)
   current(@CurrentUser() user: AuthUser): Promise<CurrentTripsDto> {
     return this.trips.current(user.id);
+  }
+
+  @Post(':id/start')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    operationId: 'startTrip',
+    summary: 'Start a planned trip now (optional device location)',
+  })
+  @ApiOkResponse({ type: TripDto })
+  @ApiErrorResponses({
+    400: ['VALIDATION_FAILED'],
+    ...SIGNED_IN_ERRORS,
+    404: ['TRIP_NOT_FOUND'],
+    409: ['TRIP_NOT_EDITABLE', 'TRIP_ALREADY_ACTIVE'],
+    422: ['TRIP_TIMES_INVALID'],
+  })
+  start(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe()) id: string,
+    @Body() dto: StartTripDto,
+  ): Promise<TripDto> {
+    return this.trips.start(user.id, id, dto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    operationId: 'updateTrip',
+    summary: 'Edit a planned trip, or extend/toggle the alert of an active one',
+    description:
+      'Planned: startAt, backBy, alertEnabled. Active (until the alert is sent): backBy and alertEnabled only.',
+  })
+  @ApiOkResponse({ type: TripDto })
+  @ApiErrorResponses({
+    400: ['VALIDATION_FAILED'],
+    ...SIGNED_IN_ERRORS,
+    404: ['TRIP_NOT_FOUND'],
+    409: ['TRIP_NOT_EDITABLE'],
+    422: ['TRIP_TIMES_INVALID'],
+  })
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe()) id: string,
+    @Body() dto: UpdateTripDto,
+  ): Promise<TripDto> {
+    return this.trips.update(user.id, id, dto);
+  }
+
+  @Post(':id/check-out')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    operationId: 'checkOutTrip',
+    summary: 'Mark an active or alerted trip as safely back',
+  })
+  @ApiOkResponse({ type: TripDto })
+  @ApiErrorResponses({
+    400: ['VALIDATION_FAILED'],
+    ...SIGNED_IN_ERRORS,
+    404: ['TRIP_NOT_FOUND'],
+    409: ['TRIP_NOT_EDITABLE'],
+  })
+  checkOut(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe()) id: string,
+  ): Promise<TripDto> {
+    return this.trips.checkOut(user.id, id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    operationId: 'deleteTrip',
+    summary: 'Delete a planned trip',
+  })
+  @ApiNoContentResponse({ description: 'Deleted.' })
+  @ApiErrorResponses({
+    400: ['VALIDATION_FAILED'],
+    ...SIGNED_IN_ERRORS,
+    404: ['TRIP_NOT_FOUND'],
+    409: ['TRIP_NOT_EDITABLE'],
+  })
+  remove(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe()) id: string,
+  ): Promise<void> {
+    return this.trips.remove(user.id, id);
   }
 }

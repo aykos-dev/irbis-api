@@ -36,3 +36,6 @@ export const PLANNED_TRIP_LOOKBACK_MS = 86_400_000;
 export const NAME_MAX = 60;
 export const RELATION_MAX = 30;
 export const ACCURACY_MAX_M = 100_000;
+
+/** AC8: the alert job stops retrying a trip after this many failed sends. */
+export const ALERT_MAX_ATTEMPTS = 5;

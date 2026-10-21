@@ -8,6 +8,8 @@ import { PlaceNotFoundError } from '../places/places.errors.js';
 import type {
   CreateTripDto,
   PutEmergencyContactDto,
+  StartTripDto,
+  UpdateTripDto,
 } from './dto/trip-plan.request.dto.js';
 import type {
   CurrentTripsDto,
@@ -21,9 +23,14 @@ import { PLANNED_TRIP_LOOKBACK_MS } from './trip-plan.constants.js';
 import {
   EmergencyContactRequiredError,
   TripAlreadyActiveError,
+  TripNotEditableError,
+  TripNotFoundError,
+  TripTimesInvalidError,
 } from './trip-plan.errors.js';
 import {
   TripPlanRepository,
+  type TripChange,
+  type TripGuard,
   type PreviewPlace,
   type TripRecord,
 } from './trip-plan.repository.js';
@@ -163,6 +170,128 @@ export class TripPlanService {
       active: active ? this.toDto(active, config.alertDelayMin) : null,
       planned: planned.map((t) => this.toDto(t, config.alertDelayMin)),
     };
+  }
+
+  /** AC6: planned → active now; backBy must still be ahead and no other trip may be active. */
+  async start(
+    userId: string,
+    id: string,
+    dto: StartTripDto,
+    now = new Date(),
+  ): Promise<TripDto> {
+    const trip = await this.ownTrip(userId, id);
+    if (trip.status !== 'planned') throw new TripNotEditableError();
+    if (trip.backBy.getTime() <= now.getTime()) {
+      throw new TripTimesInvalidError('backBy has passed');
+    }
+    if (await this.repository.hasActiveTrip(userId)) {
+      throw new TripAlreadyActiveError();
+    }
+    return this.apply(
+      id,
+      { statuses: ['planned'] },
+      { status: 'active', startedAt: now, location: dto.location ?? null },
+      now,
+    );
+  }
+
+  /**
+   * AC7: planned → startAt/backBy/alertEnabled under the create rules; active → backBy and
+   * alertEnabled only, until the alert is sent; anything else is not editable.
+   */
+  async update(
+    userId: string,
+    id: string,
+    dto: UpdateTripDto,
+    now = new Date(),
+  ): Promise<TripDto> {
+    const trip = await this.ownTrip(userId, id);
+    const config = await this.gameConfig.tripConfig(now.getTime());
+    const startAt = dto.startAt ? new Date(dto.startAt) : undefined;
+    const backBy = dto.backBy ? new Date(dto.backBy) : undefined;
+    const change: TripChange = {
+      startAt,
+      backBy,
+      alertEnabled: dto.alertEnabled,
+    };
+
+    if (trip.status === 'planned') {
+      if (startAt || backBy) {
+        assertTripTimes(
+          startAt ?? trip.startAt,
+          backBy ?? trip.backBy,
+          now,
+          config,
+        );
+      }
+      return this.apply(id, { statuses: ['planned'] }, change, now);
+    }
+    if (trip.status !== 'active' || trip.alertSentAt || startAt) {
+      throw new TripNotEditableError();
+    }
+    if (backBy) {
+      if (backBy.getTime() <= now.getTime()) {
+        throw new TripTimesInvalidError('backBy must be in the future');
+      }
+      const latest = trip.startAt.getTime() + config.maxDurationH * HOUR_MS;
+      if (backBy.getTime() > latest) {
+        throw new TripTimesInvalidError('trip is longer than allowed');
+      }
+    }
+    return this.apply(
+      id,
+      { statuses: ['active'], alertNotSent: true },
+      change,
+      now,
+    );
+  }
+
+  /** AC7: active or alerted → checked_out. */
+  async checkOut(
+    userId: string,
+    id: string,
+    now = new Date(),
+  ): Promise<TripDto> {
+    const trip = await this.ownTrip(userId, id);
+    if (trip.status !== 'active' && trip.status !== 'alerted') {
+      throw new TripNotEditableError();
+    }
+    return this.apply(
+      id,
+      { statuses: ['active', 'alerted'] },
+      { status: 'checked_out', checkedOutAt: now },
+      now,
+    );
+  }
+
+  /** AC7: only a planned trip can be deleted. */
+  async remove(userId: string, id: string): Promise<void> {
+    const trip = await this.ownTrip(userId, id);
+    if (
+      trip.status !== 'planned' ||
+      !(await this.repository.deletePlanned(id))
+    ) {
+      throw new TripNotEditableError();
+    }
+  }
+
+  private async ownTrip(userId: string, id: string): Promise<TripRecord> {
+    const trip = await this.repository.findOwnTrip(userId, id);
+    if (!trip) throw new TripNotFoundError();
+    return trip;
+  }
+
+  /** Writes the change under its guard; a lost race (status moved meanwhile) is TRIP_NOT_EDITABLE. */
+  private async apply(
+    id: string,
+    guard: TripGuard,
+    change: TripChange,
+    now: Date,
+  ): Promise<TripDto> {
+    const updated = await this.repository.updateIf(id, guard, change);
+    if (!updated) throw new TripNotEditableError();
+    const config = await this.gameConfig.tripConfig(now.getTime());
+    return this.toDto(updated, config.alertDelayMin);
   }
 
   private toDto(trip: TripRecord, alertDelayMin: number): TripDto {

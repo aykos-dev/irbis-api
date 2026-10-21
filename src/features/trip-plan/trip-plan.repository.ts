@@ -4,7 +4,11 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import type { OpenMeteoDaily } from '../conditions/condition.rules.js';
 import type { PlaceTypeCode } from '../places/places.constants.js';
 import { TripAlreadyActiveError } from './trip-plan.errors.js';
-import type { TripStatusCode } from './trip-plan.constants.js';
+import type { LocaleCode } from '../auth/auth.constants.js';
+import {
+  ALERT_MAX_ATTEMPTS,
+  type TripStatusCode,
+} from './trip-plan.constants.js';
 
 export interface PreviewPlace {
   id: string;
@@ -58,6 +62,48 @@ export interface NewTrip {
   contact: StoredContact;
   startedAt: Date | null;
   location: { lat: number; lng: number; accuracyM: number } | null;
+}
+
+export interface TripLocation {
+  lat: number;
+  lng: number;
+  accuracyM: number;
+}
+
+/** Fields a lifecycle step may change. */
+export interface TripChange {
+  status?: TripStatusCode;
+  startAt?: Date;
+  backBy?: Date;
+  alertEnabled?: boolean;
+  startedAt?: Date;
+  checkedOutAt?: Date;
+  location?: TripLocation | null;
+}
+
+/** Only apply the change while the trip still is in one of `statuses` (and, with `alertNotSent`, unalerted). */
+export interface TripGuard {
+  statuses: TripStatusCode[];
+  alertNotSent?: boolean;
+}
+
+/** An active trip whose alert is due: everything the SMS needs. `contactPhone` is PhoneCipher ciphertext. */
+export interface DueAlert {
+  id: string;
+  userId: string;
+  backBy: Date;
+  contactPhone: string;
+  alertAttempts: number;
+  startLat: number | null;
+  startLng: number | null;
+  user: { username: string; displayName: string | null; locale: LocaleCode };
+  place: {
+    nameUz: string;
+    nameRu: string | null;
+    nameEn: string | null;
+    latitude: number;
+    longitude: number;
+  };
 }
 
 const tripSelect = {
@@ -189,6 +235,122 @@ export class TripPlanRepository {
       where: { userId, status: 'planned', startAt: { gte: since } },
       orderBy: [{ startAt: 'asc' }, { id: 'asc' }],
       select: tripSelect,
+    });
+  }
+
+  findOwnTrip(userId: string, id: string): Promise<TripRecord | null> {
+    return this.prisma.trip.findFirst({
+      where: { id, userId },
+      select: tripSelect,
+    });
+  }
+
+  /**
+   * Applies `change` only while `guard` still holds (a conditional update, so a concurrent step
+   * cannot be overwritten). Null when the guard no longer matched. Throws TRIP_ALREADY_ACTIVE
+   * when the one-active-trip index rejects the row.
+   */
+  async updateIf(
+    id: string,
+    guard: TripGuard,
+    change: TripChange,
+  ): Promise<TripRecord | null> {
+    const { location, ...fields } = change;
+    try {
+      const { count } = await this.prisma.trip.updateMany({
+        where: {
+          id,
+          status: { in: guard.statuses },
+          ...(guard.alertNotSent ? { alertSentAt: null } : {}),
+        },
+        data: {
+          ...fields,
+          ...(location !== undefined
+            ? {
+                startLat: location?.lat ?? null,
+                startLng: location?.lng ?? null,
+                startAccuracyM: location?.accuracyM ?? null,
+              }
+            : {}),
+        },
+      });
+      if (count === 0) return null;
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new TripAlreadyActiveError();
+      throw error;
+    }
+    return this.prisma.trip.findUnique({ where: { id }, select: tripSelect });
+  }
+
+  /** Deletes the trip only while it is planned; false when it was not. */
+  async deletePlanned(id: string): Promise<boolean> {
+    const { count } = await this.prisma.trip.deleteMany({
+      where: { id, status: 'planned' },
+    });
+    return count > 0;
+  }
+
+  /** AC8: active, alert on, not yet alerted, under the retry cap, with backBy at or before `dueBefore`. */
+  listDueAlerts(dueBefore: Date): Promise<DueAlert[]> {
+    return this.prisma.trip.findMany({
+      where: {
+        status: 'active',
+        alertEnabled: true,
+        alertSentAt: null,
+        alertAttempts: { lt: ALERT_MAX_ATTEMPTS },
+        backBy: { lte: dueBefore },
+      },
+      orderBy: [{ backBy: 'asc' }, { id: 'asc' }],
+      select: {
+        id: true,
+        userId: true,
+        backBy: true,
+        contactPhone: true,
+        alertAttempts: true,
+        startLat: true,
+        startLng: true,
+        user: { select: { username: true, displayName: true, locale: true } },
+        place: {
+          select: {
+            nameUz: true,
+            nameRu: true,
+            nameEn: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+      },
+    });
+  }
+
+  /** Claims the alert by stamping alertSentAt; true only for the one caller whose update matched. */
+  async claimAlert(id: string, at: Date): Promise<boolean> {
+    const { count } = await this.prisma.trip.updateMany({
+      where: {
+        id,
+        status: 'active',
+        alertEnabled: true,
+        alertSentAt: null,
+        alertAttempts: { lt: ALERT_MAX_ATTEMPTS },
+      },
+      data: { alertSentAt: at },
+    });
+    return count === 1;
+  }
+
+  /** The SMS went out: active → alerted (a check-out that raced the send keeps checked_out). */
+  async markAlerted(id: string): Promise<void> {
+    await this.prisma.trip.updateMany({
+      where: { id, status: 'active' },
+      data: { status: 'alerted' },
+    });
+  }
+
+  /** The send failed: release the claim and count the attempt so the next tick may retry. */
+  async releaseAlert(id: string, claimedAt: Date): Promise<void> {
+    await this.prisma.trip.updateMany({
+      where: { id, alertSentAt: claimedAt },
+      data: { alertSentAt: null, alertAttempts: { increment: 1 } },
     });
   }
 }

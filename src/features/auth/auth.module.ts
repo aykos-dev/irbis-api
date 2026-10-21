@@ -58,7 +58,9 @@ import { TokenService } from './token.service.js';
   // AuthService: the global account-status guard and the profile username change.
   // PasswordService: PATCH /v1/me verifies currentPassword. AdminBootstrapService: the admin:create CLI.
   // MeService: the profile slice uses its mapping for PATCH /v1/me.
+  // SmsSender: the trip-plan alert job texts the emergency contact.
   exports: [
+    SmsSender,
     AuthService,
     GuestMergeRegistry,
     AdminBootstrapService,

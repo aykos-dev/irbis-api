@@ -9,9 +9,20 @@ export interface SmsMessage {
   purpose: SmsPurposeCode;
 }
 
-/** Delivers one-time codes. A real provider adapter is added later; it must not log codes or phones. */
+/** A free-text SMS (trip-plan alert to the emergency contact). */
+export interface SmsTextMessage {
+  userId: string;
+  phone: string;
+  text: string;
+}
+
+/**
+ * Delivers one-time codes and plain texts. A real provider adapter is added later; it must not
+ * log codes, phones or texts.
+ */
 export abstract class SmsSender {
   abstract send(message: SmsMessage): Promise<void>;
+  abstract sendText(message: SmsTextMessage): Promise<void>;
 }
 
 /**
@@ -35,6 +46,14 @@ export class FakeSmsSender extends SmsSender {
 
   send(message: SmsMessage): Promise<void> {
     this.logger.log(`SMS code for user ${message.userId}: ${message.code}`);
+    return Promise.resolve();
+  }
+
+  /** The text may carry a name and a location: only its length is logged. */
+  sendText(message: SmsTextMessage): Promise<void> {
+    this.logger.log(
+      `SMS text for user ${message.userId} (${message.text.length} chars)`,
+    );
     return Promise.resolve();
   }
 }

@@ -106,3 +106,38 @@ export class CreateTripDto {
   @Type(() => TripLocationDto)
   location?: TripLocationDto;
 }
+
+export class StartTripDto {
+  @ApiPropertyOptional({
+    type: TripLocationDto,
+    description: 'Device position at start, used for the alert link.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TripLocationDto)
+  location?: TripLocationDto;
+}
+
+export class UpdateTripDto {
+  @ApiPropertyOptional({
+    format: 'date-time',
+    description: 'Planned trips only.',
+  })
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  startAt?: string;
+
+  @ApiPropertyOptional({
+    format: 'date-time',
+    description:
+      'Active trips: after now and within maxDurationH of startAt, until the alert is sent.',
+  })
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  backBy?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  alertEnabled?: boolean;
+}
