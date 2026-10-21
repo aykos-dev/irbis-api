@@ -1,0 +1,67 @@
+# CI on every pull request and push; CD to the dev server (devapi.wayout.uz) on push to main.
+# Deploy needs: secret DEPLOY_SSH_KEY, variables DEPLOY_HOST and DEPLOY_KNOWN_HOSTS (DEPLOY_USER defaults to root).
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Lint, typecheck, unit + e2e (Testcontainers on the runner's Docker), dependency-cruiser, slop grep.
+      - run: npm run check
+      - run: npm run build
+      - name: openapi.json is up to date
+        run: npm run -s openapi:export && git diff --exit-code openapi.json
+
+  deploy:
+    needs: check
+    # Skipped until the DEPLOY_* settings exist in the repo.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_HOST != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: dev
+      url: https://devapi.wayout.uz/health
+    concurrency:
+      group: deploy-irbis-api
+      cancel-in-progress: false
+    steps:
+      - name: Deploy over SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+          USER: ${{ vars.DEPLOY_USER || 'root' }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # The server key only accepts this project name (forced command).
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$USER@$HOST" irbis-api
+      - name: Health check
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS https://devapi.wayout.uz/health; then exit 0; fi
+            sleep 5
+          done
+          echo "devapi.wayout.uz/health did not turn healthy" >&2
+          exit 1
