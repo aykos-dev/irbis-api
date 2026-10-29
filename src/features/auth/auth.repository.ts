@@ -171,18 +171,19 @@ export class AuthRepository {
   }
 
   /**
-   * Sets username + password and clears `isDemo`, only while the user is still a demo.
+   * Sets username + password + terms acceptance and clears `isDemo`, only while the user is still a demo.
    * False when it no longer is; a username claimed meanwhile answers USERNAME_TAKEN.
    */
   async secureDemoUser(
     id: string,
     username: string,
     passwordHash: string,
+    termsAcceptedAt: Date,
   ): Promise<boolean> {
     try {
       const updated = await this.prisma.user.updateMany({
         where: { id, isDemo: true },
-        data: { username, passwordHash, isDemo: false },
+        data: { username, passwordHash, termsAcceptedAt, isDemo: false },
       });
       return updated.count === 1;
     } catch (error) {

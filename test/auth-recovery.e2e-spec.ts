@@ -465,6 +465,7 @@ describe('password reset, recovery phone, /me, guest merge (e2e) - AC5, AC6, AC8
           'homeRegion',
           'id',
           'interests',
+          'isDemo',
           'level',
           'locale',
           'preferences',

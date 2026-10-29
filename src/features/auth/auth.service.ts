@@ -123,13 +123,19 @@ export class AuthService {
     const user = await this.repository.findById(userId);
     if (!user) throw new UnauthorizedException();
     if (!user.isDemo) throw new NotDemoError();
+    if (!dto.acceptTerms) throw new TermsRequiredError();
 
     const username = normalizeUsername(dto.username);
     this.assertUsernameUsable(username);
     this.passwords.assertAcceptable(dto.password, username);
     const passwordHash = await this.passwords.hash(dto.password);
     if (
-      !(await this.repository.secureDemoUser(userId, username, passwordHash))
+      !(await this.repository.secureDemoUser(
+        userId,
+        username,
+        passwordHash,
+        new Date(),
+      ))
     ) {
       throw new NotDemoError();
     }

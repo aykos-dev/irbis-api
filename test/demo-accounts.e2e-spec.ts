@@ -1,6 +1,7 @@
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import request from 'supertest';
+import { PrismaService } from '../src/prisma/prisma.service.js';
 import { createE2eApp } from './setup/app.js';
 import { GOOD_PASSWORD, bearer, signUp, uniqueName } from './setup/auth.js';
 import { e2eEnv, startPostgres } from './setup/postgres.js';
@@ -35,6 +36,12 @@ describe('demo accounts (e2e) - ADR-006, check-in AC6/AC8', () => {
     expect(demo.body.me).toMatchObject({ isDemo: true, locale: 'en' });
     expect(demo.body.me.username).toMatch(/^explorer_\d{4}$/);
     const token: string = demo.body.accessToken;
+    const terms = () =>
+      app
+        .get(PrismaService)
+        .user.findUniqueOrThrow({ where: { id: demo.body.me.id } })
+        .then((row) => row.termsAcceptedAt);
+    expect(await terms()).toBeNull();
     expect(demo.body.refreshToken).toEqual(expect.any(String));
 
     const me = await request(server())
@@ -60,8 +67,10 @@ describe('demo accounts (e2e) - ADR-006, check-in AC6/AC8', () => {
     const secured = await secure(token, {
       username,
       password: GOOD_PASSWORD,
+      acceptTerms: true,
     }).expect(200);
     expect(secured.body).toMatchObject({ username, isDemo: false });
+    expect(await terms()).toEqual(expect.any(Date));
 
     // The session is kept.
     await request(server())
@@ -71,11 +80,24 @@ describe('demo accounts (e2e) - ADR-006, check-in AC6/AC8', () => {
     await logIn(username, GOOD_PASSWORD).expect(200);
   });
 
+  it('400 TERMS_REQUIRED when securing without accepting the terms', async () => {
+    const demo = await createDemo().expect(201);
+    const body = { username: uniqueName(), password: GOOD_PASSWORD };
+    const refused = await secure(demo.body.accessToken, {
+      ...body,
+      acceptTerms: false,
+    }).expect(400);
+    expect(refused.body.code).toBe('TERMS_REQUIRED');
+    const missing = await secure(demo.body.accessToken, body).expect(400);
+    expect(missing.body.code).toBe('VALIDATION_FAILED');
+  });
+
   it('409 NOT_DEMO when securing a normal account', async () => {
     const account = await signUp(app);
     const res = await secure(account.accessToken, {
       username: uniqueName(),
       password: GOOD_PASSWORD,
+      acceptTerms: true,
     }).expect(409);
     expect(res.body.code).toBe('NOT_DEMO');
   });
@@ -86,13 +108,14 @@ describe('demo accounts (e2e) - ADR-006, check-in AC6/AC8', () => {
     const res = await secure(demo.body.accessToken, {
       username: other.username,
       password: GOOD_PASSWORD,
+      acceptTerms: true,
     }).expect(409);
     expect(res.body.code).toBe('USERNAME_TAKEN');
   });
 
   it('429 DEMO_LIMIT for the 6th demo account from one IP in 24 h', async () => {
-    // Two created above; three more fill the day's limit of 5.
-    for (let i = 0; i < 3; i += 1) await createDemo().expect(201);
+    // Three created above; two more fill the day's limit of 5.
+    for (let i = 0; i < 2; i += 1) await createDemo().expect(201);
     const res = await createDemo().expect(429);
     expect(res.body.code).toBe('DEMO_LIMIT');
   });

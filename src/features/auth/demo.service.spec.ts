@@ -1,6 +1,10 @@
 import type { AppConfig } from '../../config/app-config.js';
 import type { GameConfigService } from '../levels/game-config.service.js';
-import { NotDemoError, UsernameTakenError } from './auth.errors.js';
+import {
+  NotDemoError,
+  TermsRequiredError,
+  UsernameTakenError,
+} from './auth.errors.js';
 import type { AuthRepository, UserRecord } from './auth.repository.js';
 import { AuthService } from './auth.service.js';
 import { demoUsername } from './demo.rules.js';
@@ -93,6 +97,7 @@ describe('AuthService.secure (ADR-006)', () => {
     await service.secure('user_1', {
       username: 'Guest_1',
       password: GOOD_PASSWORD,
+      acceptTerms: true,
     });
     expect(secured).toEqual([
       { username: 'guest_1', passwordHash: `hash:${GOOD_PASSWORD}` },
@@ -105,8 +110,21 @@ describe('AuthService.secure (ADR-006)', () => {
       service.secure('user_1', {
         username: 'guest_1',
         password: GOOD_PASSWORD,
+        acceptTerms: true,
       }),
     ).rejects.toBeInstanceOf(NotDemoError);
+    expect(secured).toEqual([]);
+  });
+
+  it('refuses without accepted terms (TERMS_REQUIRED)', async () => {
+    const { service, secured } = setup();
+    await expect(
+      service.secure('user_1', {
+        username: 'guest_1',
+        password: GOOD_PASSWORD,
+        acceptTerms: false,
+      }),
+    ).rejects.toBeInstanceOf(TermsRequiredError);
     expect(secured).toEqual([]);
   });
 });

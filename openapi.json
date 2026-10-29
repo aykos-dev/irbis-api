@@ -753,7 +753,7 @@
             }
           },
           "400": {
-            "description": "Error. code: VALIDATION_FAILED | USERNAME_INVALID | USERNAME_RESERVED | PASSWORD_WEAK",
+            "description": "Error. code: VALIDATION_FAILED | USERNAME_INVALID | USERNAME_RESERVED | PASSWORD_WEAK | TERMS_REQUIRED",
             "content": {
               "application/json": {
                 "schema": {
@@ -6760,11 +6760,16 @@
           "password": {
             "type": "string",
             "description": "6-64 chars, not the username, not a common password."
+          },
+          "acceptTerms": {
+            "type": "boolean",
+            "description": "Must be true, as on sign-up."
           }
         },
         "required": [
           "username",
-          "password"
+          "password",
+          "acceptTerms"
         ]
       },
       "RecoveryPhoneDto": {

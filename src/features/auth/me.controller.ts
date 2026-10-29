@@ -65,6 +65,7 @@ export class MeController {
       'USERNAME_INVALID',
       'USERNAME_RESERVED',
       'PASSWORD_WEAK',
+      'TERMS_REQUIRED',
     ],
     401: ['UNAUTHENTICATED'],
     403: ['ACCOUNT_BLOCKED'],

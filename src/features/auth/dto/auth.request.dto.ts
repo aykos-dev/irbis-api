@@ -67,6 +67,10 @@ export class SecureAccountDto {
   @IsString()
   @MaxLength(256)
   password: string;
+
+  @ApiProperty({ description: 'Must be true, as on sign-up.' })
+  @IsBoolean()
+  acceptTerms: boolean;
 }
 
 export class LogInDto {
