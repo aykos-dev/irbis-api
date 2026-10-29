@@ -2037,6 +2037,223 @@
         ]
       }
     },
+    "/v1/levels": {
+      "get": {
+        "operationId": "Levels_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LevelListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "The level table with how many places each level opens",
+        "tags": [
+          "Levels"
+        ]
+      }
+    },
+    "/v1/me/level": {
+      "get": {
+        "operationId": "MeLevel_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyLevelDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The signed-in user's level, next-level bars and unseen level-ups",
+        "tags": [
+          "Levels"
+        ]
+      }
+    },
+    "/v1/me/level-ups/{id}/seen": {
+      "post": {
+        "operationId": "MeLevel_markLevelUpSeen",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: LEVEL_UP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a level-up as seen (repeating it is fine)",
+        "tags": [
+          "Levels"
+        ]
+      }
+    },
+    "/v1/qa/levels/grant": {
+      "post": {
+        "description": "Answers 404 NOT_FOUND unless QA_TOOLS_ENABLED=true.",
+        "operationId": "QaLevels_grant",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QaGrantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyLevelDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "QA only: grant XP, lessons, check-ins and verified spots to yourself",
+        "tags": [
+          "QA"
+        ]
+      }
+    },
     "/v1/places/{id}/condition": {
       "get": {
         "operationId": "Conditions_getForPlace",
@@ -2655,223 +2872,6 @@
         "summary": "End an override",
         "tags": [
           "Admin"
-        ]
-      }
-    },
-    "/v1/levels": {
-      "get": {
-        "operationId": "Levels_list",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LevelListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "The level table with how many places each level opens",
-        "tags": [
-          "Levels"
-        ]
-      }
-    },
-    "/v1/me/level": {
-      "get": {
-        "operationId": "MeLevel_get",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MyLevelDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Error. code: UNAUTHENTICATED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Error. code: ACCOUNT_BLOCKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "The signed-in user's level, next-level bars and unseen level-ups",
-        "tags": [
-          "Levels"
-        ]
-      }
-    },
-    "/v1/me/level-ups/{id}/seen": {
-      "post": {
-        "operationId": "MeLevel_markLevelUpSeen",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": "Error. code: VALIDATION_FAILED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Error. code: UNAUTHENTICATED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Error. code: ACCOUNT_BLOCKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Error. code: LEVEL_UP_NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Mark a level-up as seen (repeating it is fine)",
-        "tags": [
-          "Levels"
-        ]
-      }
-    },
-    "/v1/qa/levels/grant": {
-      "post": {
-        "description": "Answers 404 NOT_FOUND unless QA_TOOLS_ENABLED=true.",
-        "operationId": "QaLevels_grant",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QaGrantDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MyLevelDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Error. code: VALIDATION_FAILED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Error. code: UNAUTHENTICATED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Error. code: ACCOUNT_BLOCKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Error. code: NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "QA only: grant XP, lessons, check-ins and verified spots to yourself",
-        "tags": [
-          "QA"
         ]
       }
     },
@@ -5900,6 +5900,104 @@
           "Live"
         ]
       }
+    },
+    "/v1/check-ins": {
+      "post": {
+        "description": "Rules in order: recordedAt (future → 400, older than 72 h → 422), place, accuracy, radius of the place type. A repeat at the same place in the same Asia/Tashkent month is stored with counted=false and 0 XP.",
+        "operationId": "checkInsCreate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "This clientId was already stored: its result is returned again (no new XP).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResult"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: CHECK_IN_TOO_OLD | LOCATION_INACCURATE | CHECK_IN_TOO_FAR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check in at a place with a GPS fix (earns XP once per place per month)",
+        "tags": [
+          "Check-ins"
+        ]
+      }
     }
   },
   "info": {
@@ -7373,6 +7471,10 @@
           },
           "viewer": {
             "$ref": "#/components/schemas/PlaceViewerDto"
+          },
+          "checkInRadiusM": {
+            "type": "integer",
+            "description": "A check-in must be within this many metres of the place (by type, from config)."
           }
         },
         "required": [
@@ -7391,8 +7493,334 @@
           "season",
           "hazards",
           "origin",
-          "viewer"
+          "viewer",
+          "checkInRadiusM"
         ]
+      },
+      "LessonGateKind": {
+        "type": "string",
+        "enum": [
+          "count",
+          "tier",
+          "all"
+        ],
+        "description": "count: any lessons; tier: lessons of `tier`; all: every lesson."
+      },
+      "LessonGateDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "description": "count: any lessons; tier: lessons of `tier`; all: every lesson.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LessonGateKind"
+              }
+            ]
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true,
+            "example": "2"
+          },
+          "required": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "tier",
+          "required"
+        ]
+      },
+      "CheckInGateDto": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "integer"
+          },
+          "minDifficulty": {
+            "type": "integer",
+            "description": "Only check-ins at places of at least this difficulty count."
+          }
+        },
+        "required": [
+          "required",
+          "minDifficulty"
+        ]
+      },
+      "LevelDefDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "example": 2
+          },
+          "xp": {
+            "type": "integer",
+            "description": "Total XP needed."
+          },
+          "lessons": {
+            "$ref": "#/components/schemas/LessonGateDto"
+          },
+          "checkIns": {
+            "$ref": "#/components/schemas/CheckInGateDto"
+          },
+          "verifiedSpots": {
+            "type": "integer"
+          },
+          "maxDifficulty": {
+            "type": "integer",
+            "description": "Hardest place difficulty this level opens."
+          },
+          "newPlacesCount": {
+            "type": "integer",
+            "description": "Places whose requiredLevel is this level."
+          }
+        },
+        "required": [
+          "level",
+          "xp",
+          "lessons",
+          "checkIns",
+          "verifiedSpots",
+          "maxDifficulty",
+          "newPlacesCount"
+        ]
+      },
+      "LevelListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Levels 1..7 in order.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelDefDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ProgressBarDto": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "required"
+        ]
+      },
+      "LessonProgressDto": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "integer"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LessonGateKind"
+              }
+            ]
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "current",
+          "required",
+          "kind",
+          "tier"
+        ]
+      },
+      "CheckInProgressDto": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "integer"
+          },
+          "minDifficulty": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "required",
+          "minDifficulty"
+        ]
+      },
+      "NextLevelDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer"
+          },
+          "xp": {
+            "$ref": "#/components/schemas/ProgressBarDto"
+          },
+          "lessons": {
+            "$ref": "#/components/schemas/LessonProgressDto"
+          },
+          "checkIns": {
+            "$ref": "#/components/schemas/CheckInProgressDto"
+          },
+          "verifiedSpots": {
+            "nullable": true,
+            "description": "Null when the next level needs no verified spots.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProgressBarDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "level",
+          "xp",
+          "lessons",
+          "checkIns",
+          "verifiedSpots"
+        ]
+      },
+      "PendingLevelUpDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromLevel": {
+            "type": "integer"
+          },
+          "toLevel": {
+            "type": "integer"
+          },
+          "maxDifficulty": {
+            "type": "integer"
+          },
+          "newPlacesCount": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "fromLevel",
+          "toLevel",
+          "maxDifficulty",
+          "newPlacesCount"
+        ]
+      },
+      "MyLevelDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "example": 1
+          },
+          "xpTotal": {
+            "type": "integer"
+          },
+          "reachedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "next": {
+            "nullable": true,
+            "description": "Null at the top level.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/NextLevelDto"
+              }
+            ]
+          },
+          "pendingLevelUps": {
+            "description": "Level-ups not yet seen, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingLevelUpDto"
+            }
+          }
+        },
+        "required": [
+          "level",
+          "xpTotal",
+          "reachedAt",
+          "next",
+          "pendingLevelUps"
+        ]
+      },
+      "QaGrantLessonDto": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "example": "2"
+          }
+        },
+        "required": [
+          "tier"
+        ]
+      },
+      "QaGrantCheckInDto": {
+        "type": "object",
+        "properties": {
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "difficulty"
+        ]
+      },
+      "QaGrantDto": {
+        "type": "object",
+        "properties": {
+          "xp": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20000
+          },
+          "lessons": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QaGrantLessonDto"
+            }
+          },
+          "checkIns": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QaGrantCheckInDto"
+            }
+          },
+          "verifiedSpots": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          }
+        }
       },
       "ConditionSource": {
         "type": "string",
@@ -7974,331 +8402,6 @@
           "reason",
           "expiresAt"
         ]
-      },
-      "LessonGateKind": {
-        "type": "string",
-        "enum": [
-          "count",
-          "tier",
-          "all"
-        ],
-        "description": "count: any lessons; tier: lessons of `tier`; all: every lesson."
-      },
-      "LessonGateDto": {
-        "type": "object",
-        "properties": {
-          "kind": {
-            "description": "count: any lessons; tier: lessons of `tier`; all: every lesson.",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LessonGateKind"
-              }
-            ]
-          },
-          "tier": {
-            "type": "string",
-            "nullable": true,
-            "example": "2"
-          },
-          "required": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "kind",
-          "tier",
-          "required"
-        ]
-      },
-      "CheckInGateDto": {
-        "type": "object",
-        "properties": {
-          "required": {
-            "type": "integer"
-          },
-          "minDifficulty": {
-            "type": "integer",
-            "description": "Only check-ins at places of at least this difficulty count."
-          }
-        },
-        "required": [
-          "required",
-          "minDifficulty"
-        ]
-      },
-      "LevelDefDto": {
-        "type": "object",
-        "properties": {
-          "level": {
-            "type": "integer",
-            "example": 2
-          },
-          "xp": {
-            "type": "integer",
-            "description": "Total XP needed."
-          },
-          "lessons": {
-            "$ref": "#/components/schemas/LessonGateDto"
-          },
-          "checkIns": {
-            "$ref": "#/components/schemas/CheckInGateDto"
-          },
-          "verifiedSpots": {
-            "type": "integer"
-          },
-          "maxDifficulty": {
-            "type": "integer",
-            "description": "Hardest place difficulty this level opens."
-          },
-          "newPlacesCount": {
-            "type": "integer",
-            "description": "Places whose requiredLevel is this level."
-          }
-        },
-        "required": [
-          "level",
-          "xp",
-          "lessons",
-          "checkIns",
-          "verifiedSpots",
-          "maxDifficulty",
-          "newPlacesCount"
-        ]
-      },
-      "LevelListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "description": "Levels 1..7 in order.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LevelDefDto"
-            }
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "ProgressBarDto": {
-        "type": "object",
-        "properties": {
-          "current": {
-            "type": "integer"
-          },
-          "required": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "current",
-          "required"
-        ]
-      },
-      "LessonProgressDto": {
-        "type": "object",
-        "properties": {
-          "current": {
-            "type": "integer"
-          },
-          "required": {
-            "type": "integer"
-          },
-          "kind": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LessonGateKind"
-              }
-            ]
-          },
-          "tier": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "current",
-          "required",
-          "kind",
-          "tier"
-        ]
-      },
-      "CheckInProgressDto": {
-        "type": "object",
-        "properties": {
-          "current": {
-            "type": "integer"
-          },
-          "required": {
-            "type": "integer"
-          },
-          "minDifficulty": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "current",
-          "required",
-          "minDifficulty"
-        ]
-      },
-      "NextLevelDto": {
-        "type": "object",
-        "properties": {
-          "level": {
-            "type": "integer"
-          },
-          "xp": {
-            "$ref": "#/components/schemas/ProgressBarDto"
-          },
-          "lessons": {
-            "$ref": "#/components/schemas/LessonProgressDto"
-          },
-          "checkIns": {
-            "$ref": "#/components/schemas/CheckInProgressDto"
-          },
-          "verifiedSpots": {
-            "nullable": true,
-            "description": "Null when the next level needs no verified spots.",
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ProgressBarDto"
-              }
-            ]
-          }
-        },
-        "required": [
-          "level",
-          "xp",
-          "lessons",
-          "checkIns",
-          "verifiedSpots"
-        ]
-      },
-      "PendingLevelUpDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "fromLevel": {
-            "type": "integer"
-          },
-          "toLevel": {
-            "type": "integer"
-          },
-          "maxDifficulty": {
-            "type": "integer"
-          },
-          "newPlacesCount": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "fromLevel",
-          "toLevel",
-          "maxDifficulty",
-          "newPlacesCount"
-        ]
-      },
-      "MyLevelDto": {
-        "type": "object",
-        "properties": {
-          "level": {
-            "type": "integer",
-            "example": 1
-          },
-          "xpTotal": {
-            "type": "integer"
-          },
-          "reachedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "next": {
-            "nullable": true,
-            "description": "Null at the top level.",
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/NextLevelDto"
-              }
-            ]
-          },
-          "pendingLevelUps": {
-            "description": "Level-ups not yet seen, oldest first.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PendingLevelUpDto"
-            }
-          }
-        },
-        "required": [
-          "level",
-          "xpTotal",
-          "reachedAt",
-          "next",
-          "pendingLevelUps"
-        ]
-      },
-      "QaGrantLessonDto": {
-        "type": "object",
-        "properties": {
-          "tier": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20,
-            "example": "2"
-          }
-        },
-        "required": [
-          "tier"
-        ]
-      },
-      "QaGrantCheckInDto": {
-        "type": "object",
-        "properties": {
-          "difficulty": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
-          }
-        },
-        "required": [
-          "difficulty"
-        ]
-      },
-      "QaGrantDto": {
-        "type": "object",
-        "properties": {
-          "xp": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 20000
-          },
-          "lessons": {
-            "maxItems": 50,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QaGrantLessonDto"
-            }
-          },
-          "checkIns": {
-            "maxItems": 50,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QaGrantCheckInDto"
-            }
-          },
-          "verifiedSpots": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 10
-          }
-        }
       },
       "L10nDto": {
         "type": "object",
@@ -10533,6 +10636,114 @@
           "placeNames",
           "backBy",
           "status"
+        ]
+      },
+      "CreateCheckInDto": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Generated by the app once per check-in; a retry with the same id returns the stored result (200)."
+          },
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "Above the configured maximum (50 m) → LOCATION_INACCURATE."
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fix was taken: at most 2 min ahead of the server (400) and at most 72 h old (CHECK_IN_TOO_OLD)."
+          }
+        },
+        "required": [
+          "clientId",
+          "placeId",
+          "lat",
+          "lng",
+          "accuracyM",
+          "recordedAt"
+        ]
+      },
+      "CheckInLevelUp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromLevel": {
+            "type": "integer"
+          },
+          "toLevel": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "fromLevel",
+          "toLevel"
+        ]
+      },
+      "CheckInResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "counted": {
+            "type": "boolean",
+            "description": "False for a repeat at the same place in the same Asia/Tashkent month (no XP)."
+          },
+          "xp": {
+            "type": "integer",
+            "description": "0 when not counted."
+          },
+          "levelUps": {
+            "description": "Level-ups this check-in caused; empty on a replay.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CheckInLevelUp"
+            }
+          },
+          "pathVisited": {
+            "type": "boolean",
+            "description": "True when this check-in marked a node of the month's path done."
+          }
+        },
+        "required": [
+          "id",
+          "placeId",
+          "recordedAt",
+          "counted",
+          "xp",
+          "levelUps",
+          "pathVisited"
         ]
       }
     }

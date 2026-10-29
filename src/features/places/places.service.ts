@@ -55,7 +55,7 @@ export class PlacesService {
     id: string,
     query: PlaceOriginQueryDto,
     viewerId?: string,
-  ): Promise<PlaceDetailDto> {
+  ): Promise<Omit<PlaceDetailDto, 'checkInRadiusM'>> {
     const row = await this.places.findById(id);
     if (!row) throw new PlaceNotFoundError();
     const { origin, point } = this.resolveOrigin(query);

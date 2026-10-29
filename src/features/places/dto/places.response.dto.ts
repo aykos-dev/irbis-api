@@ -108,4 +108,11 @@ export class PlaceDetailDto extends OmitType(PlaceListItemDto, [
   origin: PlaceOrigin;
 
   @ApiProperty({ type: PlaceViewerDto }) viewer: PlaceViewerDto;
+
+  @ApiProperty({
+    type: 'integer',
+    description:
+      'A check-in must be within this many metres of the place (by type, from config).',
+  })
+  checkInRadiusM: number;
 }

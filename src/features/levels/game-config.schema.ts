@@ -111,6 +111,27 @@ export const tripActiveConfigSchema = z.object({
 });
 
 export type TripActiveConfig = z.infer<typeof tripActiveConfigSchema>;
+
+const metres = z.number().int().min(1);
+
+/** `checkIn.config` (check-in): XP per difficulty 1–5, radius per place type, fix limits, demo quota. */
+export const checkInConfigSchema = z.object({
+  xpByDifficulty: z.array(z.number().int().min(1)).length(MAX_DIFFICULTY),
+  radiusMByType: z.object({
+    peak: metres,
+    waterfall: metres,
+    cave: metres,
+    lake: metres,
+    canyon: metres,
+    camping: metres,
+    trail: metres,
+  }),
+  maxAccuracyM: z.number().min(0),
+  maxAgeHours: z.number().min(0),
+  demoPerIpPerDay: z.number().int().min(0),
+});
+
+export type CheckInConfig = z.infer<typeof checkInConfigSchema>;
 export type LevelRow = z.infer<typeof levelRowSchema>;
 export type LevelTable = z.infer<typeof levelTableSchema>;
 export type DailyCaps = z.infer<typeof dailyCapsSchema>;

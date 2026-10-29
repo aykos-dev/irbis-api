@@ -82,6 +82,23 @@ export const tripActiveConfig = {
   liveAfterCheckoutH: 2,
 };
 
+/** check-in: XP by difficulty 1–5, radius by place type, fix accuracy / age limits, demo check-ins per IP. */
+export const checkInConfig = {
+  xpByDifficulty: [40, 60, 80, 100, 120],
+  radiusMByType: {
+    peak: 300,
+    waterfall: 300,
+    cave: 200,
+    lake: 1000,
+    canyon: 1000,
+    camping: 1000,
+    trail: 1000,
+  },
+  maxAccuracyM: 50,
+  maxAgeHours: 72,
+  demoPerIpPerDay: 5,
+};
+
 export const gameConfigRows = [
   { key: 'levels.table', value: levelTable },
   { key: 'xp.dailyCaps', value: xpDailyCaps },
@@ -97,4 +114,9 @@ export const pathConfigRows = [{ key: 'path.config', value: pathConfig }];
 export const tripConfigRows = [
   { key: 'trip.config', value: tripConfig },
   { key: 'trip.active', value: tripActiveConfig },
+];
+
+/** GameConfig rows owned by check-in (seeded by seedCheckInConfig). */
+export const checkInConfigRows = [
+  { key: 'checkIn.config', value: checkInConfig },
 ];

@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import type { z } from 'zod';
 import {
+  checkInConfigSchema,
   dailyCapsSchema,
   lessonsConfigSchema,
   levelTableSchema,
   pathConfigSchema,
   tripActiveConfigSchema,
   tripConfigSchema,
+  type CheckInConfig,
   type DailyCaps,
   type LessonsConfig,
   type LevelTable,
@@ -68,6 +70,10 @@ export class GameConfigService {
 
   tripActiveConfig(now = Date.now()): Promise<TripActiveConfig> {
     return this.load(GAME_CONFIG_KEYS.tripActive, tripActiveConfigSchema, now);
+  }
+
+  checkInConfig(now = Date.now()): Promise<CheckInConfig> {
+    return this.load(GAME_CONFIG_KEYS.checkIn, checkInConfigSchema, now);
   }
 
   private async publishedLessons(now: number): Promise<PublishedLessonCounts> {

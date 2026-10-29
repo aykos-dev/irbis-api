@@ -5,6 +5,7 @@ import type { AuthUser } from '../../common/auth-user.js';
 import { OptionalUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { RequestValidationError } from '../../common/errors/validation.error.js';
+import { GameConfigService } from '../levels/game-config.service.js';
 import {
   PlaceOriginQueryDto,
   PlacesQueryDto,
@@ -25,7 +26,10 @@ function uuidPipe(): ParseUUIDPipe {
 @ApiTags('Places')
 @Controller('places')
 export class PlacesController {
-  constructor(private readonly places: PlacesService) {}
+  constructor(
+    private readonly places: PlacesService,
+    private readonly gameConfig: GameConfigService,
+  ) {}
 
   @Public()
   @Get()
@@ -52,11 +56,15 @@ export class PlacesController {
     400: ['VALIDATION_FAILED'],
     404: ['PLACE_NOT_FOUND'],
   })
-  detail(
+  async detail(
     @Param('id', uuidPipe()) id: string,
     @Query() query: PlaceOriginQueryDto,
     @OptionalUser() viewer: AuthUser | undefined,
   ): Promise<PlaceDetailDto> {
-    return this.places.detail(id, query, viewer?.id);
+    const [detail, checkIn] = await Promise.all([
+      this.places.detail(id, query, viewer?.id),
+      this.gameConfig.checkInConfig(),
+    ]);
+    return { ...detail, checkInRadiusM: checkIn.radiusMByType[detail.type] };
   }
 }

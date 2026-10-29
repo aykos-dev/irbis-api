@@ -171,6 +171,7 @@ model User {
   lessonCompletions LessonCompletion[]
   notifications     Notification[]
   pathMonths        PathMonth[]
+  checkIns          CheckIn[]
   emergencyContact  EmergencyContact?
   trips             Trip[]
 
@@ -310,6 +311,7 @@ model Place {
   overrides ConditionOverride[]
   pathNodes PathNode[]
   trips     Trip[]
+  checkIns  CheckIn[]
 
   @@index([type])
   @@map("places")
@@ -729,4 +731,31 @@ model TripSos {
 
   @@index([tripId, sentAt])
   @@map("trip_sos")
+}
+
+/// A verified place check-in (features/check-in.md). One counted row per (user, place, Tashkent
+/// month): a partial unique index in the check_in migration enforces it.
+model CheckIn {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  placeId     String   @map("place_id") @db.Uuid
+  /// Client-generated id; a retry with the same id replays the stored result.
+  clientId    String   @map("client_id") @db.Uuid
+  lat         Float
+  lng         Float
+  accuracyM   Float    @map("accuracy_m")
+  recordedAt  DateTime @map("recorded_at") @db.Timestamptz(3)
+  /// Asia/Tashkent YYYY-MM of recordedAt.
+  month       String   @db.Char(7)
+  counted     Boolean
+  xpAwarded   Int      @default(0) @map("xp_awarded")
+  pathVisited Boolean  @default(false) @map("path_visited")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place Place @relation(fields: [placeId], references: [id])
+
+  @@unique([userId, clientId])
+  @@index([userId, placeId, month])
+  @@map("check_ins")
 }
