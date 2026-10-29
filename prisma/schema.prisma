@@ -326,6 +326,8 @@ model Place {
   overrides ConditionOverride[]
   pathNodes PathNode[]
   trips     Trip[]
+
+  weekendConditions WeekendCondition[]
   checkIns  CheckIn[]
 
   @@index([type])
@@ -826,4 +828,17 @@ model StreakFreeze {
   @@unique([userId, kind, coversDate])
   @@index([userId, month])
   @@map("streak_freezes")
+}
+
+/// streaks AC3: a place's condition status at 12:00 Asia/Tashkent on a Saturday or Sunday (weather shield).
+model WeekendCondition {
+  placeId    String          @map("place_id") @db.Uuid
+  date       DateTime        @db.Date
+  status     ConditionStatus
+  recordedAt DateTime        @default(now()) @map("recorded_at") @db.Timestamptz(3)
+
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([placeId, date])
+  @@map("weekend_conditions")
 }

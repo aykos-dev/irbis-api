@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { tashkentDate } from '../conditions/weekend-window.js';
 import { GameConfigService } from '../levels/game-config.service.js';
+import { SHIELD_STATUSES } from './streaks.constants.js';
 import { StreaksRepository } from './streaks.repository.js';
 import {
   activityFrom,
   addDays,
   evaluateStreaks,
+  isShielded,
   missedWeeks,
   mondayOf,
   summarizeStreaks,
@@ -49,11 +51,30 @@ export class StreaksService {
     return this.evaluate(userId, now);
   }
 
-  /** AC3 seam (streaks brief 2): whether bad weather shields the week starting `monday`. */
-  readonly isWeekShielded: (
-    userId: string,
-    monday: string,
-  ) => Promise<boolean> = () => Promise.resolve(false);
+  /**
+   * AC3: the week starting `monday` is shielded when the user had places that weekend (path of
+   * that Saturday's month + trips overlapping Sat/Sun) and every one was red on both days.
+   */
+  async isWeekShielded(userId: string, monday: string): Promise<boolean> {
+    const saturday = addDays(monday, 5);
+    const placeIds = await this.repository.weekendPlacesOf(userId, saturday);
+    if (placeIds.length === 0) return false;
+    const rows = await this.repository.weekendConditions(placeIds, [
+      saturday,
+      addDays(monday, 6),
+    ]);
+    return isShielded(monday, placeIds, rows, SHIELD_STATUSES);
+  }
+
+  /** AC3 job: records today's current status of every weekend place. Returns the rows written. */
+  async recordWeekendConditions(now = new Date()): Promise<number> {
+    const day = tashkentDate(now);
+    const placeIds = await this.repository.weekendPlacesOn(day);
+    if (placeIds.length === 0) return 0;
+    const rows = await this.repository.currentStatuses(placeIds);
+    await this.repository.saveWeekendConditions(day, rows);
+    return rows.length;
+  }
 
   /**
    * Lazy, idempotent evaluation under a per-user lock. Activity recorded for an already-evaluated

@@ -1,15 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import type {
-  ActivityDayInput,
-  ActivityKind,
-  FreezeUse,
-  StreakSnapshot,
+import type { ConditionStatusCode } from '../conditions/conditions.constants.js';
+import {
+  addDays,
+  monthOf,
+  type ActivityDayInput,
+  type ActivityKind,
+  type FreezeUse,
+  type StreakSnapshot,
+  type WeekendConditionRow,
 } from './streaks.rules.js';
 
 const toDbDate = (day: string): Date => new Date(`${day}T00:00:00Z`);
 const fromDbDate = (date: Date): string => date.toISOString().slice(0, 10);
+/** 00:00 Asia/Tashkent (UTC+5, no DST) of a `YYYY-MM-DD` day, as a UTC instant. */
+const tashkentStart = (day: string): Date => new Date(`${day}T00:00:00+05:00`);
+const distinct = (ids: readonly string[]): string[] => [...new Set(ids)];
 const fromDbDateOrNull = (date: Date | null): string | null =>
   date === null ? null : fromDbDate(date);
 
@@ -127,5 +134,91 @@ export class StreaksRepository {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('streaks'), hashtext(${userId}))`;
       return work(new StreaksStore(tx, userId));
     });
+  }
+
+  /**
+   * AC3: places of the user's path for the month of `saturday` plus places of the user's trips
+   * whose [startAt, backBy] overlaps that Saturday or the Sunday after it.
+   */
+  async weekendPlacesOf(userId: string, saturday: string): Promise<string[]> {
+    const [nodes, trips] = await Promise.all([
+      this.prisma.pathNode.findMany({
+        where: { pathMonth: { userId, month: monthOf(saturday) } },
+        select: { placeId: true },
+      }),
+      this.prisma.trip.findMany({
+        where: {
+          userId,
+          startAt: { lt: tashkentStart(addDays(saturday, 2)) },
+          backBy: { gt: tashkentStart(saturday) },
+        },
+        select: { placeId: true },
+      }),
+    ]);
+    return distinct([...nodes, ...trips].map((row) => row.placeId));
+  }
+
+  /** AC3 job: places on any user's path for the month of `day` plus places of trips overlapping `day`. */
+  async weekendPlacesOn(day: string): Promise<string[]> {
+    const [nodes, trips] = await Promise.all([
+      this.prisma.pathNode.findMany({
+        where: { pathMonth: { month: monthOf(day) } },
+        select: { placeId: true },
+        distinct: ['placeId'],
+      }),
+      this.prisma.trip.findMany({
+        where: {
+          startAt: { lt: tashkentStart(addDays(day, 1)) },
+          backBy: { gt: tashkentStart(day) },
+        },
+        select: { placeId: true },
+        distinct: ['placeId'],
+      }),
+    ]);
+    return distinct([...nodes, ...trips].map((row) => row.placeId));
+  }
+
+  /** Current condition status per place; places without a status are left out. */
+  async currentStatuses(
+    placeIds: readonly string[],
+  ): Promise<{ placeId: string; status: ConditionStatusCode }[]> {
+    const rows = await this.prisma.placeCondition.findMany({
+      where: { placeId: { in: [...placeIds] }, status: { not: null } },
+      select: { placeId: true, status: true },
+    });
+    return rows.flatMap((row) =>
+      row.status === null ? [] : [{ placeId: row.placeId, status: row.status }],
+    );
+  }
+
+  /** Upserts the `day` row of every place (a rerun the same day overwrites). */
+  async saveWeekendConditions(
+    day: string,
+    rows: readonly { placeId: string; status: ConditionStatusCode }[],
+  ): Promise<void> {
+    const date = toDbDate(day);
+    await this.prisma.$transaction(
+      rows.map((row) =>
+        this.prisma.weekendCondition.upsert({
+          where: { placeId_date: { placeId: row.placeId, date } },
+          create: { placeId: row.placeId, date, status: row.status },
+          update: { status: row.status, recordedAt: new Date() },
+        }),
+      ),
+    );
+  }
+
+  async weekendConditions(
+    placeIds: readonly string[],
+    days: readonly string[],
+  ): Promise<WeekendConditionRow[]> {
+    const rows = await this.prisma.weekendCondition.findMany({
+      where: {
+        placeId: { in: [...placeIds] },
+        date: { in: days.map(toDbDate) },
+      },
+      select: { placeId: true, date: true, status: true },
+    });
+    return rows.map((row) => ({ ...row, date: fromDbDate(row.date) }));
   }
 }

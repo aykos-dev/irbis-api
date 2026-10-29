@@ -236,3 +236,31 @@ export function summarizeStreaks(input: {
     },
   };
 }
+
+export interface WeekendConditionRow {
+  placeId: string;
+  date: string;
+  status: string;
+}
+
+/**
+ * AC3: a week is shielded when the user had places that weekend and, on both Saturday and Sunday,
+ * every one of them was recorded red (`redStatuses`). A missing row is not red.
+ */
+export function isShielded(
+  monday: string,
+  placeIds: readonly string[],
+  rows: readonly WeekendConditionRow[],
+  redStatuses: ReadonlySet<string>,
+): boolean {
+  if (placeIds.length === 0) return false;
+  const red = new Set(
+    rows
+      .filter((row) => redStatuses.has(row.status))
+      .map((row) => `${row.placeId}|${row.date}`),
+  );
+  const weekend = [addDays(monday, 5), addDays(monday, 6)];
+  return weekend.every((day) =>
+    placeIds.every((placeId) => red.has(`${placeId}|${day}`)),
+  );
+}
