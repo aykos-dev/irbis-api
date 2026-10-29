@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import type { CheckInConfig } from '../levels/game-config.schema.js';
 import { GameConfigService } from '../levels/game-config.service.js';
 import { LevelsService } from '../levels/levels.service.js';
 import { PlaceNotFoundError } from '../places/places.errors.js';
+import { StreaksService } from '../streaks/streaks.service.js';
 import { WeeklyPathService } from '../weekly-path/weekly-path.service.js';
 import type { CreateCheckInDto } from './dto/check-in.request.dto.js';
 import type { CheckInResultDto } from './dto/check-in.response.dto.js';
@@ -34,6 +35,7 @@ export class CheckInService {
     private readonly gameConfig: GameConfigService,
     private readonly levels: LevelsService,
     private readonly weeklyPath: WeeklyPathService,
+    @Optional() private readonly streaks?: StreaksService,
   ) {}
 
   async create(
@@ -64,6 +66,8 @@ export class CheckInService {
         month,
       });
       if (row) {
+        // Every accepted check-in (counted or not) feeds the flame and boot streaks.
+        await this.streaks?.recordActivity(userId, 'check_in', row.recordedAt);
         if (!row.counted) return { result: toResult(row), created: true };
         return {
           result: await this.reward(userId, row, place.difficulty, now, config),

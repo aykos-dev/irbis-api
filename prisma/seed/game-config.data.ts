@@ -120,3 +120,11 @@ export const tripConfigRows = [
 export const checkInConfigRows = [
   { key: 'checkIn.config', value: checkInConfig },
 ];
+
+/** streaks: free freezes per Asia/Tashkent month, one pool for flame and boot. */
+export const streaksConfig = { freezesPerMonth: 2 };
+
+/** GameConfig rows owned by streaks (seeded by seedStreaksConfig). */
+export const streaksConfigRows = [
+  { key: 'streaks.config', value: streaksConfig },
+];

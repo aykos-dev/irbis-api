@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { StorageModule } from '../../lib/storage/storage.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { LevelsModule } from '../levels/levels.module.js';
+import { StreaksModule } from '../streaks/streaks.module.js';
 import {
   LessonsController,
   MeLessonCompletionsController,
@@ -11,7 +12,7 @@ import { LessonsRepository } from './lessons.repository.js';
 import { LessonsService } from './lessons.service.js';
 
 @Module({
-  imports: [AuthModule, LevelsModule, StorageModule],
+  imports: [AuthModule, LevelsModule, StorageModule, StreaksModule],
   controllers: [LessonsController, MeLessonCompletionsController],
   providers: [LessonsService, LessonsRepository, LessonsMergeHandler],
 })

@@ -13,6 +13,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
 import {
   checkInConfigRows,
+  streaksConfigRows,
   gameConfigRows,
   lessonsConfigRow,
   pathConfigRows,
@@ -56,6 +57,11 @@ export async function seedTripConfig(prisma: PrismaClient): Promise<number> {
 /** Upserts the check-in GameConfig row (`checkIn.config`); returns the row count seeded. */
 export async function seedCheckInConfig(prisma: PrismaClient): Promise<number> {
   return upsertGameConfig(prisma, checkInConfigRows);
+}
+
+/** Upserts the streaks GameConfig row (`streaks.config`); returns the row count seeded. */
+export async function seedStreaksConfig(prisma: PrismaClient): Promise<number> {
+  return upsertGameConfig(prisma, streaksConfigRows);
 }
 
 async function upsertGameConfig(
@@ -146,7 +152,8 @@ async function main(): Promise<void> {
       1 +
       (await seedPathConfig(prisma)) +
       (await seedTripConfig(prisma)) +
-      (await seedCheckInConfig(prisma));
+      (await seedCheckInConfig(prisma)) +
+      (await seedStreaksConfig(prisma));
     const lessons = await seedLessons(prisma);
     process.stdout.write(
       `Seeded ${seeded} places; ${total} in the database. Seeded ${configRows} game config rows. Created ${lessons} draft lessons.\n`,

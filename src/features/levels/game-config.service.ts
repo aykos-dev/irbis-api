@@ -6,6 +6,7 @@ import {
   lessonsConfigSchema,
   levelTableSchema,
   pathConfigSchema,
+  streaksConfigSchema,
   tripActiveConfigSchema,
   tripConfigSchema,
   type CheckInConfig,
@@ -13,6 +14,7 @@ import {
   type LessonsConfig,
   type LevelTable,
   type PathConfig,
+  type StreaksConfig,
   type TripActiveConfig,
   type TripConfig,
 } from './game-config.schema.js';
@@ -74,6 +76,10 @@ export class GameConfigService {
 
   checkInConfig(now = Date.now()): Promise<CheckInConfig> {
     return this.load(GAME_CONFIG_KEYS.checkIn, checkInConfigSchema, now);
+  }
+
+  streaksConfig(now = Date.now()): Promise<StreaksConfig> {
+    return this.load(GAME_CONFIG_KEYS.streaks, streaksConfigSchema, now);
   }
 
   private async publishedLessons(now: number): Promise<PublishedLessonCounts> {

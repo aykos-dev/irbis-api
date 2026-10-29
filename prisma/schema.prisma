@@ -174,6 +174,9 @@ model User {
   notifications     Notification[]
   pathMonths        PathMonth[]
   checkIns          CheckIn[]
+  activityDays      ActivityDay[]
+  streakState       StreakState?
+  streakFreezes     StreakFreeze[]
   emergencyContact  EmergencyContact?
   trips             Trip[]
 
@@ -770,4 +773,57 @@ model CheckIn {
   @@unique([userId, clientId])
   @@index([userId, placeId, month])
   @@map("check_ins")
+}
+
+// --- streaks -----------------------------------------------------------------
+
+enum StreakKind {
+  flame
+  boot
+}
+
+/// One Asia/Tashkent day with at least one lesson completion or accepted check-in.
+model ActivityDay {
+  userId   String   @map("user_id") @db.Uuid
+  day      DateTime @db.Date
+  lessons  Int      @default(0)
+  checkIns Int      @default(0) @map("check_ins")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@map("activity_days")
+}
+
+/// Persisted streak evaluation: runs as of the end of `evaluatedThrough` (a Tashkent day before today).
+model StreakState {
+  userId           String    @id @map("user_id") @db.Uuid
+  flameCount       Int       @default(0) @map("flame_count")
+  flameLastDay     DateTime? @map("flame_last_day") @db.Date
+  bootCount        Int       @default(0) @map("boot_count")
+  /// Monday of the last fully evaluated week.
+  bootLastWeek     DateTime? @map("boot_last_week") @db.Date
+  evaluatedThrough DateTime? @map("evaluated_through") @db.Date
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("streak_states")
+}
+
+/// A freeze that covered a missed day (flame) or week Monday (boot); one pool per Tashkent month.
+model StreakFreeze {
+  id         String     @id @default(uuid(7)) @db.Uuid
+  userId     String     @map("user_id") @db.Uuid
+  kind       StreakKind
+  coversDate DateTime   @map("covers_date") @db.Date
+  /// Asia/Tashkent YYYY-MM the freeze counts against.
+  month      String     @db.Char(7)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, coversDate])
+  @@index([userId, month])
+  @@map("streak_freezes")
 }

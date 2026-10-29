@@ -132,6 +132,12 @@ export const checkInConfigSchema = z.object({
 });
 
 export type CheckInConfig = z.infer<typeof checkInConfigSchema>;
+/** `streaks.config` (streaks): free freezes per Asia/Tashkent month, shared by flame and boot. */
+export const streaksConfigSchema = z.object({
+  freezesPerMonth: z.number().int().min(0),
+});
+
+export type StreaksConfig = z.infer<typeof streaksConfigSchema>;
 export type LevelRow = z.infer<typeof levelRowSchema>;
 export type LevelTable = z.infer<typeof levelTableSchema>;
 export type DailyCaps = z.infer<typeof dailyCapsSchema>;

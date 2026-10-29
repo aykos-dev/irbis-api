@@ -4309,6 +4309,53 @@
         ]
       }
     },
+    "/v1/me/streaks": {
+      "get": {
+        "operationId": "meStreaks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreaksDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The signed-in user's flame and boot streaks and freezes",
+        "tags": [
+          "Streaks"
+        ]
+      }
+    },
     "/v1/users/{username}": {
       "get": {
         "operationId": "Users_getProfile",
@@ -9509,6 +9556,125 @@
           "doneToday",
           "dailyGoal",
           "levelUps"
+        ]
+      },
+      "FlameStreakDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "Consecutive counted days ending today or yesterday."
+          },
+          "doneToday": {
+            "type": "boolean",
+            "description": "Today has a lesson or a check-in."
+          },
+          "atRisk": {
+            "type": "boolean",
+            "description": "Not done today and the count is above 0."
+          }
+        },
+        "required": [
+          "count",
+          "doneToday",
+          "atRisk"
+        ]
+      },
+      "BootStreakDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "Consecutive Monday–Sunday weeks with a check-in ending this or last week."
+          },
+          "doneThisWeek": {
+            "type": "boolean",
+            "description": "This week has a check-in."
+          },
+          "shieldedLastWeek": {
+            "type": "boolean",
+            "description": "Last week had no check-in and the weather shield kept the run."
+          }
+        },
+        "required": [
+          "count",
+          "doneThisWeek",
+          "shieldedLastWeek"
+        ]
+      },
+      "StreakKind": {
+        "type": "string",
+        "enum": [
+          "flame",
+          "boot"
+        ]
+      },
+      "StreakFreezeUseDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StreakKind"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-14",
+            "description": "The missed day (flame) or the missed week's Monday (boot), Asia/Tashkent."
+          }
+        },
+        "required": [
+          "kind",
+          "date"
+        ]
+      },
+      "StreakFreezesDto": {
+        "type": "object",
+        "properties": {
+          "left": {
+            "type": "integer"
+          },
+          "perMonth": {
+            "type": "integer"
+          },
+          "usedThisMonth": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreakFreezeUseDto"
+            }
+          }
+        },
+        "required": [
+          "left",
+          "perMonth",
+          "usedThisMonth"
+        ]
+      },
+      "StreaksDto": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "example": "2026-10-30",
+            "description": "Asia/Tashkent date."
+          },
+          "flame": {
+            "$ref": "#/components/schemas/FlameStreakDto"
+          },
+          "boot": {
+            "$ref": "#/components/schemas/BootStreakDto"
+          },
+          "freezes": {
+            "$ref": "#/components/schemas/StreakFreezesDto"
+          }
+        },
+        "required": [
+          "today",
+          "flame",
+          "boot",
+          "freezes"
         ]
       },
       "PublicProfileResponseDto": {
