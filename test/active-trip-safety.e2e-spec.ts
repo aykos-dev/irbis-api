@@ -154,6 +154,25 @@ describe('active trip waypoints + SOS (e2e) - AC6, AC7', () => {
     expect(trip.status).toBe('active');
   });
 
+  it('a failed sos (502) starts no cooldown: retry at once is sent', async () => {
+    const { user, id } = await startTrip();
+    vi.spyOn(app.get(SmsSender), 'sendText').mockRejectedValueOnce(
+      new Error('provider down'),
+    );
+    const failed = await request(server())
+      .post(`/v1/trips/${id}/sos`)
+      .set(...bearer(user.accessToken))
+      .send({})
+      .expect(502);
+    expect(failed.body.code).toBe('SOS_SEND_FAILED');
+
+    await request(server())
+      .post(`/v1/trips/${id}/sos`)
+      .set(...bearer(user.accessToken))
+      .send({})
+      .expect(200);
+  });
+
   it('sos-contact 200 with no-store for the owner; 404 for another user', async () => {
     const { user, id } = await startTrip();
     const res = await request(server())

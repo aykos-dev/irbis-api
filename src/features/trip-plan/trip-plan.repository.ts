@@ -493,9 +493,10 @@ export class TripPlanRepository {
     });
   }
 
+  /** Last SOS that reached the contact; failed attempts never start a cooldown. */
   async lastSosAt(tripId: string): Promise<Date | null> {
     const row = await this.prisma.tripSos.findFirst({
-      where: { tripId },
+      where: { tripId, status: 'sent' },
       orderBy: { sentAt: 'desc' },
       select: { sentAt: true },
     });
