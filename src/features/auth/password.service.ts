@@ -16,7 +16,15 @@ export class PasswordService {
     return hash(password, this.config.argon2);
   }
 
-  verify(passwordHash: string, password: string): Promise<boolean> {
+  /** A user without a password (demo account) never matches, after the same time as a real check. */
+  async verify(
+    passwordHash: string | null,
+    password: string,
+  ): Promise<boolean> {
+    if (passwordHash === null) {
+      await this.verifyAgainstDummy(password);
+      return false;
+    }
     return verify(passwordHash, password);
   }
 

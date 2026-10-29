@@ -95,6 +95,58 @@
         ]
       }
     },
+    "/v1/auth/demo": {
+      "post": {
+        "operationId": "authCreateDemo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDemoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: DEMO_LIMIT | RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a demo account (auto username, no password) and log in (ADR-006)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/v1/auth/username-available": {
       "get": {
         "operationId": "Auth_usernameAvailable",
@@ -670,6 +722,93 @@
           }
         ],
         "summary": "Delete the signed-in account after confirming the current password",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/v1/me/secure": {
+      "post": {
+        "operationId": "meSecure",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecureAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED | USERNAME_INVALID | USERNAME_RESERVED | PASSWORD_WEAK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: NOT_DEMO | USERNAME_TAKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Turn a demo account into a normal one: set username and password; keeps this session",
         "tags": [
           "Me"
         ]
@@ -1844,199 +1983,6 @@
         ]
       }
     },
-    "/v1/places": {
-      "get": {
-        "operationId": "Places_list",
-        "parameters": [
-          {
-            "name": "lat",
-            "required": false,
-            "in": "query",
-            "description": "Device latitude; send together with lng.",
-            "schema": {
-              "minimum": -90,
-              "maximum": 90,
-              "type": "number"
-            }
-          },
-          {
-            "name": "lng",
-            "required": false,
-            "in": "query",
-            "description": "Device longitude; send together with lat.",
-            "schema": {
-              "minimum": -180,
-              "maximum": 180,
-              "type": "number"
-            }
-          },
-          {
-            "name": "types",
-            "required": false,
-            "in": "query",
-            "description": "Any of these types. Repeat the key or send a comma list.",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/PlaceType"
-              }
-            }
-          },
-          {
-            "name": "difficultyMin",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 5,
-              "type": "number"
-            }
-          },
-          {
-            "name": "difficultyMax",
-            "required": false,
-            "in": "query",
-            "description": "≥ difficultyMin.",
-            "schema": {
-              "minimum": 1,
-              "maximum": 5,
-              "type": "number"
-            }
-          },
-          {
-            "name": "maxDistanceKm",
-            "required": false,
-            "in": "query",
-            "description": "Inclusive distance limit from the origin, km.",
-            "schema": {
-              "minimum": 1,
-              "maximum": 1000,
-              "type": "number"
-            }
-          },
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "Opaque; the previous page's nextCursor.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 200,
-              "default": 50,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlaceListResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Error. code: VALIDATION_FAILED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Places sorted by distance from the device or Tashkent",
-        "tags": [
-          "Places"
-        ]
-      }
-    },
-    "/v1/places/{id}": {
-      "get": {
-        "description": "Public. With a valid bearer token, `viewer` is the signed-in user; otherwise a guest at level 1.",
-        "operationId": "Places_get",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "lat",
-            "required": false,
-            "in": "query",
-            "description": "Device latitude; send together with lng.",
-            "schema": {
-              "minimum": -90,
-              "maximum": 90,
-              "type": "number"
-            }
-          },
-          {
-            "name": "lng",
-            "required": false,
-            "in": "query",
-            "description": "Device longitude; send together with lat.",
-            "schema": {
-              "minimum": -180,
-              "maximum": 180,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlaceDetailDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Error. code: VALIDATION_FAILED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Error. code: PLACE_NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "One place",
-        "tags": [
-          "Places"
-        ]
-      }
-    },
     "/v1/levels": {
       "get": {
         "operationId": "Levels_list",
@@ -2251,6 +2197,199 @@
         "summary": "QA only: grant XP, lessons, check-ins and verified spots to yourself",
         "tags": [
           "QA"
+        ]
+      }
+    },
+    "/v1/places": {
+      "get": {
+        "operationId": "Places_list",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "description": "Device latitude; send together with lng.",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "description": "Device longitude; send together with lat.",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            }
+          },
+          {
+            "name": "types",
+            "required": false,
+            "in": "query",
+            "description": "Any of these types. Repeat the key or send a comma list.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            }
+          },
+          {
+            "name": "difficultyMin",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "difficultyMax",
+            "required": false,
+            "in": "query",
+            "description": "≥ difficultyMin.",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxDistanceKm",
+            "required": false,
+            "in": "query",
+            "description": "Inclusive distance limit from the origin, km.",
+            "schema": {
+              "minimum": 1,
+              "maximum": 1000,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque; the previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceListResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Places sorted by distance from the device or Tashkent",
+        "tags": [
+          "Places"
+        ]
+      }
+    },
+    "/v1/places/{id}": {
+      "get": {
+        "description": "Public. With a valid bearer token, `viewer` is the signed-in user; otherwise a guest at level 1.",
+        "operationId": "Places_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "description": "Device latitude; send together with lng.",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "description": "Device longitude; send together with lat.",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "One place",
+        "tags": [
+          "Places"
         ]
       }
     },
@@ -6341,6 +6480,10 @@
               }
             ]
           },
+          "isDemo": {
+            "type": "boolean",
+            "description": "Demo account (ADR-006): auto username, no password; secure it with POST /v1/me/secure."
+          },
           "hasRecoveryPhone": {
             "type": "boolean",
             "description": "A verified recovery phone exists."
@@ -6378,6 +6521,7 @@
           "experience",
           "interests",
           "role",
+          "isDemo",
           "hasRecoveryPhone",
           "recoveryPhonePending",
           "createdAt",
@@ -6474,6 +6618,21 @@
           "code",
           "message",
           "requestId"
+        ]
+      },
+      "CreateDemoDto": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Locale"
+              }
+            ]
+          }
+        },
+        "required": [
+          "locale"
         ]
       },
       "UsernameAvailabilityResponseDto": {
@@ -6588,6 +6747,24 @@
           "username",
           "code",
           "newPassword"
+        ]
+      },
+      "SecureAccountDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "guest_1",
+            "description": "3-20 chars a-z 0-9 . _ ; case-insensitive; no leading/trailing dot."
+          },
+          "password": {
+            "type": "string",
+            "description": "6-64 chars, not the username, not a common password."
+          }
+        },
+        "required": [
+          "username",
+          "password"
         ]
       },
       "RecoveryPhoneDto": {
@@ -7189,314 +7366,6 @@
           "nextCursor"
         ]
       },
-      "PlaceType": {
-        "type": "string",
-        "enum": [
-          "peak",
-          "lake",
-          "cave",
-          "camping",
-          "trail",
-          "waterfall",
-          "canyon"
-        ]
-      },
-      "PlaceNameDto": {
-        "type": "object",
-        "properties": {
-          "uz": {
-            "type": "string"
-          },
-          "ru": {
-            "type": "string",
-            "nullable": true
-          },
-          "en": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "uz",
-          "ru",
-          "en"
-        ]
-      },
-      "ConditionStatus": {
-        "type": "string",
-        "enum": [
-          "go",
-          "caution",
-          "not_now",
-          "seasonal_lock"
-        ],
-        "description": "Weekend condition. Absent until one was computed for the place; null when there is no status."
-      },
-      "PlaceListItemDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "slug": {
-            "type": "string",
-            "example": "qorangur-2941"
-          },
-          "name": {
-            "$ref": "#/components/schemas/PlaceNameDto"
-          },
-          "type": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PlaceType"
-              }
-            ]
-          },
-          "latitude": {
-            "type": "number"
-          },
-          "longitude": {
-            "type": "number"
-          },
-          "elevationM": {
-            "type": "integer"
-          },
-          "difficulty": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
-          },
-          "requiredLevel": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 7
-          },
-          "distanceM": {
-            "type": "integer",
-            "description": "Great-circle distance from the origin, metres."
-          },
-          "conditionStatus": {
-            "nullable": true,
-            "description": "Weekend condition. Absent until one was computed for the place; null when there is no status.",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ConditionStatus"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "slug",
-          "name",
-          "type",
-          "latitude",
-          "longitude",
-          "elevationM",
-          "difficulty",
-          "requiredLevel",
-          "distanceM"
-        ]
-      },
-      "PlaceOrigin": {
-        "type": "string",
-        "enum": [
-          "device",
-          "tashkent"
-        ]
-      },
-      "PlaceListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PlaceListItemDto"
-            }
-          },
-          "nextCursor": {
-            "type": "string",
-            "nullable": true
-          },
-          "origin": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PlaceOrigin"
-              }
-            ]
-          },
-          "total": {
-            "type": "integer",
-            "description": "Places matching the filters."
-          }
-        },
-        "required": [
-          "items",
-          "nextCursor",
-          "origin",
-          "total"
-        ]
-      },
-      "PlaceDescriptionDto": {
-        "type": "object",
-        "properties": {
-          "uz": {
-            "type": "string",
-            "nullable": true,
-            "description": "Markdown."
-          },
-          "ru": {
-            "type": "string",
-            "nullable": true,
-            "description": "Markdown."
-          },
-          "en": {
-            "type": "string",
-            "nullable": true,
-            "description": "Markdown."
-          }
-        },
-        "required": [
-          "uz",
-          "ru",
-          "en"
-        ]
-      },
-      "SeasonStatus": {
-        "type": "string",
-        "enum": [
-          "best",
-          "possible",
-          "closed"
-        ],
-        "description": "Empty (not set yet) or 12 months, January first."
-      },
-      "Hazard": {
-        "type": "string",
-        "enum": [
-          "avalanche",
-          "flood",
-          "mudslide",
-          "heat",
-          "road"
-        ]
-      },
-      "PlaceViewerDto": {
-        "type": "object",
-        "properties": {
-          "level": {
-            "type": "integer"
-          },
-          "qualifies": {
-            "type": "boolean",
-            "description": "requiredLevel <= level."
-          }
-        },
-        "required": [
-          "level",
-          "qualifies"
-        ]
-      },
-      "PlaceDetailDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "slug": {
-            "type": "string",
-            "example": "qorangur-2941"
-          },
-          "name": {
-            "$ref": "#/components/schemas/PlaceNameDto"
-          },
-          "type": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PlaceType"
-              }
-            ]
-          },
-          "latitude": {
-            "type": "number"
-          },
-          "longitude": {
-            "type": "number"
-          },
-          "elevationM": {
-            "type": "integer"
-          },
-          "difficulty": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
-          },
-          "requiredLevel": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 7
-          },
-          "distanceM": {
-            "type": "integer",
-            "description": "Great-circle distance from the origin, metres."
-          },
-          "region": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "$ref": "#/components/schemas/PlaceDescriptionDto"
-          },
-          "season": {
-            "type": "array",
-            "description": "Empty (not set yet) or 12 months, January first.",
-            "items": {
-              "$ref": "#/components/schemas/SeasonStatus"
-            }
-          },
-          "hazards": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Hazard"
-            }
-          },
-          "origin": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PlaceOrigin"
-              }
-            ]
-          },
-          "viewer": {
-            "$ref": "#/components/schemas/PlaceViewerDto"
-          },
-          "checkInRadiusM": {
-            "type": "integer",
-            "description": "A check-in must be within this many metres of the place (by type, from config)."
-          }
-        },
-        "required": [
-          "id",
-          "slug",
-          "name",
-          "type",
-          "latitude",
-          "longitude",
-          "elevationM",
-          "difficulty",
-          "requiredLevel",
-          "distanceM",
-          "region",
-          "description",
-          "season",
-          "hazards",
-          "origin",
-          "viewer",
-          "checkInRadiusM"
-        ]
-      },
       "LessonGateKind": {
         "type": "string",
         "enum": [
@@ -7821,6 +7690,314 @@
             "maximum": 10
           }
         }
+      },
+      "PlaceType": {
+        "type": "string",
+        "enum": [
+          "peak",
+          "lake",
+          "cave",
+          "camping",
+          "trail",
+          "waterfall",
+          "canyon"
+        ]
+      },
+      "PlaceNameDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true
+          },
+          "en": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "ConditionStatus": {
+        "type": "string",
+        "enum": [
+          "go",
+          "caution",
+          "not_now",
+          "seasonal_lock"
+        ],
+        "description": "Weekend condition. Absent until one was computed for the place; null when there is no status."
+      },
+      "PlaceListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "qorangur-2941"
+          },
+          "name": {
+            "$ref": "#/components/schemas/PlaceNameDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "elevationM": {
+            "type": "integer"
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "requiredLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "distanceM": {
+            "type": "integer",
+            "description": "Great-circle distance from the origin, metres."
+          },
+          "conditionStatus": {
+            "nullable": true,
+            "description": "Weekend condition. Absent until one was computed for the place; null when there is no status.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "type",
+          "latitude",
+          "longitude",
+          "elevationM",
+          "difficulty",
+          "requiredLevel",
+          "distanceM"
+        ]
+      },
+      "PlaceOrigin": {
+        "type": "string",
+        "enum": [
+          "device",
+          "tashkent"
+        ]
+      },
+      "PlaceListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceListItemDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "origin": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceOrigin"
+              }
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "description": "Places matching the filters."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "origin",
+          "total"
+        ]
+      },
+      "PlaceDescriptionDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string",
+            "nullable": true,
+            "description": "Markdown."
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true,
+            "description": "Markdown."
+          },
+          "en": {
+            "type": "string",
+            "nullable": true,
+            "description": "Markdown."
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "SeasonStatus": {
+        "type": "string",
+        "enum": [
+          "best",
+          "possible",
+          "closed"
+        ],
+        "description": "Empty (not set yet) or 12 months, January first."
+      },
+      "Hazard": {
+        "type": "string",
+        "enum": [
+          "avalanche",
+          "flood",
+          "mudslide",
+          "heat",
+          "road"
+        ]
+      },
+      "PlaceViewerDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer"
+          },
+          "qualifies": {
+            "type": "boolean",
+            "description": "requiredLevel <= level."
+          }
+        },
+        "required": [
+          "level",
+          "qualifies"
+        ]
+      },
+      "PlaceDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "qorangur-2941"
+          },
+          "name": {
+            "$ref": "#/components/schemas/PlaceNameDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "elevationM": {
+            "type": "integer"
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "requiredLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "distanceM": {
+            "type": "integer",
+            "description": "Great-circle distance from the origin, metres."
+          },
+          "region": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "$ref": "#/components/schemas/PlaceDescriptionDto"
+          },
+          "season": {
+            "type": "array",
+            "description": "Empty (not set yet) or 12 months, January first.",
+            "items": {
+              "$ref": "#/components/schemas/SeasonStatus"
+            }
+          },
+          "hazards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Hazard"
+            }
+          },
+          "origin": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceOrigin"
+              }
+            ]
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/PlaceViewerDto"
+          },
+          "checkInRadiusM": {
+            "type": "integer",
+            "description": "A check-in must be within this many metres of the place (by type, from config)."
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "type",
+          "latitude",
+          "longitude",
+          "elevationM",
+          "difficulty",
+          "requiredLevel",
+          "distanceM",
+          "region",
+          "description",
+          "season",
+          "hazards",
+          "origin",
+          "viewer",
+          "checkInRadiusM"
+        ]
       },
       "ConditionSource": {
         "type": "string",

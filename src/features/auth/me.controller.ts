@@ -18,8 +18,10 @@ import type { AuthUser } from '../../common/auth-user.js';
 import { ApiErrorResponses } from '../../common/decorators/api-error-responses.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Throttled } from '../../common/decorators/throttle.decorator.js';
+import { AuthService } from './auth.service.js';
 import {
   RecoveryPhoneDto,
+  SecureAccountDto,
   VerifyRecoveryPhoneDto,
 } from './dto/auth.request.dto.js';
 import { GuestMergeDto, GuestMergeResponseDto } from './dto/guest-merge.dto.js';
@@ -37,6 +39,7 @@ export class MeController {
     private readonly me: MeService,
     private readonly recovery: RecoveryService,
     private readonly guestMerge: GuestMergeService,
+    private readonly auth: AuthService,
   ) {}
 
   @Get()
@@ -45,6 +48,34 @@ export class MeController {
   @ApiErrorResponses({ 401: ['UNAUTHENTICATED'], 403: ['ACCOUNT_BLOCKED'] })
   get(@CurrentUser() user: AuthUser): Promise<MeResponseDto> {
     return this.me.getMe(user.id);
+  }
+
+  @Throttled('auth')
+  @Post('secure')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    operationId: 'meSecure',
+    summary:
+      'Turn a demo account into a normal one: set username and password; keeps this session',
+  })
+  @ApiOkResponse({ type: MeResponseDto })
+  @ApiErrorResponses({
+    400: [
+      'VALIDATION_FAILED',
+      'USERNAME_INVALID',
+      'USERNAME_RESERVED',
+      'PASSWORD_WEAK',
+    ],
+    401: ['UNAUTHENTICATED'],
+    403: ['ACCOUNT_BLOCKED'],
+    409: ['NOT_DEMO', 'USERNAME_TAKEN'],
+    429: ['RATE_LIMITED'],
+  })
+  secure(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SecureAccountDto,
+  ): Promise<MeResponseDto> {
+    return this.auth.secure(user.id, dto);
   }
 
   @Throttled('auth')

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AppConfig } from '../../config/app-config.js';
 import { StorageModule } from '../../lib/storage/storage.module.js';
+import { LevelsModule } from '../levels/levels.module.js';
 import { AdminAuthController } from './admin-auth.controller.js';
 import { AdminBootstrapService } from './admin-bootstrap.service.js';
 import { AdminUsersController } from './admin-users.controller.js';
@@ -22,7 +23,7 @@ import { FakeSmsSender, SmsSender } from './sms-sender.js';
 import { TokenService } from './token.service.js';
 
 @Module({
-  imports: [JwtModule.register({}), StorageModule],
+  imports: [JwtModule.register({}), StorageModule, LevelsModule],
   controllers: [
     AuthController,
     MeController,

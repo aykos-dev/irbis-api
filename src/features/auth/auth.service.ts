@@ -1,6 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { RateLimitedError } from '../../common/errors/domain.error.js';
+import { AppConfig } from '../../config/app-config.js';
 import { addMs } from '../../lib/dates.js';
+import { GameConfigService } from '../levels/game-config.service.js';
 import {
   LAST_ACTIVE_MIN_INTERVAL_MS,
   type UserRole,
@@ -8,16 +10,31 @@ import {
 import {
   AccountBlockedError,
   AccountLockedError,
+  DemoLimitError,
   InvalidCredentialsError,
   NotAdminError,
+  NotDemoError,
   PhoneInvalidError,
   RefreshInvalidError,
   TermsRequiredError,
   UsernameInvalidError,
   UsernameReservedError,
+  UsernameTakenError,
 } from './auth.errors.js';
 import { AuthRepository, type UserRecord } from './auth.repository.js';
-import type { LogInDto, SignUpDto } from './dto/auth.request.dto.js';
+import {
+  DEMO_MAX_ATTEMPTS,
+  DEMO_WINDOW_MS,
+  demoRetryAfterSec,
+  demoUsername,
+  hashDemoIp,
+} from './demo.rules.js';
+import type {
+  CreateDemoDto,
+  LogInDto,
+  SecureAccountDto,
+  SignUpDto,
+} from './dto/auth.request.dto.js';
 import type {
   AuthSessionResponseDto,
   TokensResponseDto,
@@ -52,6 +69,8 @@ export class AuthService {
     private readonly tokens: TokenService,
     private readonly recovery: RecoveryService,
     private readonly me: MeService,
+    private readonly gameConfig: GameConfigService,
+    private readonly config: AppConfig,
   ) {}
 
   async signUp(dto: SignUpDto): Promise<AuthSessionResponseDto> {
@@ -73,6 +92,48 @@ export class AuthService {
 
     const session = await this.tokens.startSession(user, now);
     return { ...session, me: await this.me.toMe(user, now) };
+  }
+
+  /**
+   * ADR-006: a password-less account with an `explorer_<n>` username, logged in at once.
+   * Limited per client IP per day (`checkIn.config.demoPerIpPerDay`).
+   */
+  async createDemo(
+    dto: CreateDemoDto,
+    ip: string,
+  ): Promise<AuthSessionResponseDto> {
+    const now = new Date();
+    const ipHash = hashDemoIp(this.config.jwtAccessSecret, ip);
+    const { demoPerIpPerDay } = await this.gameConfig.checkInConfig();
+    const recent = await this.repository.demoCreationTimes(
+      ipHash,
+      addMs(now, -DEMO_WINDOW_MS),
+    );
+    if (recent.length >= demoPerIpPerDay && recent[0]) {
+      throw new DemoLimitError(demoRetryAfterSec(recent[0], now));
+    }
+
+    const user = await this.createDemoUser(dto, ipHash);
+    const session = await this.tokens.startSession(user, now);
+    return { ...session, me: await this.me.toMe(user, now) };
+  }
+
+  /** Demo → normal account: chosen username + password; the current session stays. */
+  async secure(userId: string, dto: SecureAccountDto): Promise<MeResponseDto> {
+    const user = await this.repository.findById(userId);
+    if (!user) throw new UnauthorizedException();
+    if (!user.isDemo) throw new NotDemoError();
+
+    const username = normalizeUsername(dto.username);
+    this.assertUsernameUsable(username);
+    this.passwords.assertAcceptable(dto.password, username);
+    const passwordHash = await this.passwords.hash(dto.password);
+    if (
+      !(await this.repository.secureDemoUser(userId, username, passwordHash))
+    ) {
+      throw new NotDemoError();
+    }
+    return this.me.getMe(userId);
   }
 
   async usernameAvailability(
@@ -162,6 +223,29 @@ export class AuthService {
       now,
       addMs(now, -LAST_ACTIVE_MIN_INTERVAL_MS),
     );
+  }
+
+  /** Retries on a username collision: 4 digits first, 6 digits after 5 collisions. */
+  private async createDemoUser(
+    dto: CreateDemoDto,
+    ipHash: string,
+  ): Promise<UserRecord> {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await this.repository.createDemoUser({
+          username: demoUsername(attempt),
+          locale: dto.locale,
+          ipHash,
+        });
+      } catch (error) {
+        if (
+          !(error instanceof UsernameTakenError) ||
+          attempt >= DEMO_MAX_ATTEMPTS - 1
+        ) {
+          throw error;
+        }
+      }
+    }
   }
 
   private assertUsernameUsable(username: string): void {

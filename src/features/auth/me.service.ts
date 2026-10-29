@@ -23,6 +23,7 @@ export interface MeUser {
   experience: ExperienceCode | null;
   interests: InterestCode[];
   role: UserRole;
+  isDemo: boolean;
   recoveryPhone: string | null;
   recoveryPhoneVerifiedAt: Date | null;
   createdAt: Date;
@@ -75,6 +76,7 @@ export class MeService {
       experience: user.experience,
       interests: user.interests,
       role: user.role,
+      isDemo: user.isDemo,
       hasRecoveryPhone:
         user.recoveryPhone !== null && user.recoveryPhoneVerifiedAt !== null,
       recoveryPhonePending: await this.repository.hasPendingPhoneCode(

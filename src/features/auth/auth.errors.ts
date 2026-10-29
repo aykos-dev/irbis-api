@@ -190,6 +190,24 @@ export class CannotChangeOwnRoleError extends DomainError {
   }
 }
 
+export class DemoLimitError extends DomainError {
+  readonly code = 'DEMO_LIMIT';
+  readonly status = HttpStatus.TOO_MANY_REQUESTS;
+
+  constructor(override readonly retryAfterSec: number) {
+    super('Too many demo accounts from this address today');
+  }
+}
+
+export class NotDemoError extends DomainError {
+  readonly code = 'NOT_DEMO';
+  readonly status = HttpStatus.CONFLICT;
+
+  constructor() {
+    super('This account is already secured');
+  }
+}
+
 export class UserNotFoundError extends NotFoundError {
   constructor() {
     super('User not found');

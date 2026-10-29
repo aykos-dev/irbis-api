@@ -43,6 +43,32 @@ export class SignUpDto {
   acceptTerms: boolean;
 }
 
+export class CreateDemoDto {
+  @ApiProperty({ enum: LOCALES, enumName: 'Locale' })
+  @IsIn(LOCALES)
+  locale: LocaleCode;
+}
+
+/** POST /v1/me/secure: same username and password rules as sign-up. */
+export class SecureAccountDto {
+  @ApiProperty({
+    example: 'guest_1',
+    description:
+      '3-20 chars a-z 0-9 . _ ; case-insensitive; no leading/trailing dot.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(64)
+  username: string;
+
+  @ApiProperty({
+    description: '6-64 chars, not the username, not a common password.',
+  })
+  @IsString()
+  @MaxLength(256)
+  password: string;
+}
+
 export class LogInDto {
   @ApiProperty()
   @IsString()

@@ -19,6 +19,7 @@ const userSelect = {
   id: true,
   username: true,
   passwordHash: true,
+  isDemo: true,
   recoveryPhone: true,
   recoveryPhoneVerifiedAt: true,
   locale: true,
@@ -91,6 +92,12 @@ export interface NewUser {
   termsAcceptedAt: Date;
 }
 
+export interface NewDemoUser {
+  username: string;
+  locale: LocaleCode;
+  ipHash: string;
+}
+
 export interface NewRefreshToken {
   userId: string;
   familyId: string;
@@ -129,6 +136,55 @@ export class AuthRepository {
   async createUser(data: NewUser): Promise<UserRecord> {
     try {
       return await this.prisma.user.create({ data, select: userSelect });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new UsernameTakenError();
+      throw error;
+    }
+  }
+
+  /** Demo user (no password) plus its per-IP creation row, in one transaction. */
+  async createDemoUser(data: NewDemoUser): Promise<UserRecord> {
+    const { ipHash, ...user } = data;
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: { ...user, isDemo: true },
+          select: userSelect,
+        });
+        await tx.demoCreation.create({ data: { ipHash } });
+        return created;
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new UsernameTakenError();
+      throw error;
+    }
+  }
+
+  /** Creation times of demo accounts from one IP hash since `since`, oldest first. */
+  async demoCreationTimes(ipHash: string, since: Date): Promise<Date[]> {
+    const rows = await this.prisma.demoCreation.findMany({
+      where: { ipHash, createdAt: { gt: since } },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
+    });
+    return rows.map((row) => row.createdAt);
+  }
+
+  /**
+   * Sets username + password and clears `isDemo`, only while the user is still a demo.
+   * False when it no longer is; a username claimed meanwhile answers USERNAME_TAKEN.
+   */
+  async secureDemoUser(
+    id: string,
+    username: string,
+    passwordHash: string,
+  ): Promise<boolean> {
+    try {
+      const updated = await this.prisma.user.updateMany({
+        where: { id, isDemo: true },
+        data: { username, passwordHash, isDemo: false },
+      });
+      return updated.count === 1;
     } catch (error) {
       if (isUniqueViolation(error)) throw new UsernameTakenError();
       throw error;
