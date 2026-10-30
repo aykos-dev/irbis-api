@@ -178,6 +178,7 @@ model User {
   streakState       StreakState?
   streakFreezes     StreakFreeze[]
   emergencyContact  EmergencyContact?
+  badgeAwards       BadgeAward[]
   trips             Trip[]
 
   @@index([createdAt, id])
@@ -841,4 +842,23 @@ model WeekendCondition {
 
   @@id([placeId, date])
   @@map("weekend_conditions")
+}
+
+// --- badges -----------------------------------------------------------------
+
+/// One earned badge per user. Awards are written lazily by GET /v1/badges and never revoked;
+/// `showcase_order` pins up to four to the profile (1–4).
+model BadgeAward {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  key           String   @db.VarChar(50)
+  earnedAt      DateTime @map("earned_at") @db.Timestamptz(3)
+  showcaseOrder Int?     @map("showcase_order")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId, earnedAt])
+  @@map("badge_awards")
 }

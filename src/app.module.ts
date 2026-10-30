@@ -18,6 +18,7 @@ import { AppConfig } from './config/app-config.js';
 import { AppConfigModule } from './config/config.module.js';
 import { AccountStatusGuard } from './features/auth/guards/account-status.guard.js';
 import { AuthModule } from './features/auth/auth.module.js';
+import { BadgesModule } from './features/badges/badges.module.js';
 import { CheckInModule } from './features/check-in/check-in.module.js';
 import { ConditionsModule } from './features/conditions/conditions.module.js';
 import { LessonsAdminModule } from './features/lessons-admin/lessons-admin.module.js';
@@ -68,6 +69,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     PrismaModule,
     HealthModule,
     AuthModule,
+    BadgesModule,
     PlacesModule,
     ConditionsModule,
     LevelsModule,

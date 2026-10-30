@@ -128,3 +128,11 @@ export const streaksConfig = { freezesPerMonth: 2 };
 export const streaksConfigRows = [
   { key: 'streaks.config', value: streaksConfig },
 ];
+
+/** badges: activity only counts from this release date onward (no retroactive awards). */
+export const badgesConfig = { startAt: '2026-10-30T00:00:00.000Z' };
+
+/** GameConfig rows owned by badges (seeded by seedBadgesConfig). */
+export const badgesConfigRows = [
+  { key: 'badges.config', value: badgesConfig },
+];
