@@ -4,6 +4,7 @@ import {
   type HomeRegion,
   type Interest,
   type Locale,
+  type PlaceType,
 } from '../../generated/prisma/client.js';
 import {
   type AppearanceCode,
@@ -11,6 +12,16 @@ import {
 } from '../../common/profile.constants.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { UsernameTakenError } from '../auth/auth.errors.js';
+
+/** Profile stats in canonical metric units. */
+export interface ProfileStatsRecord {
+  peaks: number;
+  lakes: number;
+  caves: number;
+  walkedM: number;
+  climbedM: number;
+  spots: number;
+}
 
 /** The columns PATCH /v1/me may write. Username is changed through the auth service. */
 export interface ProfileUpdate {
@@ -99,6 +110,58 @@ export class ProfileRepository {
       where: { username },
       select: publicProfileSelect,
     });
+  }
+
+  /** The id and visibility flags for `GET /v1/users/:username/stats`. */
+  findPublicStatsTarget(
+    username: string,
+  ): Promise<{
+    id: string;
+    showStats: boolean;
+    publicProfile: boolean;
+    blockedAt: Date | null;
+    deletedAt: Date | null;
+  } | null> {
+    return this.prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        showStats: true,
+        publicProfile: true,
+        blockedAt: true,
+        deletedAt: true,
+      },
+    });
+  }
+
+  /** All-time stats: distinct counted places by type, trip totals and verified spots. */
+  async stats(userId: string): Promise<ProfileStatsRecord> {
+    const [checkIns, trips, spots] = await Promise.all([
+      this.prisma.checkIn.findMany({
+        where: { userId, counted: true },
+        select: { placeId: true, place: { select: { type: true } } },
+      }),
+      this.prisma.trip.aggregate({
+        where: { userId, checkedOutAt: { not: null } },
+        _sum: { distanceM: true, climbM: true },
+      }),
+      this.prisma.levelFact.count({ where: { userId, kind: 'verified_spot' } }),
+    ]);
+    // One visit per place counts, even when it was checked in across months.
+    const types = new Map<string, PlaceType>();
+    for (const checkIn of checkIns) {
+      if (!types.has(checkIn.placeId)) types.set(checkIn.placeId, checkIn.place.type);
+    }
+    const count = (type: PlaceType): number =>
+      [...types.values()].filter((value) => value === type).length;
+    return {
+      peaks: count('peak'),
+      lakes: count('lake'),
+      caves: count('cave'),
+      walkedM: trips._sum.distanceM ?? 0,
+      climbedM: trips._sum.climbM ?? 0,
+      spots,
+    };
   }
 
   /**

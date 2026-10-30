@@ -25,6 +25,7 @@ import { normalizeUsername, usernameProblem } from '../auth/username.rules.js';
 import type { DeleteAccountDto } from './dto/delete-account.dto.js';
 import type { MePreferencesInputDto } from './dto/profile.request.dto.js';
 import type { MeResponseDto } from './dto/profile.response.dto.js';
+import type { ProfileStatsDto } from './dto/profile-stats.response.dto.js';
 import type { PublicProfileResponseDto } from './dto/public-profile.response.dto.js';
 import type { UpdateMeDto } from './dto/profile.request.dto.js';
 import { ProfileAvatarService } from './profile-avatar.service.js';
@@ -179,6 +180,32 @@ export class ProfileService {
       createdAt: user.createdAt.toISOString(),
       showStats: user.showStats,
     };
+  }
+
+  /** AC4: the signed-in user's all-time stats. */
+  meStats(userId: string): Promise<ProfileStatsDto> {
+    return this.repository.stats(userId);
+  }
+
+  /**
+   * AC4: public stats respect `showStats`. Hidden stats answer zeros so the endpoint never leaks
+   * numbers; the app does not call it when `showStats` is false.
+   */
+  async publicStats(rawUsername: string): Promise<ProfileStatsDto> {
+    const username = rawUsername.trim().toLowerCase();
+    const user = await this.repository.findPublicStatsTarget(username);
+    if (
+      !user ||
+      user.deletedAt !== null ||
+      user.blockedAt !== null ||
+      !user.publicProfile
+    ) {
+      throw new ProfileNotFoundError();
+    }
+    if (!user.showStats) {
+      return { peaks: 0, lakes: 0, caves: 0, walkedM: 0, climbedM: 0, spots: 0 };
+    }
+    return this.repository.stats(user.id);
   }
 
   /** Storage being down must not make the public profile fail: the app shows initials. */

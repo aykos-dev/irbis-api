@@ -31,6 +31,7 @@ import { DeleteAccountDto } from './dto/delete-account.dto.js';
 import { UpdateMeDto } from './dto/profile.request.dto.js';
 import { MeResponseDto } from './dto/profile.response.dto.js';
 import { PublicProfileResponseDto } from './dto/public-profile.response.dto.js';
+import { ProfileStatsDto } from './dto/profile-stats.response.dto.js';
 import { AvatarTooLargeInterceptor } from './avatar-too-large.interceptor.js';
 import { AVATAR_MAX_BYTES } from './profile-avatar.service.js';
 import { ProfileService } from './profile.service.js';
@@ -54,6 +55,21 @@ export class ProfileController {
   ): Promise<PublicProfileResponseDto> {
     return this.profile.getPublicProfile(username);
   }
+
+  @Public()
+  @Throttled('lookup')
+  @Get(':username/stats')
+  @ApiOperation({
+    operationId: 'Users_getStats',
+    summary: "A public profile's all-time stats (zeros when hidden)",
+  })
+  @ApiOkResponse({ type: ProfileStatsDto })
+  @ApiErrorResponses({ 404: ['PROFILE_NOT_FOUND'], 429: ['RATE_LIMITED'] })
+  getPublicStats(
+    @Param('username') username: string,
+  ): Promise<ProfileStatsDto> {
+    return this.profile.publicStats(username);
+  }
 }
 
 @ApiTags('Me')
@@ -61,6 +77,17 @@ export class ProfileController {
 @Controller('me')
 export class MeProfileController {
   constructor(private readonly profile: ProfileService) {}
+
+  @Get('stats')
+  @ApiOperation({
+    operationId: 'Me_stats',
+    summary: "The signed-in user's all-time profile stats",
+  })
+  @ApiOkResponse({ type: ProfileStatsDto })
+  @ApiErrorResponses({ 401: ['UNAUTHENTICATED'], 403: ['ACCOUNT_BLOCKED'] })
+  stats(@CurrentUser() user: AuthUser): Promise<ProfileStatsDto> {
+    return this.profile.meStats(user.id);
+  }
 
   @Throttled('auth')
   @Patch()
