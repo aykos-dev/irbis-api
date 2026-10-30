@@ -50,9 +50,52 @@ export class PlacesService {
     };
   }
 
+  /**
+   * Free-text place search for the Search screen: name, slug or region contains `query`.
+   * Name matches that start with the term come first, then the rest by name.
+   */
+  async search(
+    query: string,
+    point: LatLng,
+    limit: number,
+  ): Promise<PlaceListItemDto[]> {
+    const term = query.trim().toLowerCase();
+    if (term.length === 0) return [];
+    const rows = await this.places.searchByName(term, limit * 5);
+    const ranked = rows
+      .map((row) => ({
+        row,
+        distanceM: haversineM(point, {
+          lat: row.latitude,
+          lng: row.longitude,
+        }),
+        starts:
+          [
+            row.nameUz,
+            row.nameRu ?? '',
+            row.nameEn ?? '',
+            row.slug,
+          ]
+            .map((name) => name.toLowerCase())
+            .some((name) => name.startsWith(term)) ? 0 : 1,
+      }))
+      .sort(
+        (a, b) =>
+          a.starts - b.starts ||
+          (a.row.nameEn ?? a.row.nameUz).localeCompare(
+            b.row.nameEn ?? b.row.nameUz,
+          ) ||
+          a.row.id.localeCompare(b.row.id),
+      )
+      .slice(0, limit);
+    return ranked.map(({ row, distanceM }) => ({
+      ...toListItem(row, distanceM),
+      ...conditionStatusOf(row),
+    }));
+  }
+
   /** `viewerId` is the signed-in caller, if any; guests see level 1. */
-  async detail(
-    id: string,
+  async detail(    id: string,
     query: PlaceOriginQueryDto,
     viewerId?: string,
   ): Promise<Omit<PlaceDetailDto, 'checkInRadiusM'>> {

@@ -8,5 +8,6 @@ import { PlacesService } from './places.service.js';
   imports: [LevelsModule],
   controllers: [PlacesController],
   providers: [PlacesService, PlacesRepository],
+  exports: [PlacesService],
 })
 export class PlacesModule {}

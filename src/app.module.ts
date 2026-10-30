@@ -27,6 +27,7 @@ import { LevelsModule } from './features/levels/levels.module.js';
 import { StreaksModule } from './features/streaks/streaks.module.js';
 import { PlacesModule } from './features/places/places.module.js';
 import { ProfileModule } from './features/profile/profile.module.js';
+import { SearchModule } from './features/search/search.module.js';
 import { TripPlanModule } from './features/trip-plan/trip-plan.module.js';
 import { WeeklyPathModule } from './features/weekly-path/weekly-path.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -76,6 +77,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     LessonsAdminModule,
     LessonsModule,
     ProfileModule,
+    SearchModule,
     WeeklyPathModule,
     TripPlanModule,
     CheckInModule,

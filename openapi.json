@@ -2200,6 +2200,156 @@
         ]
       }
     },
+    "/v1/badges": {
+      "get": {
+        "operationId": "Badges_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgesListDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "The 64-badge catalogue with live progress; guests see the catalogue without progress",
+        "tags": [
+          "Badges"
+        ]
+      }
+    },
+    "/v1/me/badges/showcase": {
+      "put": {
+        "operationId": "Me_setBadgesShowcase",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetShowcaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgesListDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED | BADGE_NOT_EARNED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pick up to four earned badges for the profile showcase",
+        "tags": [
+          "Badges"
+        ]
+      }
+    },
+    "/v1/users/{username}/badges": {
+      "get": {
+        "operationId": "Users_getBadges",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicBadgesDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A public profile's showcase badges",
+        "tags": [
+          "Badges"
+        ]
+      }
+    },
     "/v1/places": {
       "get": {
         "operationId": "Places_list",
@@ -4407,6 +4557,104 @@
         ]
       }
     },
+    "/v1/users/{username}/stats": {
+      "get": {
+        "operationId": "Users_getStats",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileStatsDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A public profile's all-time stats (zeros when hidden)",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
+    "/v1/me/stats": {
+      "get": {
+        "operationId": "Me_stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileStatsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The signed-in user's all-time profile stats",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
     "/v1/me/avatar": {
       "post": {
         "operationId": "Me_uploadAvatar",
@@ -4689,6 +4937,88 @@
         "summary": "Mark every unread notification of the signed-in user as read",
         "tags": [
           "Notifications"
+        ]
+      }
+    },
+    "/v1/search": {
+      "get": {
+        "operationId": "Search_query",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Trimmed before matching; 2–60 characters.",
+            "schema": {
+              "minLength": 2,
+              "maxLength": 60,
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SearchScope"
+            }
+          },
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResultsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Search places and people; groups and tours are empty for now",
+        "tags": [
+          "Search"
         ]
       }
     },
@@ -7743,6 +8073,255 @@
           }
         }
       },
+      "BadgeGroup": {
+        "type": "string",
+        "enum": [
+          "places",
+          "regions",
+          "seasons",
+          "social",
+          "milestones"
+        ]
+      },
+      "BadgeRarity": {
+        "type": "string",
+        "enum": [
+          "common",
+          "rare",
+          "epic",
+          "legendary"
+        ]
+      },
+      "BadgeTextDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string",
+            "example": "Peak Bagger I"
+          },
+          "ru": {
+            "type": "string",
+            "example": "Peak Bagger I"
+          },
+          "en": {
+            "type": "string",
+            "example": "Peak Bagger I"
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "BadgeDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "peak-bagger-1"
+          },
+          "group": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BadgeGroup"
+              }
+            ]
+          },
+          "rarity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BadgeRarity"
+              }
+            ]
+          },
+          "title": {
+            "$ref": "#/components/schemas/BadgeTextDto"
+          },
+          "description": {
+            "$ref": "#/components/schemas/BadgeTextDto"
+          },
+          "target": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 3
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Capped at the target; 0 for guests."
+          },
+          "earnedAt": {
+            "type": "object",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Null until the badge is earned."
+          },
+          "showcase": {
+            "type": "boolean",
+            "description": "The owner picked it for the profile showcase."
+          },
+          "art": {
+            "type": "string",
+            "nullable": true,
+            "description": "Art file stem; null draws a code hexagon."
+          }
+        },
+        "required": [
+          "key",
+          "group",
+          "rarity",
+          "title",
+          "description",
+          "target",
+          "progress",
+          "earnedAt",
+          "showcase",
+          "art"
+        ]
+      },
+      "BadgeGroupDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BadgeGroup"
+              }
+            ]
+          },
+          "title": {
+            "$ref": "#/components/schemas/BadgeTextDto"
+          },
+          "earned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "earned",
+          "total"
+        ]
+      },
+      "BadgesListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BadgeDto"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BadgeGroupDto"
+            }
+          },
+          "collected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "showcase": {
+            "description": "Up to four badge keys shown on the profile.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "items",
+          "groups",
+          "collected",
+          "total",
+          "showcase"
+        ]
+      },
+      "SetShowcaseDto": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "maxItems": 4,
+            "uniqueItems": true,
+            "example": [
+              "peak-bagger-1",
+              "region-tashkent"
+            ],
+            "description": "Earned badge keys, in display order. At most four.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "keys"
+        ]
+      },
+      "PublicBadgeDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "peak-bagger-1"
+          },
+          "title": {
+            "$ref": "#/components/schemas/BadgeTextDto"
+          },
+          "rarity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BadgeRarity"
+              }
+            ]
+          },
+          "art": {
+            "type": "string",
+            "nullable": true
+          },
+          "earnedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "rarity",
+          "art",
+          "earnedAt"
+        ]
+      },
+      "PublicBadgesDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "guest_1"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicBadgeDto"
+            }
+          }
+        },
+        "required": [
+          "username",
+          "items"
+        ]
+      },
       "PlaceType": {
         "type": "string",
         "enum": [
@@ -9734,6 +10313,49 @@
           "showStats"
         ]
       },
+      "ProfileStatsDto": {
+        "type": "object",
+        "properties": {
+          "peaks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct peaks visited."
+          },
+          "lakes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct lakes visited."
+          },
+          "caves": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct caves visited."
+          },
+          "walkedM": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Metres walked on checked-out trips."
+          },
+          "climbedM": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Metres climbed on checked-out trips."
+          },
+          "spots": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Verified spots added."
+          }
+        },
+        "required": [
+          "peaks",
+          "lakes",
+          "caves",
+          "walkedM",
+          "climbedM",
+          "spots"
+        ]
+      },
       "NotificationPreferencesInputDto": {
         "type": "object",
         "properties": {
@@ -9966,6 +10588,170 @@
         },
         "required": [
           "updated"
+        ]
+      },
+      "SearchScope": {
+        "type": "string",
+        "enum": [
+          "all",
+          "places",
+          "people",
+          "groups",
+          "tours"
+        ]
+      },
+      "SearchPlaceNameDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true
+          },
+          "en": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "SearchPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "qorangur-2941"
+          },
+          "name": {
+            "$ref": "#/components/schemas/SearchPlaceNameDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "elevationM": {
+            "type": "integer"
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "requiredLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "distanceM": {
+            "type": "integer",
+            "description": "Metres from the search origin."
+          },
+          "conditionStatus": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "type",
+          "latitude",
+          "longitude",
+          "elevationM",
+          "difficulty",
+          "requiredLevel",
+          "distanceM"
+        ]
+      },
+      "SearchPersonDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "guest_1"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null when no avatar is set or storage is unavailable."
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          }
+        },
+        "required": [
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level"
+        ]
+      },
+      "SearchResultsDto": {
+        "type": "object",
+        "properties": {
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchPlaceDto"
+            }
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchPersonDto"
+            }
+          },
+          "groups": {
+            "description": "Always empty until groups ship.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tours": {
+            "description": "Always empty until tours ship.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "places",
+          "people",
+          "groups",
+          "tours"
         ]
       },
       "PathPlaceNameDto": {

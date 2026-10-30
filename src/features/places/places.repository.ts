@@ -33,6 +33,23 @@ export class PlacesRepository {
     return this.prisma.place.findUnique({ where: { id } });
   }
 
+  /** Name, slug or region contains the term (case-insensitive); capped by the caller. */
+  searchByName(term: string, take: number): Promise<PlaceRow[]> {
+    return this.prisma.place.findMany({
+      where: {
+        OR: [
+          { nameUz: { contains: term, mode: 'insensitive' } },
+          { nameRu: { contains: term, mode: 'insensitive' } },
+          { nameEn: { contains: term, mode: 'insensitive' } },
+          { slug: { contains: term, mode: 'insensitive' } },
+          { region: { contains: term, mode: 'insensitive' } },
+        ],
+      },
+      include: { condition: { select: { status: true } } },
+      take,
+    });
+  }
+
   /** The viewer's current level; null when the user does not exist. */
   async findViewerLevel(userId: string): Promise<number | null> {
     const user = await this.prisma.user.findUnique({
