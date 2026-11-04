@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { isUUID } from 'class-validator';
 import { startOfTashkentDay } from '../../lib/dates.js';
 import { StorageService } from '../../lib/storage/storage.service.js';
 import { GameConfigService } from '../levels/game-config.service.js';
 import { LevelsService } from '../levels/levels.service.js';
+import { StreaksService } from '../streaks/streaks.service.js';
 import { effectiveCompletedAt, gradeAttempts } from './lesson-grading.js';
 import { attemptsRejected, LessonNotFoundError } from './lessons.errors.js';
 import { LessonsRepository } from './lessons.repository.js';
@@ -22,6 +23,7 @@ export class LessonsService {
     private readonly gameConfig: GameConfigService,
     private readonly levels: LevelsService,
     private readonly storage: StorageService,
+    @Optional() private readonly streaks?: StreaksService,
   ) {}
 
   async catalog(
@@ -85,22 +87,27 @@ export class LessonsService {
       config.heartsPerDay,
     );
     if (!grade.ok) throw attemptsRejected(grade.reason);
+    const completedAt = effectiveCompletedAt(new Date(input.completedAt), now);
 
     const result = async (
       firstCompletion: boolean,
       xpAwarded: number,
       levelUps: CompletionResultDto['levelUps'],
-    ): Promise<CompletionResultDto> => ({
-      firstCompletion,
-      perfect: grade.perfect,
-      xpAwarded,
-      doneToday: await this.repository.countCompletionsSince(
-        userId,
-        startOfTashkentDay(now),
-      ),
-      dailyGoal: config.dailyGoal,
-      levelUps,
-    });
+    ): Promise<CompletionResultDto> => {
+      // First and practice completions (guest merges included) count on their own Tashkent day.
+      await this.streaks?.recordActivity(userId, 'lesson', completedAt, now);
+      return {
+        firstCompletion,
+        perfect: grade.perfect,
+        xpAwarded,
+        doneToday: await this.repository.countCompletionsSince(
+          userId,
+          startOfTashkentDay(now),
+        ),
+        dailyGoal: config.dailyGoal,
+        levelUps,
+      };
+    };
 
     if (await this.repository.hasCompletion(userId, lesson.id)) {
       return result(false, 0, []);
@@ -123,7 +130,7 @@ export class LessonsService {
     const inserted = await this.repository.insertCompletion({
       userId,
       lessonId: lesson.id,
-      completedAt: effectiveCompletedAt(new Date(input.completedAt), now),
+      completedAt,
       wrongCount: grade.wrongCount,
       perfect: grade.perfect,
       xp,

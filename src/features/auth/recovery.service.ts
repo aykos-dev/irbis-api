@@ -63,6 +63,7 @@ export class RecoveryService {
     );
     if (
       user &&
+      user.passwordHash !== null &&
       !user.blockedAt &&
       user.recoveryPhone &&
       user.recoveryPhoneVerifiedAt
@@ -85,7 +86,8 @@ export class RecoveryService {
     this.passwords.assertAcceptable(dto.newPassword, username, 'newPassword');
 
     const user = await this.repository.findByUsername(username);
-    if (!user) throw new CodeInvalidError();
+    // A demo account has no password to reset: answered like an unknown username.
+    if (!user || user.passwordHash === null) throw new CodeInvalidError();
     if (user.blockedAt) {
       throw new AccountBlockedError(user.blockReasonCode ?? 'other');
     }

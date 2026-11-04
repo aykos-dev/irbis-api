@@ -24,6 +24,7 @@ import { Throttled } from '../../common/decorators/throttle.decorator.js';
 import type { AuthUser } from '../../common/auth-user.js';
 import { AuthService } from './auth.service.js';
 import {
+  CreateDemoDto,
   ForgotPasswordDto,
   LogInDto,
   RefreshDto,
@@ -69,6 +70,26 @@ export class AuthController {
   })
   signUp(@Body() dto: SignUpDto): Promise<AuthSessionResponseDto> {
     return this.auth.signUp(dto);
+  }
+
+  @Public()
+  @Throttled('auth')
+  @Post('demo')
+  @ApiOperation({
+    operationId: 'authCreateDemo',
+    summary:
+      'Create a demo account (auto username, no password) and log in (ADR-006)',
+  })
+  @ApiCreatedResponse({ type: AuthSessionResponseDto })
+  @ApiErrorResponses({
+    400: ['VALIDATION_FAILED'],
+    429: ['DEMO_LIMIT', 'RATE_LIMITED'],
+  })
+  createDemo(
+    @Body() dto: CreateDemoDto,
+    @ClientIp() ip: string,
+  ): Promise<AuthSessionResponseDto> {
+    return this.auth.createDemo(dto, ip);
   }
 
   @Public()

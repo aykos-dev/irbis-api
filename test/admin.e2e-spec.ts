@@ -2,6 +2,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import request from 'supertest';
 import { AdminBootstrapService } from '../src/features/auth/admin-bootstrap.service.js';
+import { startOfTashkentDay } from '../src/lib/dates.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { createE2eApp } from './setup/app.js';
 import {
@@ -410,7 +411,13 @@ describe('admin panel API (e2e) - AC12-AC16', () => {
     });
 
     it('breaks ties on identical timestamps by id, without skipping or repeating', async () => {
-      const same = new Date(Date.now() - 3_600_000);
+      // One hour ago, but never before today's Tashkent midnight (the next test filters on "joined today").
+      const same = new Date(
+        Math.max(
+          Date.now() - 3_600_000,
+          startOfTashkentDay(new Date()).getTime() + 1_000,
+        ),
+      );
       await prisma.user.updateMany({
         where: { id: { in: users.map((u) => u.id) } },
         data: { createdAt: same },

@@ -112,6 +112,16 @@ export const configSchema = z.object({
     (value) => (value === '' ? undefined : value),
     z.url().optional(),
   ),
+  // Public web origin; live trip links are `<this>/t/<token>`.
+  WEB_PUBLIC_URL: z.url().default('http://localhost:3001'),
+  // Number the SOS screen dials (E.164, e.g. +<country><number>); empty = unset.
+  SOS_CALL_NUMBER: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z
+      .string()
+      .regex(/^\+[1-9]\d{7,14}$/, 'expected an E.164 phone number')
+      .optional(),
+  ),
   DATABASE_URL: z
     .string()
     .regex(/^postgres(ql)?:\/\//, 'expected a postgresql:// connection string'),

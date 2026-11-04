@@ -90,6 +90,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         ...(exception.retryAfterSec !== undefined && {
           retryAfterSec: exception.retryAfterSec,
         }),
+        ...(exception.details && { details: exception.details }),
         requestId,
       };
     }

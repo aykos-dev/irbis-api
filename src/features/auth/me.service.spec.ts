@@ -12,6 +12,7 @@ const user: MeUser = {
   experience: 'weekend',
   interests: ['peaks'],
   role: 'user',
+  isDemo: false,
   recoveryPhone: null,
   recoveryPhoneVerifiedAt: null,
   createdAt: AT,

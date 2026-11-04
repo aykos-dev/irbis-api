@@ -101,6 +101,12 @@ export class MeResponseDto {
   @ApiProperty({ enum: USER_ROLES, enumName: 'Role' })
   role: (typeof USER_ROLES)[number];
 
+  @ApiProperty({
+    description:
+      'Demo account (ADR-006): auto username, no password; secure it with POST /v1/me/secure.',
+  })
+  isDemo: boolean;
+
   @ApiProperty({ description: 'A verified recovery phone exists.' })
   hasRecoveryPhone: boolean;
 

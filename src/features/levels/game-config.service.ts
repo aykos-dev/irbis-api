@@ -1,14 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import type { z } from 'zod';
 import {
+  checkInConfigSchema,
   dailyCapsSchema,
   lessonsConfigSchema,
   levelTableSchema,
   pathConfigSchema,
+  streaksConfigSchema,
+  tripActiveConfigSchema,
+  tripConfigSchema,
+  type CheckInConfig,
   type DailyCaps,
   type LessonsConfig,
   type LevelTable,
   type PathConfig,
+  type StreaksConfig,
+  type TripActiveConfig,
+  type TripConfig,
 } from './game-config.schema.js';
 import {
   withPublishedLessonGates,
@@ -56,6 +64,22 @@ export class GameConfigService {
 
   pathConfig(now = Date.now()): Promise<PathConfig> {
     return this.load(GAME_CONFIG_KEYS.pathConfig, pathConfigSchema, now);
+  }
+
+  tripConfig(now = Date.now()): Promise<TripConfig> {
+    return this.load(GAME_CONFIG_KEYS.tripConfig, tripConfigSchema, now);
+  }
+
+  tripActiveConfig(now = Date.now()): Promise<TripActiveConfig> {
+    return this.load(GAME_CONFIG_KEYS.tripActive, tripActiveConfigSchema, now);
+  }
+
+  checkInConfig(now = Date.now()): Promise<CheckInConfig> {
+    return this.load(GAME_CONFIG_KEYS.checkIn, checkInConfigSchema, now);
+  }
+
+  streaksConfig(now = Date.now()): Promise<StreaksConfig> {
+    return this.load(GAME_CONFIG_KEYS.streaks, streaksConfigSchema, now);
   }
 
   private async publishedLessons(now: number): Promise<PublishedLessonCounts> {

@@ -1,4 +1,5 @@
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { WsAdapter } from '@nestjs/platform-ws';
 import { Test } from '@nestjs/testing';
 
 /**
@@ -19,6 +20,7 @@ export async function createE2eApp(
     bodyParser: false,
   });
   configureApp(app);
+  app.useWebSocketAdapter(new WsAdapter(app));
   await app.init();
   return app;
 }

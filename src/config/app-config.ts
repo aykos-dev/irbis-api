@@ -194,6 +194,15 @@ export class AppConfig {
     };
   }
 
+  /** Public web origin without a trailing slash. */
+  get webPublicUrl(): string {
+    return this.get('WEB_PUBLIC_URL').replace(/\/+$/, '');
+  }
+
+  get sosCallNumber(): string | undefined {
+    return this.get('SOS_CALL_NUMBER');
+  }
+
   get databaseUrl(): string {
     return this.get('DATABASE_URL');
   }

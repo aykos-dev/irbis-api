@@ -18,12 +18,19 @@ import { AppConfig } from './config/app-config.js';
 import { AppConfigModule } from './config/config.module.js';
 import { AccountStatusGuard } from './features/auth/guards/account-status.guard.js';
 import { AuthModule } from './features/auth/auth.module.js';
+import { BadgesModule } from './features/badges/badges.module.js';
+import { CheckInModule } from './features/check-in/check-in.module.js';
+import { GroupsModule } from './features/groups/groups.module.js';
+import { GroupChatModule } from './features/group-chat/group-chat.module.js';
 import { ConditionsModule } from './features/conditions/conditions.module.js';
 import { LessonsAdminModule } from './features/lessons-admin/lessons-admin.module.js';
 import { LessonsModule } from './features/lessons/lessons.module.js';
 import { LevelsModule } from './features/levels/levels.module.js';
+import { StreaksModule } from './features/streaks/streaks.module.js';
 import { PlacesModule } from './features/places/places.module.js';
 import { ProfileModule } from './features/profile/profile.module.js';
+import { SearchModule } from './features/search/search.module.js';
+import { TripPlanModule } from './features/trip-plan/trip-plan.module.js';
 import { WeeklyPathModule } from './features/weekly-path/weekly-path.module.js';
 import { HealthModule } from './health/health.module.js';
 import { loggerParams } from './logging.js';
@@ -65,13 +72,20 @@ import { PrismaModule } from './prisma/prisma.module.js';
     PrismaModule,
     HealthModule,
     AuthModule,
+    BadgesModule,
     PlacesModule,
     ConditionsModule,
     LevelsModule,
     LessonsAdminModule,
     LessonsModule,
     ProfileModule,
+    SearchModule,
     WeeklyPathModule,
+    TripPlanModule,
+    CheckInModule,
+    GroupsModule,
+    GroupChatModule,
+    StreaksModule,
   ],
   providers: [
     // Guards run in this order: rate limit → authentication → account status (blocked, current role) → roles.

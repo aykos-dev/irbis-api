@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AppConfig } from '../../config/app-config.js';
 import { StorageModule } from '../../lib/storage/storage.module.js';
+import { LevelsModule } from '../levels/levels.module.js';
 import { AdminAuthController } from './admin-auth.controller.js';
 import { AdminBootstrapService } from './admin-bootstrap.service.js';
 import { AdminUsersController } from './admin-users.controller.js';
@@ -22,7 +23,7 @@ import { FakeSmsSender, SmsSender } from './sms-sender.js';
 import { TokenService } from './token.service.js';
 
 @Module({
-  imports: [JwtModule.register({}), StorageModule],
+  imports: [JwtModule.register({}), StorageModule, LevelsModule],
   controllers: [
     AuthController,
     MeController,
@@ -58,7 +59,9 @@ import { TokenService } from './token.service.js';
   // AuthService: the global account-status guard and the profile username change.
   // PasswordService: PATCH /v1/me verifies currentPassword. AdminBootstrapService: the admin:create CLI.
   // MeService: the profile slice uses its mapping for PATCH /v1/me.
+  // SmsSender: the trip-plan alert job texts the emergency contact.
   exports: [
+    SmsSender,
     AuthService,
     GuestMergeRegistry,
     AdminBootstrapService,

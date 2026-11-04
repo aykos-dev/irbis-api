@@ -78,6 +78,66 @@ export const pathConfigSchema = z.object({
 });
 
 export type PathConfig = z.infer<typeof pathConfigSchema>;
+
+/** `trip.config` (trip-plan): alert delay, time limits and the gear-list thresholds. */
+export const tripConfigSchema = z.object({
+  alertDelayMin: z.number().int().min(0),
+  maxDurationH: z.number().int().min(1),
+  planAheadDays: z.number().int().min(0),
+  startGraceMin: z.number().int().min(0),
+  gear: z.object({
+    waterLPerHour: z.number().positive(),
+    waterMinL: z.number().min(0),
+    frostMaxC: z.number(),
+    sunMinC: z.number(),
+    headlampWithinMinOfSunset: z.number().int().min(0),
+  }),
+});
+
+export type TripConfig = z.infer<typeof tripConfigSchema>;
+
+/** `trip.active` (active-trip): ping cadence, waypoint XP rules, SOS cooldown and the live-link window. */
+export const tripActiveConfigSchema = z.object({
+  pingEveryMin: z.number().int().min(1),
+  waypoint: z.object({
+    xp: z.number().int().min(0),
+    minDistanceM: z.number().int().min(0),
+    minGapMin: z.number().int().min(0),
+    maxPerTrip: z.number().int().min(0),
+    maxAccuracyM: z.number().min(0),
+  }),
+  sosCooldownSec: z.number().int().min(0),
+  liveAfterCheckoutH: z.number().min(0),
+});
+
+export type TripActiveConfig = z.infer<typeof tripActiveConfigSchema>;
+
+const metres = z.number().int().min(1);
+
+/** `checkIn.config` (check-in): XP per difficulty 1–5, radius per place type, fix limits, demo quota. */
+export const checkInConfigSchema = z.object({
+  xpByDifficulty: z.array(z.number().int().min(1)).length(MAX_DIFFICULTY),
+  radiusMByType: z.object({
+    peak: metres,
+    waterfall: metres,
+    cave: metres,
+    lake: metres,
+    canyon: metres,
+    camping: metres,
+    trail: metres,
+  }),
+  maxAccuracyM: z.number().min(0),
+  maxAgeHours: z.number().min(0),
+  demoPerIpPerDay: z.number().int().min(0),
+});
+
+export type CheckInConfig = z.infer<typeof checkInConfigSchema>;
+/** `streaks.config` (streaks): free freezes per Asia/Tashkent month, shared by flame and boot. */
+export const streaksConfigSchema = z.object({
+  freezesPerMonth: z.number().int().min(0),
+});
+
+export type StreaksConfig = z.infer<typeof streaksConfigSchema>;
 export type LevelRow = z.infer<typeof levelRowSchema>;
 export type LevelTable = z.infer<typeof levelTableSchema>;
 export type DailyCaps = z.infer<typeof dailyCapsSchema>;

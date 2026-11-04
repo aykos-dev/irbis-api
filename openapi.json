@@ -95,6 +95,58 @@
         ]
       }
     },
+    "/v1/auth/demo": {
+      "post": {
+        "operationId": "authCreateDemo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDemoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: DEMO_LIMIT | RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a demo account (auto username, no password) and log in (ADR-006)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/v1/auth/username-available": {
       "get": {
         "operationId": "Auth_usernameAvailable",
@@ -670,6 +722,93 @@
           }
         ],
         "summary": "Delete the signed-in account after confirming the current password",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/v1/me/secure": {
+      "post": {
+        "operationId": "meSecure",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecureAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED | USERNAME_INVALID | USERNAME_RESERVED | PASSWORD_WEAK | TERMS_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: NOT_DEMO | USERNAME_TAKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Turn a demo account into a normal one: set username and password; keeps this session",
         "tags": [
           "Me"
         ]
@@ -1844,6 +1983,373 @@
         ]
       }
     },
+    "/v1/levels": {
+      "get": {
+        "operationId": "Levels_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LevelListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "The level table with how many places each level opens",
+        "tags": [
+          "Levels"
+        ]
+      }
+    },
+    "/v1/me/level": {
+      "get": {
+        "operationId": "MeLevel_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyLevelDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The signed-in user's level, next-level bars and unseen level-ups",
+        "tags": [
+          "Levels"
+        ]
+      }
+    },
+    "/v1/me/level-ups/{id}/seen": {
+      "post": {
+        "operationId": "MeLevel_markLevelUpSeen",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: LEVEL_UP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a level-up as seen (repeating it is fine)",
+        "tags": [
+          "Levels"
+        ]
+      }
+    },
+    "/v1/qa/levels/grant": {
+      "post": {
+        "description": "Answers 404 NOT_FOUND unless QA_TOOLS_ENABLED=true.",
+        "operationId": "QaLevels_grant",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QaGrantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyLevelDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "QA only: grant XP, lessons, check-ins and verified spots to yourself",
+        "tags": [
+          "QA"
+        ]
+      }
+    },
+    "/v1/badges": {
+      "get": {
+        "operationId": "Badges_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgesListDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "The 64-badge catalogue with live progress; guests see the catalogue without progress",
+        "tags": [
+          "Badges"
+        ]
+      }
+    },
+    "/v1/me/badges/showcase": {
+      "put": {
+        "operationId": "Me_setBadgesShowcase",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetShowcaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgesListDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED | BADGE_NOT_EARNED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pick up to four earned badges for the profile showcase",
+        "tags": [
+          "Badges"
+        ]
+      }
+    },
+    "/v1/users/{username}/badges": {
+      "get": {
+        "operationId": "Users_getBadges",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicBadgesDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A public profile's showcase badges",
+        "tags": [
+          "Badges"
+        ]
+      }
+    },
     "/v1/places": {
       "get": {
         "operationId": "Places_list",
@@ -2655,223 +3161,6 @@
         "summary": "End an override",
         "tags": [
           "Admin"
-        ]
-      }
-    },
-    "/v1/levels": {
-      "get": {
-        "operationId": "Levels_list",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LevelListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "The level table with how many places each level opens",
-        "tags": [
-          "Levels"
-        ]
-      }
-    },
-    "/v1/me/level": {
-      "get": {
-        "operationId": "MeLevel_get",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MyLevelDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Error. code: UNAUTHENTICATED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Error. code: ACCOUNT_BLOCKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "The signed-in user's level, next-level bars and unseen level-ups",
-        "tags": [
-          "Levels"
-        ]
-      }
-    },
-    "/v1/me/level-ups/{id}/seen": {
-      "post": {
-        "operationId": "MeLevel_markLevelUpSeen",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": "Error. code: VALIDATION_FAILED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Error. code: UNAUTHENTICATED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Error. code: ACCOUNT_BLOCKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Error. code: LEVEL_UP_NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Mark a level-up as seen (repeating it is fine)",
-        "tags": [
-          "Levels"
-        ]
-      }
-    },
-    "/v1/qa/levels/grant": {
-      "post": {
-        "description": "Answers 404 NOT_FOUND unless QA_TOOLS_ENABLED=true.",
-        "operationId": "QaLevels_grant",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QaGrantDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MyLevelDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Error. code: VALIDATION_FAILED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Error. code: UNAUTHENTICATED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Error. code: ACCOUNT_BLOCKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Error. code: NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "QA only: grant XP, lessons, check-ins and verified spots to yourself",
-        "tags": [
-          "QA"
         ]
       }
     },
@@ -4170,6 +4459,53 @@
         ]
       }
     },
+    "/v1/me/streaks": {
+      "get": {
+        "operationId": "meStreaks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreaksDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The signed-in user's flame and boot streaks and freezes",
+        "tags": [
+          "Streaks"
+        ]
+      }
+    },
     "/v1/users/{username}": {
       "get": {
         "operationId": "Users_getProfile",
@@ -4218,6 +4554,104 @@
         "summary": "A public profile by username (case-insensitive)",
         "tags": [
           "Profile"
+        ]
+      }
+    },
+    "/v1/users/{username}/stats": {
+      "get": {
+        "operationId": "Users_getStats",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileStatsDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A public profile's all-time stats (zeros when hidden)",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
+    "/v1/me/stats": {
+      "get": {
+        "operationId": "Me_stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileStatsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The signed-in user's all-time profile stats",
+        "tags": [
+          "Me"
         ]
       }
     },
@@ -4506,6 +4940,724 @@
         ]
       }
     },
+    "/v1/search": {
+      "get": {
+        "operationId": "Search_query",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Trimmed before matching; 2–60 characters.",
+            "schema": {
+              "minLength": 2,
+              "maxLength": 60,
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SearchScope"
+            }
+          },
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResultsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Search places, public people and public groups; tours are empty for now",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/v1/groups": {
+      "get": {
+        "operationId": "Groups_list",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 80,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 30,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupsHomeDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Your groups, invitations and public groups",
+        "tags": [
+          "Groups"
+        ]
+      },
+      "post": {
+        "operationId": "Groups_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupDetailsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a public or private group",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}": {
+      "get": {
+        "operationId": "Groups_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupDetailsDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Group details and visible membership state",
+        "tags": [
+          "Groups"
+        ]
+      },
+      "patch": {
+        "operationId": "Groups_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupDetailsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a group as its owner or admin",
+        "tags": [
+          "Groups"
+        ]
+      },
+      "delete": {
+        "operationId": "Groups_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a group as its owner",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/join": {
+      "post": {
+        "operationId": "Groups_join",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join a public group or request private membership",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/leave": {
+      "post": {
+        "operationId": "Groups_leave",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Leave a group after transferring ownership if needed",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/invitations": {
+      "post": {
+        "operationId": "Groups_invite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteGroupMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invite an explorer as a group admin",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/invitations/accept": {
+      "post": {
+        "operationId": "Groups_acceptInvitation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept your group invitation",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/invitations/decline": {
+      "post": {
+        "operationId": "Groups_declineInvitation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Decline your group invitation",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/requests/{userId}/approve": {
+      "post": {
+        "operationId": "Groups_approveRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve a private-group join request",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/requests/{userId}/reject": {
+      "post": {
+        "operationId": "Groups_rejectRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a private-group join request",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/members/{userId}/admin": {
+      "patch": {
+        "operationId": "Groups_setAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetGroupAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Promote or demote an admin as owner",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/members/{userId}": {
+      "delete": {
+        "operationId": "Groups_removeMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a member as an owner or admin",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/v1/groups/{id}/ownership/{userId}": {
+      "post": {
+        "operationId": "Groups_transferOwnership",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Transfer ownership to an active member",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
     "/v1/path": {
       "get": {
         "description": "Public. Signed in: the stored month (picked on the first call, then frozen) and `interests` is ignored. Guest: level 1, picked from `interests`, nothing stored.",
@@ -4695,6 +5847,1765 @@
         "summary": "QA only: mark a place visited on your path this month",
         "tags": [
           "QA"
+        ]
+      }
+    },
+    "/v1/places/{id}/trip-preview": {
+      "get": {
+        "operationId": "getTripPreview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startAt",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "backBy",
+            "required": true,
+            "in": "query",
+            "description": "After startAt.",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripPreviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: TRIP_TIMES_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sunset, daylight buffer and gear list for a planned window",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/me/emergency-contact": {
+      "get": {
+        "operationId": "getEmergencyContact",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyContactDto"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No contact saved yet."
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The saved emergency contact (phone masked); 204 when none",
+        "tags": [
+          "Me"
+        ]
+      },
+      "put": {
+        "operationId": "putEmergencyContact",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutEmergencyContactDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyContactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save or replace the emergency contact (phone stored encrypted)",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/v1/trips": {
+      "post": {
+        "description": "Snapshots the emergency contact. `location` is stored only when `start` is true.",
+        "operationId": "createTrip",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTripDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_ALREADY_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: TRIP_TIMES_INVALID | EMERGENCY_CONTACT_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Plan a trip, or start it now with `start: true`",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/current": {
+      "get": {
+        "operationId": "getCurrentTrips",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentTripsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The user's active trip and upcoming planned trips",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/{id}/start": {
+      "post": {
+        "operationId": "startTrip",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTripDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_EDITABLE | TRIP_ALREADY_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: TRIP_TIMES_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a planned trip now (optional device location)",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/{id}/locations": {
+      "post": {
+        "description": "Active or alerted trips only. A fix older than the stored one is ignored (still 204).",
+        "operationId": "tripsPostLocation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostTripLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Stored or ignored as stale."
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send the current location and running totals of an active trip",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/{id}/waypoints": {
+      "post": {
+        "description": "Rules in order: accuracy, per-trip limit, distance from every earlier waypoint, gap after the previous one.",
+        "operationId": "tripsCheckInWaypoint",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInWaypointDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaypointResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_ACTIVE | WAYPOINT_LIMIT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: WAYPOINT_TOO_CLOSE | WAYPOINT_TOO_SOON | LOCATION_INACCURATE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check in a waypoint on an active trip (earns XP)",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/{id}/sos": {
+      "post": {
+        "description": "Trip status is unchanged. On 502 SOS_SEND_FAILED the app opens the phone SMS app instead.",
+        "operationId": "tripsSendSos",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendSosDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SosResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: SOS_TOO_SOON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Error. code: SOS_SEND_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Text the emergency contact an SOS with the best known location",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/{id}/sos-contact": {
+      "get": {
+        "operationId": "tripsGetSosContact",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SosContactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The emergency contact's full phone and the rescue number",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/{id}": {
+      "patch": {
+        "description": "Planned: startAt, backBy, alertEnabled. Active (until the alert is sent): backBy and alertEnabled only.",
+        "operationId": "updateTrip",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTripDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_EDITABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: TRIP_TIMES_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a planned trip, or extend/toggle the alert of an active one",
+        "tags": [
+          "Trips"
+        ]
+      },
+      "delete": {
+        "operationId": "deleteTrip",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_EDITABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a planned trip",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/trips/{id}/check-out": {
+      "post": {
+        "description": "Optional final distanceM / climbM totals are stored.",
+        "operationId": "checkOutTrip",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckOutTripDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: TRIP_NOT_EDITABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark an active or alerted trip as safely back",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/v1/live/{token}": {
+      "get": {
+        "operationId": "liveGet",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveTripDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: LIVE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Public live view of a trip by its live-link token",
+        "tags": [
+          "Live"
+        ]
+      }
+    },
+    "/v1/check-ins": {
+      "post": {
+        "description": "Rules in order: recordedAt (future → 400, older than 72 h → 422), place, accuracy, radius of the place type. A repeat at the same place in the same Asia/Tashkent month is stored with counted=false and 0 XP.",
+        "operationId": "checkInsCreate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "This clientId was already stored: its result is returned again (no new XP).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResult"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: CHECK_IN_TOO_OLD | LOCATION_INACCURATE | CHECK_IN_TOO_FAR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check in at a place with a GPS fix (earns XP once per place per month)",
+        "tags": [
+          "Check-ins"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/messages": {
+      "get": {
+        "operationId": "GroupChat_list",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 30,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMessagesPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cursor-paginated member chat history",
+        "tags": [
+          "Group chat"
+        ]
+      },
+      "post": {
+        "operationId": "GroupChat_send",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMessageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: GROUP_MESSAGE_EMPTY | GROUP_ATTACHMENT_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: GROUP_MEMBERSHIP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send text, reply, photo or place attachments",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/messages/{messageId}": {
+      "patch": {
+        "operationId": "GroupChat_edit",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditGroupMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMessageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit your text message",
+        "tags": [
+          "Group chat"
+        ]
+      },
+      "delete": {
+        "operationId": "GroupChat_delete",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMessageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete your message, or moderate as group admin",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/messages/{messageId}/reactions": {
+      "put": {
+        "operationId": "GroupChat_addReaction",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupChatActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add one emoji reaction",
+        "tags": [
+          "Group chat"
+        ]
+      },
+      "delete": {
+        "operationId": "GroupChat_removeReaction",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupChatActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove one emoji reaction",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/messages/read": {
+      "post": {
+        "operationId": "GroupChat_markRead",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupReadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupChatActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Advance your group read receipt",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/chat/mute": {
+      "patch": {
+        "operationId": "GroupChat_mute",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMuteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupChatActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mute or unmute mention notifications for this group",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/messages/photos": {
+      "post": {
+        "operationId": "GroupChat_uploadPhoto",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupPhotoUploadRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPhotoUploadDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload one gallery photo for a message",
+        "tags": [
+          "Group chat"
         ]
       }
     }
@@ -5040,6 +7951,10 @@
               }
             ]
           },
+          "isDemo": {
+            "type": "boolean",
+            "description": "Demo account (ADR-006): auto username, no password; secure it with POST /v1/me/secure."
+          },
           "hasRecoveryPhone": {
             "type": "boolean",
             "description": "A verified recovery phone exists."
@@ -5077,6 +7992,7 @@
           "experience",
           "interests",
           "role",
+          "isDemo",
           "hasRecoveryPhone",
           "recoveryPhonePending",
           "createdAt",
@@ -5153,6 +8069,16 @@
             "example": 900,
             "description": "ACCOUNT_LOCKED, RATE_LIMITED: seconds until the client may retry."
           },
+          "details": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "example": {
+              "remainingM": 120
+            },
+            "description": "Code-specific numbers: WAYPOINT_TOO_CLOSE remainingM, WAYPOINT_TOO_SOON remainingMin, SOS_TOO_SOON retryInSec."
+          },
           "requestId": {
             "type": "string",
             "example": "6f1c2a9e-4b7d-4c1e-9a55-0d2b8f3e7c10"
@@ -5163,6 +8089,21 @@
           "code",
           "message",
           "requestId"
+        ]
+      },
+      "CreateDemoDto": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Locale"
+              }
+            ]
+          }
+        },
+        "required": [
+          "locale"
         ]
       },
       "UsernameAvailabilityResponseDto": {
@@ -5277,6 +8218,29 @@
           "username",
           "code",
           "newPassword"
+        ]
+      },
+      "SecureAccountDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "guest_1",
+            "description": "3-20 chars a-z 0-9 . _ ; case-insensitive; no leading/trailing dot."
+          },
+          "password": {
+            "type": "string",
+            "description": "6-64 chars, not the username, not a common password."
+          },
+          "acceptTerms": {
+            "type": "boolean",
+            "description": "Must be true, as on sign-up."
+          }
+        },
+        "required": [
+          "username",
+          "password",
+          "acceptTerms"
         ]
       },
       "RecoveryPhoneDto": {
@@ -5878,6 +8842,580 @@
           "nextCursor"
         ]
       },
+      "LessonGateKind": {
+        "type": "string",
+        "enum": [
+          "count",
+          "tier",
+          "all"
+        ],
+        "description": "count: any lessons; tier: lessons of `tier`; all: every lesson."
+      },
+      "LessonGateDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "description": "count: any lessons; tier: lessons of `tier`; all: every lesson.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LessonGateKind"
+              }
+            ]
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true,
+            "example": "2"
+          },
+          "required": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "tier",
+          "required"
+        ]
+      },
+      "CheckInGateDto": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "integer"
+          },
+          "minDifficulty": {
+            "type": "integer",
+            "description": "Only check-ins at places of at least this difficulty count."
+          }
+        },
+        "required": [
+          "required",
+          "minDifficulty"
+        ]
+      },
+      "LevelDefDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "example": 2
+          },
+          "xp": {
+            "type": "integer",
+            "description": "Total XP needed."
+          },
+          "lessons": {
+            "$ref": "#/components/schemas/LessonGateDto"
+          },
+          "checkIns": {
+            "$ref": "#/components/schemas/CheckInGateDto"
+          },
+          "verifiedSpots": {
+            "type": "integer"
+          },
+          "maxDifficulty": {
+            "type": "integer",
+            "description": "Hardest place difficulty this level opens."
+          },
+          "newPlacesCount": {
+            "type": "integer",
+            "description": "Places whose requiredLevel is this level."
+          }
+        },
+        "required": [
+          "level",
+          "xp",
+          "lessons",
+          "checkIns",
+          "verifiedSpots",
+          "maxDifficulty",
+          "newPlacesCount"
+        ]
+      },
+      "LevelListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Levels 1..7 in order.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelDefDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ProgressBarDto": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "required"
+        ]
+      },
+      "LessonProgressDto": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "integer"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LessonGateKind"
+              }
+            ]
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "current",
+          "required",
+          "kind",
+          "tier"
+        ]
+      },
+      "CheckInProgressDto": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "integer"
+          },
+          "minDifficulty": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "required",
+          "minDifficulty"
+        ]
+      },
+      "NextLevelDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer"
+          },
+          "xp": {
+            "$ref": "#/components/schemas/ProgressBarDto"
+          },
+          "lessons": {
+            "$ref": "#/components/schemas/LessonProgressDto"
+          },
+          "checkIns": {
+            "$ref": "#/components/schemas/CheckInProgressDto"
+          },
+          "verifiedSpots": {
+            "nullable": true,
+            "description": "Null when the next level needs no verified spots.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProgressBarDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "level",
+          "xp",
+          "lessons",
+          "checkIns",
+          "verifiedSpots"
+        ]
+      },
+      "PendingLevelUpDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromLevel": {
+            "type": "integer"
+          },
+          "toLevel": {
+            "type": "integer"
+          },
+          "maxDifficulty": {
+            "type": "integer"
+          },
+          "newPlacesCount": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "fromLevel",
+          "toLevel",
+          "maxDifficulty",
+          "newPlacesCount"
+        ]
+      },
+      "MyLevelDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "example": 1
+          },
+          "xpTotal": {
+            "type": "integer"
+          },
+          "reachedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "next": {
+            "nullable": true,
+            "description": "Null at the top level.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/NextLevelDto"
+              }
+            ]
+          },
+          "pendingLevelUps": {
+            "description": "Level-ups not yet seen, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingLevelUpDto"
+            }
+          }
+        },
+        "required": [
+          "level",
+          "xpTotal",
+          "reachedAt",
+          "next",
+          "pendingLevelUps"
+        ]
+      },
+      "QaGrantLessonDto": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "example": "2"
+          }
+        },
+        "required": [
+          "tier"
+        ]
+      },
+      "QaGrantCheckInDto": {
+        "type": "object",
+        "properties": {
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "difficulty"
+        ]
+      },
+      "QaGrantDto": {
+        "type": "object",
+        "properties": {
+          "xp": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20000
+          },
+          "lessons": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QaGrantLessonDto"
+            }
+          },
+          "checkIns": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QaGrantCheckInDto"
+            }
+          },
+          "verifiedSpots": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          }
+        }
+      },
+      "BadgeGroup": {
+        "type": "string",
+        "enum": [
+          "places",
+          "regions",
+          "seasons",
+          "social",
+          "milestones"
+        ]
+      },
+      "BadgeRarity": {
+        "type": "string",
+        "enum": [
+          "common",
+          "rare",
+          "epic",
+          "legendary"
+        ]
+      },
+      "BadgeTextDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string",
+            "example": "Peak Bagger I"
+          },
+          "ru": {
+            "type": "string",
+            "example": "Peak Bagger I"
+          },
+          "en": {
+            "type": "string",
+            "example": "Peak Bagger I"
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "BadgeDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "peak-bagger-1"
+          },
+          "group": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BadgeGroup"
+              }
+            ]
+          },
+          "rarity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BadgeRarity"
+              }
+            ]
+          },
+          "title": {
+            "$ref": "#/components/schemas/BadgeTextDto"
+          },
+          "description": {
+            "$ref": "#/components/schemas/BadgeTextDto"
+          },
+          "target": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 3
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Capped at the target; 0 for guests."
+          },
+          "earnedAt": {
+            "type": "object",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Null until the badge is earned."
+          },
+          "showcase": {
+            "type": "boolean",
+            "description": "The owner picked it for the profile showcase."
+          },
+          "art": {
+            "type": "string",
+            "nullable": true,
+            "description": "Art file stem; null draws a code hexagon."
+          }
+        },
+        "required": [
+          "key",
+          "group",
+          "rarity",
+          "title",
+          "description",
+          "target",
+          "progress",
+          "earnedAt",
+          "showcase",
+          "art"
+        ]
+      },
+      "BadgeGroupDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BadgeGroup"
+              }
+            ]
+          },
+          "title": {
+            "$ref": "#/components/schemas/BadgeTextDto"
+          },
+          "earned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "earned",
+          "total"
+        ]
+      },
+      "BadgesListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BadgeDto"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BadgeGroupDto"
+            }
+          },
+          "collected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "showcase": {
+            "description": "Up to four badge keys shown on the profile.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "items",
+          "groups",
+          "collected",
+          "total",
+          "showcase"
+        ]
+      },
+      "SetShowcaseDto": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "maxItems": 4,
+            "uniqueItems": true,
+            "example": [
+              "peak-bagger-1",
+              "region-tashkent"
+            ],
+            "description": "Earned badge keys, in display order. At most four.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "keys"
+        ]
+      },
+      "PublicBadgeDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "peak-bagger-1"
+          },
+          "title": {
+            "$ref": "#/components/schemas/BadgeTextDto"
+          },
+          "rarity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BadgeRarity"
+              }
+            ]
+          },
+          "art": {
+            "type": "string",
+            "nullable": true
+          },
+          "earnedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "rarity",
+          "art",
+          "earnedAt"
+        ]
+      },
+      "PublicBadgesDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "guest_1"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicBadgeDto"
+            }
+          }
+        },
+        "required": [
+          "username",
+          "items"
+        ]
+      },
       "PlaceType": {
         "type": "string",
         "enum": [
@@ -6160,6 +9698,10 @@
           },
           "viewer": {
             "$ref": "#/components/schemas/PlaceViewerDto"
+          },
+          "checkInRadiusM": {
+            "type": "integer",
+            "description": "A check-in must be within this many metres of the place (by type, from config)."
           }
         },
         "required": [
@@ -6178,7 +9720,8 @@
           "season",
           "hazards",
           "origin",
-          "viewer"
+          "viewer",
+          "checkInRadiusM"
         ]
       },
       "ConditionSource": {
@@ -6761,331 +10304,6 @@
           "reason",
           "expiresAt"
         ]
-      },
-      "LessonGateKind": {
-        "type": "string",
-        "enum": [
-          "count",
-          "tier",
-          "all"
-        ],
-        "description": "count: any lessons; tier: lessons of `tier`; all: every lesson."
-      },
-      "LessonGateDto": {
-        "type": "object",
-        "properties": {
-          "kind": {
-            "description": "count: any lessons; tier: lessons of `tier`; all: every lesson.",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LessonGateKind"
-              }
-            ]
-          },
-          "tier": {
-            "type": "string",
-            "nullable": true,
-            "example": "2"
-          },
-          "required": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "kind",
-          "tier",
-          "required"
-        ]
-      },
-      "CheckInGateDto": {
-        "type": "object",
-        "properties": {
-          "required": {
-            "type": "integer"
-          },
-          "minDifficulty": {
-            "type": "integer",
-            "description": "Only check-ins at places of at least this difficulty count."
-          }
-        },
-        "required": [
-          "required",
-          "minDifficulty"
-        ]
-      },
-      "LevelDefDto": {
-        "type": "object",
-        "properties": {
-          "level": {
-            "type": "integer",
-            "example": 2
-          },
-          "xp": {
-            "type": "integer",
-            "description": "Total XP needed."
-          },
-          "lessons": {
-            "$ref": "#/components/schemas/LessonGateDto"
-          },
-          "checkIns": {
-            "$ref": "#/components/schemas/CheckInGateDto"
-          },
-          "verifiedSpots": {
-            "type": "integer"
-          },
-          "maxDifficulty": {
-            "type": "integer",
-            "description": "Hardest place difficulty this level opens."
-          },
-          "newPlacesCount": {
-            "type": "integer",
-            "description": "Places whose requiredLevel is this level."
-          }
-        },
-        "required": [
-          "level",
-          "xp",
-          "lessons",
-          "checkIns",
-          "verifiedSpots",
-          "maxDifficulty",
-          "newPlacesCount"
-        ]
-      },
-      "LevelListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "description": "Levels 1..7 in order.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LevelDefDto"
-            }
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "ProgressBarDto": {
-        "type": "object",
-        "properties": {
-          "current": {
-            "type": "integer"
-          },
-          "required": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "current",
-          "required"
-        ]
-      },
-      "LessonProgressDto": {
-        "type": "object",
-        "properties": {
-          "current": {
-            "type": "integer"
-          },
-          "required": {
-            "type": "integer"
-          },
-          "kind": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LessonGateKind"
-              }
-            ]
-          },
-          "tier": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "current",
-          "required",
-          "kind",
-          "tier"
-        ]
-      },
-      "CheckInProgressDto": {
-        "type": "object",
-        "properties": {
-          "current": {
-            "type": "integer"
-          },
-          "required": {
-            "type": "integer"
-          },
-          "minDifficulty": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "current",
-          "required",
-          "minDifficulty"
-        ]
-      },
-      "NextLevelDto": {
-        "type": "object",
-        "properties": {
-          "level": {
-            "type": "integer"
-          },
-          "xp": {
-            "$ref": "#/components/schemas/ProgressBarDto"
-          },
-          "lessons": {
-            "$ref": "#/components/schemas/LessonProgressDto"
-          },
-          "checkIns": {
-            "$ref": "#/components/schemas/CheckInProgressDto"
-          },
-          "verifiedSpots": {
-            "nullable": true,
-            "description": "Null when the next level needs no verified spots.",
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ProgressBarDto"
-              }
-            ]
-          }
-        },
-        "required": [
-          "level",
-          "xp",
-          "lessons",
-          "checkIns",
-          "verifiedSpots"
-        ]
-      },
-      "PendingLevelUpDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "fromLevel": {
-            "type": "integer"
-          },
-          "toLevel": {
-            "type": "integer"
-          },
-          "maxDifficulty": {
-            "type": "integer"
-          },
-          "newPlacesCount": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "fromLevel",
-          "toLevel",
-          "maxDifficulty",
-          "newPlacesCount"
-        ]
-      },
-      "MyLevelDto": {
-        "type": "object",
-        "properties": {
-          "level": {
-            "type": "integer",
-            "example": 1
-          },
-          "xpTotal": {
-            "type": "integer"
-          },
-          "reachedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "next": {
-            "nullable": true,
-            "description": "Null at the top level.",
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/NextLevelDto"
-              }
-            ]
-          },
-          "pendingLevelUps": {
-            "description": "Level-ups not yet seen, oldest first.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PendingLevelUpDto"
-            }
-          }
-        },
-        "required": [
-          "level",
-          "xpTotal",
-          "reachedAt",
-          "next",
-          "pendingLevelUps"
-        ]
-      },
-      "QaGrantLessonDto": {
-        "type": "object",
-        "properties": {
-          "tier": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20,
-            "example": "2"
-          }
-        },
-        "required": [
-          "tier"
-        ]
-      },
-      "QaGrantCheckInDto": {
-        "type": "object",
-        "properties": {
-          "difficulty": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
-          }
-        },
-        "required": [
-          "difficulty"
-        ]
-      },
-      "QaGrantDto": {
-        "type": "object",
-        "properties": {
-          "xp": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 20000
-          },
-          "lessons": {
-            "maxItems": 50,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QaGrantLessonDto"
-            }
-          },
-          "checkIns": {
-            "maxItems": 50,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QaGrantCheckInDto"
-            }
-          },
-          "verifiedSpots": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 10
-          }
-        }
       },
       "L10nDto": {
         "type": "object",
@@ -8013,6 +11231,125 @@
           "levelUps"
         ]
       },
+      "FlameStreakDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "Consecutive counted days ending today or yesterday."
+          },
+          "doneToday": {
+            "type": "boolean",
+            "description": "Today has a lesson or a check-in."
+          },
+          "atRisk": {
+            "type": "boolean",
+            "description": "Not done today and the count is above 0."
+          }
+        },
+        "required": [
+          "count",
+          "doneToday",
+          "atRisk"
+        ]
+      },
+      "BootStreakDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "Consecutive Monday–Sunday weeks with a check-in ending this or last week."
+          },
+          "doneThisWeek": {
+            "type": "boolean",
+            "description": "This week has a check-in."
+          },
+          "shieldedLastWeek": {
+            "type": "boolean",
+            "description": "Last week had no check-in and the weather shield kept the run."
+          }
+        },
+        "required": [
+          "count",
+          "doneThisWeek",
+          "shieldedLastWeek"
+        ]
+      },
+      "StreakKind": {
+        "type": "string",
+        "enum": [
+          "flame",
+          "boot"
+        ]
+      },
+      "StreakFreezeUseDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StreakKind"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-14",
+            "description": "The missed day (flame) or the missed week's Monday (boot), Asia/Tashkent."
+          }
+        },
+        "required": [
+          "kind",
+          "date"
+        ]
+      },
+      "StreakFreezesDto": {
+        "type": "object",
+        "properties": {
+          "left": {
+            "type": "integer"
+          },
+          "perMonth": {
+            "type": "integer"
+          },
+          "usedThisMonth": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreakFreezeUseDto"
+            }
+          }
+        },
+        "required": [
+          "left",
+          "perMonth",
+          "usedThisMonth"
+        ]
+      },
+      "StreaksDto": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "example": "2026-10-30",
+            "description": "Asia/Tashkent date."
+          },
+          "flame": {
+            "$ref": "#/components/schemas/FlameStreakDto"
+          },
+          "boot": {
+            "$ref": "#/components/schemas/BootStreakDto"
+          },
+          "freezes": {
+            "$ref": "#/components/schemas/StreakFreezesDto"
+          }
+        },
+        "required": [
+          "today",
+          "flame",
+          "boot",
+          "freezes"
+        ]
+      },
       "PublicProfileResponseDto": {
         "type": "object",
         "properties": {
@@ -8068,6 +11405,49 @@
           "level",
           "createdAt",
           "showStats"
+        ]
+      },
+      "ProfileStatsDto": {
+        "type": "object",
+        "properties": {
+          "peaks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct peaks visited."
+          },
+          "lakes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct lakes visited."
+          },
+          "caves": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct caves visited."
+          },
+          "walkedM": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Metres walked on checked-out trips."
+          },
+          "climbedM": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Metres climbed on checked-out trips."
+          },
+          "spots": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Verified spots added."
+          }
+        },
+        "required": [
+          "peaks",
+          "lakes",
+          "caves",
+          "walkedM",
+          "climbedM",
+          "spots"
         ]
       },
       "NotificationPreferencesInputDto": {
@@ -8302,6 +11682,546 @@
         },
         "required": [
           "updated"
+        ]
+      },
+      "SearchScope": {
+        "type": "string",
+        "enum": [
+          "all",
+          "places",
+          "people",
+          "groups",
+          "tours"
+        ]
+      },
+      "SearchPlaceNameDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true
+          },
+          "en": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "SearchPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "qorangur-2941"
+          },
+          "name": {
+            "$ref": "#/components/schemas/SearchPlaceNameDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "elevationM": {
+            "type": "integer"
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "requiredLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "distanceM": {
+            "type": "integer",
+            "description": "Metres from the search origin."
+          },
+          "conditionStatus": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "type",
+          "latitude",
+          "longitude",
+          "elevationM",
+          "difficulty",
+          "requiredLevel",
+          "distanceM"
+        ]
+      },
+      "SearchPersonDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "guest_1"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null when no avatar is set or storage is unavailable."
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          }
+        },
+        "required": [
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level"
+        ]
+      },
+      "SearchGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "avatarUrl",
+          "color",
+          "memberCount"
+        ]
+      },
+      "SearchResultsDto": {
+        "type": "object",
+        "properties": {
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchPlaceDto"
+            }
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchPersonDto"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchGroupDto"
+            }
+          },
+          "tours": {
+            "description": "Always empty until tours ship.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "places",
+          "people",
+          "groups",
+          "tours"
+        ]
+      },
+      "GroupViewerMembershipDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "invited",
+              "pending",
+              "active"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          },
+          "joinedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "notificationsMuted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "role",
+          "joinedAt",
+          "notificationsMuted"
+        ]
+      },
+      "GroupSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "integer"
+          },
+          "unreadCount": {
+            "type": "integer"
+          },
+          "viewerMembership": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupViewerMembershipDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "visibility",
+          "avatarUrl",
+          "color",
+          "memberCount",
+          "unreadCount",
+          "viewerMembership"
+        ]
+      },
+      "GroupsHomeDto": {
+        "type": "object",
+        "properties": {
+          "yours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupSummaryDto"
+            }
+          },
+          "discover": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupSummaryDto"
+            }
+          },
+          "invitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupSummaryDto"
+            }
+          }
+        },
+        "required": [
+          "yours",
+          "discover",
+          "invitations"
+        ]
+      },
+      "CreateGroupDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "color": {
+            "type": "string",
+            "example": "#0C807A"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "visibility"
+        ]
+      },
+      "GroupMemberDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer"
+          },
+          "verifiedLeader": {
+            "type": "boolean"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "invited",
+              "pending",
+              "active"
+            ]
+          },
+          "joinedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
+          "verifiedLeader",
+          "role",
+          "status"
+        ]
+      },
+      "GroupDetailsDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "integer"
+          },
+          "unreadCount": {
+            "type": "integer"
+          },
+          "viewerMembership": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupViewerMembershipDto"
+              }
+            ]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMemberDto"
+            }
+          },
+          "pendingRequests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMemberDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "visibility",
+          "avatarUrl",
+          "color",
+          "memberCount",
+          "unreadCount",
+          "viewerMembership",
+          "members",
+          "pendingRequests"
+        ]
+      },
+      "UpdateGroupDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "color": {
+            "type": "string",
+            "example": "#0C807A"
+          }
+        }
+      },
+      "GroupActionDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "InviteGroupMemberDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "username"
+        ]
+      },
+      "SetGroupAdminDto": {
+        "type": "object",
+        "properties": {
+          "admin": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "admin"
         ]
       },
       "PathPlaceNameDto": {
@@ -8667,6 +12587,1159 @@
         },
         "required": [
           "placeId"
+        ]
+      },
+      "GearKey": {
+        "type": "string",
+        "enum": [
+          "water",
+          "warmLayer",
+          "firstAid",
+          "offlineMap",
+          "sun",
+          "headlamp",
+          "waterFilter"
+        ]
+      },
+      "GearNote": {
+        "type": "string",
+        "enum": [
+          "frost",
+          "sunset",
+          "streams"
+        ]
+      },
+      "GearItemDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GearKey"
+              }
+            ]
+          },
+          "litres": {
+            "type": "number",
+            "description": "Water only, litres in 0.5 steps."
+          },
+          "note": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GearNote"
+              }
+            ]
+          },
+          "noteTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "With note `sunset`: the sunset time."
+          }
+        },
+        "required": [
+          "key"
+        ]
+      },
+      "TripPreviewDto": {
+        "type": "object",
+        "properties": {
+          "sunsetAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Sunset at the place on the start date (Asia/Tashkent)."
+          },
+          "daylightBufferMin": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Minutes from backBy to sunset (negative = after dark); null when backBy is on a later day."
+          },
+          "gear": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GearItemDto"
+            }
+          }
+        },
+        "required": [
+          "sunsetAt",
+          "daylightBufferMin",
+          "gear"
+        ]
+      },
+      "EmergencyContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "relation": {
+            "type": "string"
+          },
+          "phoneMasked": {
+            "type": "string",
+            "example": "+998 •• ••• •• 41"
+          }
+        },
+        "required": [
+          "name",
+          "relation",
+          "phoneMasked"
+        ]
+      },
+      "PutEmergencyContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 30,
+            "example": "sister"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+998\\d{9}$",
+            "example": "+998XXXXXXXXX"
+          }
+        },
+        "required": [
+          "name",
+          "relation",
+          "phone"
+        ]
+      },
+      "TripLocationDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "accuracyM"
+        ]
+      },
+      "CreateTripDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time",
+            "description": "After startAt."
+          },
+          "alertEnabled": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "boolean",
+            "description": "true: the trip starts now (status active)."
+          },
+          "location": {
+            "description": "Device position; stored only when start is true.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripLocationDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "placeId",
+          "startAt",
+          "backBy",
+          "alertEnabled",
+          "start"
+        ]
+      },
+      "TripPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameUz": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "nameUz",
+          "nameRu",
+          "nameEn",
+          "type",
+          "latitude",
+          "longitude"
+        ]
+      },
+      "TripStatus": {
+        "type": "string",
+        "enum": [
+          "planned",
+          "active",
+          "checked_out",
+          "alerted"
+        ]
+      },
+      "TripWaypointDto": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "integer"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "n",
+          "lat",
+          "lng",
+          "recordedAt"
+        ]
+      },
+      "TripDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "place": {
+            "$ref": "#/components/schemas/TripPlaceDto"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripStatus"
+              }
+            ]
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "alertAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "backBy + trip.config alertDelayMin."
+          },
+          "alertEnabled": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "checkedOutAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "alertSentAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "contact": {
+            "$ref": "#/components/schemas/EmergencyContactDto"
+          },
+          "liveUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Public live page link for active, alerted and checked-out trips."
+          },
+          "lastLocationAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "distanceM": {
+            "type": "integer"
+          },
+          "climbM": {
+            "type": "integer"
+          },
+          "waypoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripWaypointDto"
+            }
+          },
+          "pingEveryMin": {
+            "type": "integer",
+            "description": "trip.active pingEveryMin: how often the app sends a location."
+          }
+        },
+        "required": [
+          "id",
+          "place",
+          "status",
+          "startAt",
+          "backBy",
+          "alertAt",
+          "alertEnabled",
+          "startedAt",
+          "checkedOutAt",
+          "alertSentAt",
+          "contact",
+          "liveUrl",
+          "lastLocationAt",
+          "distanceM",
+          "climbM",
+          "waypoints",
+          "pingEveryMin"
+        ]
+      },
+      "CurrentTripsDto": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripDto"
+              }
+            ]
+          },
+          "planned": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripDto"
+            }
+          }
+        },
+        "required": [
+          "active",
+          "planned"
+        ]
+      },
+      "StartTripDto": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "description": "Device position at start, used for the alert link.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripLocationDto"
+              }
+            ]
+          }
+        }
+      },
+      "PostTripLocationDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fix was taken: not before startedAt, at most 2 min ahead of the server."
+          },
+          "distanceM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "climbM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "accuracyM",
+          "recordedAt",
+          "distanceM",
+          "climbM"
+        ]
+      },
+      "CheckInWaypointDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000,
+            "description": "Above the configured maximum (50 m) → LOCATION_INACCURATE."
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fix was taken: not before startedAt, at most 2 min ahead of the server (queued check-ins may arrive late)."
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "accuracyM",
+          "recordedAt"
+        ]
+      },
+      "WaypointResultDto": {
+        "type": "object",
+        "properties": {
+          "waypoint": {
+            "$ref": "#/components/schemas/TripWaypointDto"
+          },
+          "xpAwarded": {
+            "type": "integer",
+            "description": "XP the ledger granted; 0 when the daily cap is used up."
+          }
+        },
+        "required": [
+          "waypoint",
+          "xpAwarded"
+        ]
+      },
+      "SendSosDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000
+          }
+        }
+      },
+      "SosResultDto": {
+        "type": "object",
+        "properties": {
+          "sentAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "sosCallNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Rescue number to dial (E.164); null when not configured."
+          }
+        },
+        "required": [
+          "sentAt",
+          "contactName",
+          "sosCallNumber"
+        ]
+      },
+      "SosContactDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Emergency contact phone, full E.164."
+          },
+          "sosCallNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Rescue number to dial (E.164); null when not configured."
+          }
+        },
+        "required": [
+          "phone",
+          "sosCallNumber"
+        ]
+      },
+      "UpdateTripDto": {
+        "type": "object",
+        "properties": {
+          "startAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Planned trips only."
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Active trips: after now and within maxDurationH of startAt, until the alert is sent."
+          },
+          "alertEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CheckOutTripDto": {
+        "type": "object",
+        "properties": {
+          "distanceM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "climbM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000
+          }
+        }
+      },
+      "LivePlaceNamesDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "description": "Falls back to uz."
+          },
+          "en": {
+            "type": "string",
+            "description": "Falls back to uz."
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "LiveTripStatus": {
+        "type": "string",
+        "enum": [
+          "on_trip",
+          "late",
+          "alerted",
+          "back_safe",
+          "ended"
+        ]
+      },
+      "LiveTripDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Display name, else username."
+          },
+          "placeNames": {
+            "$ref": "#/components/schemas/LivePlaceNamesDto"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LiveTripStatus"
+              }
+            ]
+          },
+          "lastLocationAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Absent once the link has ended."
+          },
+          "mapsUrl": {
+            "type": "string",
+            "description": "Absent once the link has ended."
+          }
+        },
+        "required": [
+          "displayName",
+          "placeNames",
+          "backBy",
+          "status"
+        ]
+      },
+      "CreateCheckInDto": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Generated by the app once per check-in; a retry with the same id returns the stored result (200)."
+          },
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "Above the configured maximum (50 m) → LOCATION_INACCURATE."
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fix was taken: at most 2 min ahead of the server (400) and at most 72 h old (CHECK_IN_TOO_OLD)."
+          }
+        },
+        "required": [
+          "clientId",
+          "placeId",
+          "lat",
+          "lng",
+          "accuracyM",
+          "recordedAt"
+        ]
+      },
+      "CheckInLevelUp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromLevel": {
+            "type": "integer"
+          },
+          "toLevel": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "fromLevel",
+          "toLevel"
+        ]
+      },
+      "CheckInResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "counted": {
+            "type": "boolean",
+            "description": "False for a repeat at the same place in the same Asia/Tashkent month (no XP)."
+          },
+          "xp": {
+            "type": "integer",
+            "description": "0 when not counted."
+          },
+          "levelUps": {
+            "description": "Level-ups this check-in caused; empty on a replay.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CheckInLevelUp"
+            }
+          },
+          "pathVisited": {
+            "type": "boolean",
+            "description": "True when this check-in marked a node of the month's path done."
+          }
+        },
+        "required": [
+          "id",
+          "placeId",
+          "recordedAt",
+          "counted",
+          "xp",
+          "levelUps",
+          "pathVisited"
+        ]
+      },
+      "GroupMessageAuthorDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer"
+          },
+          "verifiedLeader": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
+          "verifiedLeader"
+        ]
+      },
+      "GroupReplyPreviewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "body": {
+            "type": "string",
+            "nullable": true
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "username"
+        ]
+      },
+      "GroupMessageAttachmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "photo",
+              "place"
+            ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "placeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "placeName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "GroupReactionResponseDto": {
+        "type": "object",
+        "properties": {
+          "emoji": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "mine": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "emoji",
+          "count",
+          "mine"
+        ]
+      },
+      "GroupTripCardDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "meetingTime": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "integer"
+          },
+          "requiredLevel": {
+            "type": "integer"
+          },
+          "capacity": {
+            "type": "integer"
+          },
+          "joined": {
+            "type": "integer"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "title",
+          "startsAt",
+          "meetingTime",
+          "difficulty",
+          "requiredLevel",
+          "capacity",
+          "joined",
+          "condition",
+          "imageUrl"
+        ]
+      },
+      "GroupMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "trip"
+            ]
+          },
+          "author": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupMessageAuthorDto"
+              }
+            ]
+          },
+          "body": {
+            "type": "string",
+            "nullable": true
+          },
+          "replyTo": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupReplyPreviewDto"
+              }
+            ]
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMessageAttachmentResponseDto"
+            }
+          },
+          "reactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupReactionResponseDto"
+            }
+          },
+          "mentionedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "readByCount": {
+            "type": "integer"
+          },
+          "trip": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripCardDto"
+              }
+            ]
+          },
+          "editedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "kind",
+          "author",
+          "body",
+          "replyTo",
+          "attachments",
+          "reactions",
+          "mentionedUserIds",
+          "readByCount",
+          "trip",
+          "editedAt",
+          "deletedAt",
+          "createdAt"
+        ]
+      },
+      "GroupMessagesPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMessageDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "GroupMessageAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "photo",
+              "place"
+            ]
+          },
+          "imageKey": {
+            "type": "string"
+          },
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "CreateGroupMessageDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "replyToId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attachments": {
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMessageAttachmentDto"
+            }
+          }
+        }
+      },
+      "EditGroupMessageDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "GroupReactionDto": {
+        "type": "object",
+        "properties": {
+          "emoji": {
+            "type": "string",
+            "maxLength": 16,
+            "example": "👍"
+          }
+        },
+        "required": [
+          "emoji"
+        ]
+      },
+      "GroupChatActionDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "GroupReadDto": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "messageId"
+        ]
+      },
+      "GroupMuteDto": {
+        "type": "object",
+        "properties": {
+          "muted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "muted"
+        ]
+      },
+      "GroupPhotoUploadRequestDto": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "image"
+        ]
+      },
+      "GroupPhotoUploadDto": {
+        "type": "object",
+        "properties": {
+          "imageKey": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "imageKey",
+          "imageUrl"
         ]
       }
     }

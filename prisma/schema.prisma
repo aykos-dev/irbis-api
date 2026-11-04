@@ -115,11 +115,50 @@ enum NotificationCategory {
   @@map("notification_category")
 }
 
+enum GroupVisibility {
+  public
+  private
+
+  @@map("group_visibility")
+}
+
+enum GroupMemberRole {
+  owner
+  admin
+  member
+
+  @@map("group_member_role")
+}
+
+enum GroupMemberStatus {
+  invited
+  pending
+  active
+
+  @@map("group_member_status")
+}
+
+enum GroupMessageKind {
+  text
+  trip
+
+  @@map("group_message_kind")
+}
+
+enum GroupAttachmentType {
+  photo
+  place
+
+  @@map("group_attachment_type")
+}
+
 // Usernames are stored lowercase; the unique index and CHECKs in the auth_init migration enforce it.
 model User {
   id                      String           @id @default(uuid(7)) @db.Uuid
   username                String           @unique @db.VarChar(20)
-  passwordHash            String           @map("password_hash")
+  // Null for a demo account (ADR-006): it cannot log in with a password until secured.
+  passwordHash            String?          @map("password_hash")
+  isDemo                  Boolean          @default(false) @map("is_demo")
   // AES-256-GCM ciphertext of the verified recovery phone; never logged or returned in full.
   recoveryPhone           String?          @map("recovery_phone")
   recoveryPhoneVerifiedAt DateTime?        @map("recovery_phone_verified_at") @db.Timestamptz(3)
@@ -139,38 +178,51 @@ model User {
   levelReachedAt          DateTime         @default(now()) @map("level_reached_at") @db.Timestamptz(3)
 
   // profile: edited through PATCH /v1/me; avatar bytes stay in object storage, the column holds the key.
-  displayName      String?      @map("display_name") @db.VarChar(40)
-  bio              String?      @db.VarChar(150)
-  homeRegion       HomeRegion?  @map("home_region")
-  avatarKey        String?      @map("avatar_key") @db.VarChar(255)
-  showStats        Boolean      @default(true) @map("show_stats")
-  showHomeRegion   Boolean      @default(false) @map("show_home_region")
-  units            Units        @default(metric)
-  appearance       Appearance   @default(auto)
-  notifyStreak     Boolean      @default(true) @map("notify_streak")
-  notifyDailyGame  Boolean      @default(true) @map("notify_daily_game")
-  dailyGameTime    String       @default("19:00") @map("daily_game_time") @db.VarChar(5)
-  notifyGroups     Boolean      @default(true) @map("notify_groups")
-  notifySocial     Boolean      @default(true) @map("notify_social")
-  notifyOffers     Boolean      @default(false) @map("notify_offers")
-  publicProfile    Boolean      @default(true) @map("public_profile")
-  findBuddies      Boolean      @default(true) @map("find_buddies")
-  deletedAt        DateTime?    @map("deleted_at") @db.Timestamptz(3)
+  displayName     String?     @map("display_name") @db.VarChar(40)
+  bio             String?     @db.VarChar(150)
+  homeRegion      HomeRegion? @map("home_region")
+  avatarKey       String?     @map("avatar_key") @db.VarChar(255)
+  showStats       Boolean     @default(true) @map("show_stats")
+  showHomeRegion  Boolean     @default(false) @map("show_home_region")
+  units           Units       @default(metric)
+  appearance      Appearance  @default(auto)
+  notifyStreak    Boolean     @default(true) @map("notify_streak")
+  notifyDailyGame Boolean     @default(true) @map("notify_daily_game")
+  dailyGameTime   String      @default("19:00") @map("daily_game_time") @db.VarChar(5)
+  notifyGroups    Boolean     @default(true) @map("notify_groups")
+  notifySocial    Boolean     @default(true) @map("notify_social")
+  notifyOffers    Boolean     @default(false) @map("notify_offers")
+  publicProfile   Boolean     @default(true) @map("public_profile")
+  findBuddies     Boolean     @default(true) @map("find_buddies")
+  deletedAt       DateTime?   @map("deleted_at") @db.Timestamptz(3)
 
   refreshTokens     RefreshToken[]
   smsCodes          SmsCode[]
-  auditAsAdmin      AdminAuditLog[]     @relation("AuditAdmin")
-  auditAsTarget     AdminAuditLog[]     @relation("AuditTarget")
-  closuresCreated   Closure[]           @relation("ClosureCreatedBy")
-  closuresEnded     Closure[]           @relation("ClosureEndedBy")
-  overridesCreated  ConditionOverride[] @relation("OverrideCreatedBy")
-  overridesEnded    ConditionOverride[] @relation("OverrideEndedBy")
+  auditAsAdmin      AdminAuditLog[]        @relation("AuditAdmin")
+  auditAsTarget     AdminAuditLog[]        @relation("AuditTarget")
+  closuresCreated   Closure[]              @relation("ClosureCreatedBy")
+  closuresEnded     Closure[]              @relation("ClosureEndedBy")
+  overridesCreated  ConditionOverride[]    @relation("OverrideCreatedBy")
+  overridesEnded    ConditionOverride[]    @relation("OverrideEndedBy")
   xpEntries         XpEntry[]
   levelFacts        LevelFact[]
   levelUps          LevelUp[]
   lessonCompletions LessonCompletion[]
   notifications     Notification[]
   pathMonths        PathMonth[]
+  checkIns          CheckIn[]
+  activityDays      ActivityDay[]
+  streakState       StreakState?
+  streakFreezes     StreakFreeze[]
+  emergencyContact  EmergencyContact?
+  badgeAwards       BadgeAward[]
+  trips             Trip[]
+  groupsCreated     Group[]                @relation("GroupCreator")
+  groupMemberships  GroupMember[]          @relation("GroupMemberUser")
+  groupInvitesSent  GroupMember[]          @relation("GroupMemberInviter")
+  groupMessages     GroupMessage[]
+  groupReactions    GroupMessageReaction[]
+  groupMentions     GroupMessageMention[]
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -215,6 +267,16 @@ model SmsCode {
 
   @@index([userId, purpose, createdAt])
   @@map("sms_codes")
+}
+
+// One row per demo account created (ADR-006), for the per-IP daily limit. HMAC of the IP, never the raw IP.
+model DemoCreation {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  ipHash    String   @map("ip_hash") @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([ipHash, createdAt])
+  @@map("demo_creations")
 }
 
 // Log-in attempts for lockout (per username) and throttling (per IP). username is lowercase, may not exist.
@@ -302,14 +364,134 @@ model Place {
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  condition PlaceCondition?
-  forecast  PlaceForecast?
-  closures  Closure[]
-  overrides ConditionOverride[]
-  pathNodes PathNode[]
+  condition               PlaceCondition?
+  forecast                PlaceForecast?
+  closures                Closure[]
+  overrides               ConditionOverride[]
+  pathNodes               PathNode[]
+  trips                   Trip[]
+  groupMessageAttachments GroupMessageAttachment[]
+
+  weekendConditions WeekendCondition[]
+  checkIns          CheckIn[]
 
   @@index([type])
   @@map("places")
+}
+
+// --- groups + group chat ---
+
+model Group {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  slug        String          @unique @db.VarChar(100)
+  name        String          @db.VarChar(80)
+  description String          @db.VarChar(300)
+  visibility  GroupVisibility
+  avatarKey   String?         @map("avatar_key") @db.VarChar(255)
+  color       String          @default("#0C807A") @db.VarChar(7)
+  createdById String?         @map("created_by_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy User?          @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members   GroupMember[]
+  messages  GroupMessage[]
+
+  @@index([visibility, createdAt, id])
+  @@index([createdById])
+  @@map("groups")
+}
+
+model GroupMember {
+  id                 String            @id @default(uuid(7)) @db.Uuid
+  groupId            String            @map("group_id") @db.Uuid
+  userId             String            @map("user_id") @db.Uuid
+  role               GroupMemberRole   @default(member)
+  status             GroupMemberStatus @default(active)
+  invitedById        String?           @map("invited_by_id") @db.Uuid
+  lastReadAt         DateTime?         @map("last_read_at") @db.Timestamptz(3)
+  notificationsMuted Boolean           @default(false) @map("notifications_muted")
+  joinedAt           DateTime?         @map("joined_at") @db.Timestamptz(3)
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User  @relation("GroupMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User? @relation("GroupMemberInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([groupId, userId])
+  @@index([userId, status, updatedAt])
+  @@index([groupId, status, role])
+  @@map("group_members")
+}
+
+model GroupMessage {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  groupId   String           @map("group_id") @db.Uuid
+  senderId  String?          @map("sender_id") @db.Uuid
+  replyToId String?          @map("reply_to_id") @db.Uuid
+  kind      GroupMessageKind @default(text)
+  body      String?          @db.VarChar(2000)
+  tripData  Json?            @map("trip_data")
+  editedAt  DateTime?        @map("edited_at") @db.Timestamptz(3)
+  deletedAt DateTime?        @map("deleted_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  group       Group                    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sender      User?                    @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  replyTo     GroupMessage?            @relation("GroupMessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     GroupMessage[]           @relation("GroupMessageReplies")
+  attachments GroupMessageAttachment[]
+  reactions   GroupMessageReaction[]
+  mentions    GroupMessageMention[]
+
+  @@index([groupId, createdAt, id])
+  @@index([senderId, createdAt])
+  @@index([replyToId])
+  @@map("group_messages")
+}
+
+model GroupMessageAttachment {
+  id        String              @id @default(uuid(7)) @db.Uuid
+  messageId String              @map("message_id") @db.Uuid
+  type      GroupAttachmentType
+  imageKey  String?             @map("image_key") @db.VarChar(255)
+  placeId   String?             @map("place_id") @db.Uuid
+  order     Int
+
+  message GroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  place   Place?       @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, order])
+  @@index([placeId])
+  @@map("group_message_attachments")
+}
+
+model GroupMessageReaction {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  emoji     String   @db.VarChar(16)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  message GroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId, createdAt])
+  @@map("group_message_reactions")
+}
+
+model GroupMessageMention {
+  messageId String @map("message_id") @db.Uuid
+  userId    String @map("user_id") @db.Uuid
+
+  message GroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+  @@index([userId, messageId])
+  @@map("group_message_mentions")
 }
 
 enum ConditionStatus {
@@ -622,4 +804,220 @@ model PointForecast {
   fetchedAt DateTime @map("fetched_at") @db.Timestamptz(3)
 
   @@map("point_forecasts")
+}
+
+// trip-plan: one emergency contact per user; phone is PhoneCipher ciphertext, never logged or returned in full.
+model EmergencyContact {
+  userId     String   @id @map("user_id") @db.Uuid
+  name       String   @db.VarChar(60)
+  relation   String   @db.VarChar(30)
+  phone      String
+  phoneLast2 String   @map("phone_last2") @db.Char(2)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("emergency_contacts")
+}
+
+enum TripStatus {
+  planned
+  active
+  checked_out
+  alerted
+
+  @@map("trip_status")
+}
+
+// trip-plan: the contact is a snapshot taken at create. One `active` trip per user (partial unique index in SQL).
+model Trip {
+  id                String     @id @default(uuid(7)) @db.Uuid
+  userId            String     @map("user_id") @db.Uuid
+  placeId           String     @map("place_id") @db.Uuid
+  status            TripStatus
+  startAt           DateTime   @map("start_at") @db.Timestamptz(3)
+  backBy            DateTime   @map("back_by") @db.Timestamptz(3)
+  alertEnabled      Boolean    @map("alert_enabled")
+  contactName       String     @map("contact_name") @db.VarChar(60)
+  contactRelation   String     @map("contact_relation") @db.VarChar(30)
+  contactPhone      String     @map("contact_phone")
+  contactPhoneLast2 String     @map("contact_phone_last2") @db.Char(2)
+  startedAt         DateTime?  @map("started_at") @db.Timestamptz(3)
+  startLat          Float?     @map("start_lat")
+  startLng          Float?     @map("start_lng")
+  startAccuracyM    Float?     @map("start_accuracy_m")
+  checkedOutAt      DateTime?  @map("checked_out_at") @db.Timestamptz(3)
+  alertSentAt       DateTime?  @map("alert_sent_at") @db.Timestamptz(3)
+  alertAttempts     Int        @default(0) @map("alert_attempts")
+  liveToken         String?    @unique @map("live_token") @db.Char(22)
+  lastLat           Float?     @map("last_lat")
+  lastLng           Float?     @map("last_lng")
+  lastAccuracyM     Float?     @map("last_accuracy_m")
+  lastLocationAt    DateTime?  @map("last_location_at") @db.Timestamptz(3)
+  distanceM         Int        @default(0) @map("distance_m")
+  climbM            Int        @default(0) @map("climb_m")
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place     Place          @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  waypoints TripWaypoint[]
+  sos       TripSos[]
+
+  @@index([userId, startAt])
+  @@index([status, backBy])
+  @@map("trips")
+}
+
+/// A waypoint reached on an active trip (XP awarded per trip.active.waypoint rules).
+model TripWaypoint {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  tripId     String   @map("trip_id") @db.Uuid
+  n          Int
+  lat        Float
+  lng        Float
+  accuracyM  Float    @map("accuracy_m")
+  recordedAt DateTime @map("recorded_at") @db.Timestamptz(3)
+  xpAwarded  Int      @map("xp_awarded")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, n])
+  @@map("trip_waypoints")
+}
+
+enum TripSosStatus {
+  sent
+  failed
+
+  @@map("trip_sos_status")
+}
+
+/// An SOS sent from an active trip.
+model TripSos {
+  id     String        @id @default(uuid(7)) @db.Uuid
+  tripId String        @map("trip_id") @db.Uuid
+  lat    Float?
+  lng    Float?
+  sentAt DateTime      @map("sent_at") @db.Timestamptz(3)
+  status TripSosStatus
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, sentAt])
+  @@map("trip_sos")
+}
+
+/// A verified place check-in (features/check-in.md). One counted row per (user, place, Tashkent
+/// month): a partial unique index in the check_in migration enforces it.
+model CheckIn {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  placeId     String   @map("place_id") @db.Uuid
+  /// Client-generated id; a retry with the same id replays the stored result.
+  clientId    String   @map("client_id") @db.Uuid
+  lat         Float
+  lng         Float
+  accuracyM   Float    @map("accuracy_m")
+  recordedAt  DateTime @map("recorded_at") @db.Timestamptz(3)
+  /// Asia/Tashkent YYYY-MM of recordedAt.
+  month       String   @db.Char(7)
+  counted     Boolean
+  xpAwarded   Int      @default(0) @map("xp_awarded")
+  pathVisited Boolean  @default(false) @map("path_visited")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place Place @relation(fields: [placeId], references: [id])
+
+  @@unique([userId, clientId])
+  @@index([userId, placeId, month])
+  @@map("check_ins")
+}
+
+// --- streaks -----------------------------------------------------------------
+
+enum StreakKind {
+  flame
+  boot
+}
+
+/// One Asia/Tashkent day with at least one lesson completion or accepted check-in.
+model ActivityDay {
+  userId   String   @map("user_id") @db.Uuid
+  day      DateTime @db.Date
+  lessons  Int      @default(0)
+  checkIns Int      @default(0) @map("check_ins")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@map("activity_days")
+}
+
+/// Persisted streak evaluation: runs as of the end of `evaluatedThrough` (a Tashkent day before today).
+model StreakState {
+  userId           String    @id @map("user_id") @db.Uuid
+  flameCount       Int       @default(0) @map("flame_count")
+  flameLastDay     DateTime? @map("flame_last_day") @db.Date
+  bootCount        Int       @default(0) @map("boot_count")
+  /// Monday of the last fully evaluated week.
+  bootLastWeek     DateTime? @map("boot_last_week") @db.Date
+  evaluatedThrough DateTime? @map("evaluated_through") @db.Date
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("streak_states")
+}
+
+/// A freeze that covered a missed day (flame) or week Monday (boot); one pool per Tashkent month.
+model StreakFreeze {
+  id         String     @id @default(uuid(7)) @db.Uuid
+  userId     String     @map("user_id") @db.Uuid
+  kind       StreakKind
+  coversDate DateTime   @map("covers_date") @db.Date
+  /// Asia/Tashkent YYYY-MM the freeze counts against.
+  month      String     @db.Char(7)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, coversDate])
+  @@index([userId, month])
+  @@map("streak_freezes")
+}
+
+/// streaks AC3: a place's condition status at 12:00 Asia/Tashkent on a Saturday or Sunday (weather shield).
+model WeekendCondition {
+  placeId    String          @map("place_id") @db.Uuid
+  date       DateTime        @db.Date
+  status     ConditionStatus
+  recordedAt DateTime        @default(now()) @map("recorded_at") @db.Timestamptz(3)
+
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([placeId, date])
+  @@map("weekend_conditions")
+}
+
+// --- badges -----------------------------------------------------------------
+
+/// One earned badge per user. Awards are written lazily by GET /v1/badges and never revoked;
+/// `showcase_order` pins up to four to the profile (1–4).
+model BadgeAward {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  key           String   @db.VarChar(50)
+  earnedAt      DateTime @map("earned_at") @db.Timestamptz(3)
+  showcaseOrder Int?     @map("showcase_order")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId, earnedAt])
+  @@map("badge_awards")
 }

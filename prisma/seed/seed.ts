@@ -12,14 +12,19 @@ import { pathToFileURL } from 'node:url';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
 import {
+  checkInConfigRows,
+  streaksConfigRows,
+  badgesConfigRows,
   gameConfigRows,
   lessonsConfigRow,
   pathConfigRows,
+  tripConfigRows,
 } from './game-config.data.js';
 import { toLessonSeedRows, type LessonSeedRow } from './lesson-seed.rules.js';
 import { lessonSources } from './lessons.data.js';
 import { toSeedRows } from './place-seed.rules.js';
 import { modifiedLocations } from './places.data.js';
+import { groupSeeds } from './groups.data.js';
 
 /** Upserts every place from places.data.ts by slug in one transaction; returns the row count seeded. */
 export async function seedPlaces(prisma: PrismaClient): Promise<number> {
@@ -36,6 +41,57 @@ export async function seedPlaces(prisma: PrismaClient): Promise<number> {
   return rows.length;
 }
 
+/** Upserts the public launch catalogue without inventing members or owners. */
+export async function seedGroups(prisma: PrismaClient): Promise<number> {
+  await prisma.$transaction(
+    groupSeeds.map(({ slug, ...data }) =>
+      prisma.group.upsert({
+        where: { slug },
+        create: { slug, ...data },
+        update: data,
+      }),
+    ),
+  );
+  const trips = [
+    {
+      slug: 'tashkent-weekend-hikers',
+      data: {
+        title: 'Beldersay Ridge sunrise',
+        startsAt: '2026-11-07T00:30:00.000Z',
+        meetingTime: '05:30',
+        difficulty: 3,
+        requiredLevel: 3,
+        capacity: 10,
+        joined: 0,
+        condition: 'go',
+        imageUrl: null,
+      },
+    },
+    {
+      slug: 'caving-uzbekistan',
+      data: {
+        title: 'Intro to caving',
+        startsAt: '2026-11-08T03:00:00.000Z',
+        meetingTime: '08:00',
+        difficulty: 2,
+        requiredLevel: 2,
+        capacity: 8,
+        joined: 0,
+        condition: 'caution',
+        imageUrl: null,
+      },
+    },
+  ] as const;
+  for (const trip of trips) {
+    const group = await prisma.group.findUniqueOrThrow({ where: { slug: trip.slug }, select: { id: true } });
+    const existing = await prisma.groupMessage.findFirst({ where: { groupId: group.id, kind: 'trip' }, select: { id: true } });
+    if (!existing) {
+      await prisma.groupMessage.create({ data: { groupId: group.id, kind: 'trip', tripData: trip.data } });
+    }
+  }
+  return groupSeeds.length;
+}
+
 /** Upserts the levels GameConfig rows by key in one transaction; returns the row count seeded. */
 export async function seedGameConfig(prisma: PrismaClient): Promise<number> {
   return upsertGameConfig(prisma, gameConfigRows);
@@ -44,6 +100,26 @@ export async function seedGameConfig(prisma: PrismaClient): Promise<number> {
 /** Upserts the weekly-path GameConfig row (`path.config`); returns the row count seeded. */
 export async function seedPathConfig(prisma: PrismaClient): Promise<number> {
   return upsertGameConfig(prisma, pathConfigRows);
+}
+
+/** Upserts the trip GameConfig rows (`trip.config`, `trip.active`); returns the row count seeded. */
+export async function seedTripConfig(prisma: PrismaClient): Promise<number> {
+  return upsertGameConfig(prisma, tripConfigRows);
+}
+
+/** Upserts the check-in GameConfig row (`checkIn.config`); returns the row count seeded. */
+export async function seedCheckInConfig(prisma: PrismaClient): Promise<number> {
+  return upsertGameConfig(prisma, checkInConfigRows);
+}
+
+/** Upserts the streaks GameConfig row (`streaks.config`); returns the row count seeded. */
+export async function seedStreaksConfig(prisma: PrismaClient): Promise<number> {
+  return upsertGameConfig(prisma, streaksConfigRows);
+}
+
+/** Upserts the badges GameConfig row (`badges.config`); returns the row count seeded. */
+export async function seedBadgesConfig(prisma: PrismaClient): Promise<number> {
+  return upsertGameConfig(prisma, badgesConfigRows);
 }
 
 async function upsertGameConfig(
@@ -130,10 +206,17 @@ async function main(): Promise<void> {
     const total = await prisma.place.count();
     await seedLessonsConfig(prisma);
     const configRows =
-      (await seedGameConfig(prisma)) + 1 + (await seedPathConfig(prisma));
+      (await seedGameConfig(prisma)) +
+      1 +
+      (await seedPathConfig(prisma)) +
+      (await seedTripConfig(prisma)) +
+      (await seedCheckInConfig(prisma)) +
+      (await seedStreaksConfig(prisma)) +
+      (await seedBadgesConfig(prisma));
     const lessons = await seedLessons(prisma);
+    const groups = await seedGroups(prisma);
     process.stdout.write(
-      `Seeded ${seeded} places; ${total} in the database. Seeded ${configRows} game config rows. Created ${lessons} draft lessons.\n`,
+      `Seeded ${seeded} places; ${total} in the database. Seeded ${groups} groups and ${configRows} game config rows. Created ${lessons} draft lessons.\n`,
     );
   } finally {
     await prisma.$disconnect();
