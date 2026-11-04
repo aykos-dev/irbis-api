@@ -3,6 +3,7 @@ import { AppConfig } from '../../config/app-config.js';
 import { StorageService } from '../../lib/storage/storage.service.js';
 import { StorageUnavailableError } from '../../lib/storage/storage.errors.js';
 import { PlacesService } from '../places/places.service.js';
+import { GroupsService } from '../groups/groups.service.js';
 import type { SearchQueryDto } from './dto/search.request.dto.js';
 import type { SearchResultsDto } from './dto/search.response.dto.js';
 import { SEARCH_LIMIT, SEARCH_MIN_QUERY } from './search.constants.js';
@@ -16,6 +17,7 @@ export class SearchService {
     private readonly repository: SearchRepository,
     private readonly storage: StorageService,
     private readonly config: AppConfig,
+    private readonly groups: GroupsService,
   ) {}
 
   async search(
@@ -34,12 +36,16 @@ export class SearchService {
         : this.config.placesFallbackOrigin;
     const wantPlaces = scope === 'all' || scope === 'places';
     const wantPeople = scope === 'all' || scope === 'people';
-    const [places, people] = await Promise.all([
+    const wantGroups = scope === 'all' || scope === 'groups';
+    const [places, people, groups] = await Promise.all([
       wantPlaces
         ? this.places.search(term, point, SEARCH_LIMIT)
         : Promise.resolve([]),
       wantPeople
         ? this.repository.findPeople(term, viewerId, SEARCH_LIMIT)
+        : Promise.resolve([]),
+      wantGroups
+        ? this.groups.searchPublic(term, SEARCH_LIMIT)
         : Promise.resolve([]),
     ]);
     return {
@@ -50,7 +56,15 @@ export class SearchService {
         avatarUrl: this.avatarUrl(row.avatarKey),
         level: row.level,
       })),
-      groups: [],
+      groups: groups.map((group) => ({
+        id: group.id,
+        slug: group.slug,
+        name: group.name,
+        description: group.description,
+        avatarUrl: group.avatarUrl,
+        color: group.color,
+        memberCount: group.memberCount,
+      })),
       tours: [],
     };
   }

@@ -24,6 +24,7 @@ import { toLessonSeedRows, type LessonSeedRow } from './lesson-seed.rules.js';
 import { lessonSources } from './lessons.data.js';
 import { toSeedRows } from './place-seed.rules.js';
 import { modifiedLocations } from './places.data.js';
+import { groupSeeds } from './groups.data.js';
 
 /** Upserts every place from places.data.ts by slug in one transaction; returns the row count seeded. */
 export async function seedPlaces(prisma: PrismaClient): Promise<number> {
@@ -38,6 +39,20 @@ export async function seedPlaces(prisma: PrismaClient): Promise<number> {
     ),
   );
   return rows.length;
+}
+
+/** Upserts the public launch catalogue without inventing members or owners. */
+export async function seedGroups(prisma: PrismaClient): Promise<number> {
+  await prisma.$transaction(
+    groupSeeds.map(({ slug, ...data }) =>
+      prisma.group.upsert({
+        where: { slug },
+        create: { slug, ...data },
+        update: data,
+      }),
+    ),
+  );
+  return groupSeeds.length;
 }
 
 /** Upserts the levels GameConfig rows by key in one transaction; returns the row count seeded. */
@@ -162,8 +177,9 @@ async function main(): Promise<void> {
       (await seedStreaksConfig(prisma)) +
       (await seedBadgesConfig(prisma));
     const lessons = await seedLessons(prisma);
+    const groups = await seedGroups(prisma);
     process.stdout.write(
-      `Seeded ${seeded} places; ${total} in the database. Seeded ${configRows} game config rows. Created ${lessons} draft lessons.\n`,
+      `Seeded ${seeded} places; ${total} in the database. Seeded ${groups} groups and ${configRows} game config rows. Created ${lessons} draft lessons.\n`,
     );
   } finally {
     await prisma.$disconnect();

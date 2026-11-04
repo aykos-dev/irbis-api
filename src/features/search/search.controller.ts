@@ -1,9 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import {
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { AuthUser } from '../../common/auth-user.js';
 import { ApiErrorResponses } from '../../common/decorators/api-error-responses.decorator.js';
 import { OptionalUser } from '../../common/decorators/current-user.decorator.js';
@@ -23,7 +19,8 @@ export class SearchController {
   @Get()
   @ApiOperation({
     operationId: 'Search_query',
-    summary: 'Search places and people; groups and tours are empty for now',
+    summary:
+      'Search places, public people and public groups; tours are empty for now',
   })
   @ApiOkResponse({ type: SearchResultsDto })
   @ApiErrorResponses({ 400: ['VALIDATION_FAILED'], 429: ['RATE_LIMITED'] })

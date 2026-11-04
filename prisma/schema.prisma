@@ -115,6 +115,29 @@ enum NotificationCategory {
   @@map("notification_category")
 }
 
+enum GroupVisibility {
+  public
+  private
+
+  @@map("group_visibility")
+}
+
+enum GroupMemberRole {
+  owner
+  admin
+  member
+
+  @@map("group_member_role")
+}
+
+enum GroupMemberStatus {
+  invited
+  pending
+  active
+
+  @@map("group_member_status")
+}
+
 // Usernames are stored lowercase; the unique index and CHECKs in the auth_init migration enforce it.
 model User {
   id                      String           @id @default(uuid(7)) @db.Uuid
@@ -141,23 +164,23 @@ model User {
   levelReachedAt          DateTime         @default(now()) @map("level_reached_at") @db.Timestamptz(3)
 
   // profile: edited through PATCH /v1/me; avatar bytes stay in object storage, the column holds the key.
-  displayName      String?      @map("display_name") @db.VarChar(40)
-  bio              String?      @db.VarChar(150)
-  homeRegion       HomeRegion?  @map("home_region")
-  avatarKey        String?      @map("avatar_key") @db.VarChar(255)
-  showStats        Boolean      @default(true) @map("show_stats")
-  showHomeRegion   Boolean      @default(false) @map("show_home_region")
-  units            Units        @default(metric)
-  appearance       Appearance   @default(auto)
-  notifyStreak     Boolean      @default(true) @map("notify_streak")
-  notifyDailyGame  Boolean      @default(true) @map("notify_daily_game")
-  dailyGameTime    String       @default("19:00") @map("daily_game_time") @db.VarChar(5)
-  notifyGroups     Boolean      @default(true) @map("notify_groups")
-  notifySocial     Boolean      @default(true) @map("notify_social")
-  notifyOffers     Boolean      @default(false) @map("notify_offers")
-  publicProfile    Boolean      @default(true) @map("public_profile")
-  findBuddies      Boolean      @default(true) @map("find_buddies")
-  deletedAt        DateTime?    @map("deleted_at") @db.Timestamptz(3)
+  displayName     String?     @map("display_name") @db.VarChar(40)
+  bio             String?     @db.VarChar(150)
+  homeRegion      HomeRegion? @map("home_region")
+  avatarKey       String?     @map("avatar_key") @db.VarChar(255)
+  showStats       Boolean     @default(true) @map("show_stats")
+  showHomeRegion  Boolean     @default(false) @map("show_home_region")
+  units           Units       @default(metric)
+  appearance      Appearance  @default(auto)
+  notifyStreak    Boolean     @default(true) @map("notify_streak")
+  notifyDailyGame Boolean     @default(true) @map("notify_daily_game")
+  dailyGameTime   String      @default("19:00") @map("daily_game_time") @db.VarChar(5)
+  notifyGroups    Boolean     @default(true) @map("notify_groups")
+  notifySocial    Boolean     @default(true) @map("notify_social")
+  notifyOffers    Boolean     @default(false) @map("notify_offers")
+  publicProfile   Boolean     @default(true) @map("public_profile")
+  findBuddies     Boolean     @default(true) @map("find_buddies")
+  deletedAt       DateTime?   @map("deleted_at") @db.Timestamptz(3)
 
   refreshTokens     RefreshToken[]
   smsCodes          SmsCode[]
@@ -180,6 +203,9 @@ model User {
   emergencyContact  EmergencyContact?
   badgeAwards       BadgeAward[]
   trips             Trip[]
+  groupsCreated     Group[]             @relation("GroupCreator")
+  groupMemberships  GroupMember[]       @relation("GroupMemberUser")
+  groupInvitesSent  GroupMember[]       @relation("GroupMemberInviter")
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -329,10 +355,55 @@ model Place {
   trips     Trip[]
 
   weekendConditions WeekendCondition[]
-  checkIns  CheckIn[]
+  checkIns          CheckIn[]
 
   @@index([type])
   @@map("places")
+}
+
+// --- groups + group chat ---
+
+model Group {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  slug        String          @unique @db.VarChar(100)
+  name        String          @db.VarChar(80)
+  description String          @db.VarChar(300)
+  visibility  GroupVisibility
+  avatarKey   String?         @map("avatar_key") @db.VarChar(255)
+  color       String          @default("#0C807A") @db.VarChar(7)
+  createdById String?         @map("created_by_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy User?         @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members   GroupMember[]
+
+  @@index([visibility, createdAt, id])
+  @@index([createdById])
+  @@map("groups")
+}
+
+model GroupMember {
+  id                 String            @id @default(uuid(7)) @db.Uuid
+  groupId            String            @map("group_id") @db.Uuid
+  userId             String            @map("user_id") @db.Uuid
+  role               GroupMemberRole   @default(member)
+  status             GroupMemberStatus @default(active)
+  invitedById        String?           @map("invited_by_id") @db.Uuid
+  lastReadAt         DateTime?         @map("last_read_at") @db.Timestamptz(3)
+  notificationsMuted Boolean           @default(false) @map("notifications_muted")
+  joinedAt           DateTime?         @map("joined_at") @db.Timestamptz(3)
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User  @relation("GroupMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User? @relation("GroupMemberInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([groupId, userId])
+  @@index([userId, status, updatedAt])
+  @@index([groupId, status, role])
+  @@map("group_members")
 }
 
 enum ConditionStatus {

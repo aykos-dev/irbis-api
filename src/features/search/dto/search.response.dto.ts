@@ -47,7 +47,10 @@ export class SearchPlaceDto {
   @ApiProperty({ type: 'integer', minimum: 1, maximum: 7 })
   requiredLevel: number;
 
-  @ApiProperty({ type: 'integer', description: 'Metres from the search origin.' })
+  @ApiProperty({
+    type: 'integer',
+    description: 'Metres from the search origin.',
+  })
   distanceM: number;
 
   @ApiPropertyOptional({
@@ -76,6 +79,29 @@ export class SearchPersonDto {
   level: number;
 }
 
+export class SearchGroupDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiProperty()
+  slug: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  description: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  avatarUrl: string | null;
+
+  @ApiProperty()
+  color: string;
+
+  @ApiProperty({ type: 'integer' })
+  memberCount: number;
+}
+
 export class SearchResultsDto {
   @ApiProperty({ type: [SearchPlaceDto] })
   places: SearchPlaceDto[];
@@ -83,11 +109,8 @@ export class SearchResultsDto {
   @ApiProperty({ type: [SearchPersonDto] })
   people: SearchPersonDto[];
 
-  @ApiProperty({
-    type: [String],
-    description: 'Always empty until groups ship.',
-  })
-  groups: string[];
+  @ApiProperty({ type: [SearchGroupDto] })
+  groups: SearchGroupDto[];
 
   @ApiProperty({
     type: [String],
