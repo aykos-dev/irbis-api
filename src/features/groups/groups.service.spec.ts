@@ -17,6 +17,7 @@ const publicGroup = (
   avatarKey: null,
   color: '#0C807A',
   memberCount: 12,
+  unreadCount: 0,
   viewerMembership: membership,
 });
 
@@ -40,6 +41,7 @@ function setup(group: GroupRow = publicGroup()) {
         role: 'member',
         status: 'active',
         joinedAt: new Date(),
+        notificationsMuted: false,
       }),
   } as unknown as GroupsRepository;
   const storage = {
@@ -75,6 +77,7 @@ describe('GroupsService', () => {
         role: 'owner',
         status: 'active',
         joinedAt: new Date(),
+        notificationsMuted: false,
       }),
     );
     await expect(
@@ -89,6 +92,7 @@ describe('GroupsService', () => {
       role: 'owner',
       status: 'active',
       joinedAt: new Date(),
+      notificationsMuted: false,
     });
     const row: MemberRow = {
       userId: 'leader',
@@ -99,6 +103,7 @@ describe('GroupsService', () => {
       role: 'member',
       status: 'active',
       joinedAt: new Date(),
+      notificationsMuted: false,
     };
     const repository = {
       find: () => Promise.resolve(group),

@@ -7150,6 +7150,464 @@
           "Check-ins"
         ]
       }
+    },
+    "/v1/groups/{groupId}/messages": {
+      "get": {
+        "operationId": "GroupChat_list",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 30,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMessagesPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cursor-paginated member chat history",
+        "tags": [
+          "Group chat"
+        ]
+      },
+      "post": {
+        "operationId": "GroupChat_send",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMessageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: GROUP_MESSAGE_EMPTY | GROUP_ATTACHMENT_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: GROUP_MEMBERSHIP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send text, reply, photo or place attachments",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/messages/{messageId}": {
+      "patch": {
+        "operationId": "GroupChat_edit",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditGroupMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMessageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit your text message",
+        "tags": [
+          "Group chat"
+        ]
+      },
+      "delete": {
+        "operationId": "GroupChat_delete",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMessageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete your message, or moderate as group admin",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/messages/{messageId}/reactions": {
+      "put": {
+        "operationId": "GroupChat_addReaction",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupChatActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add one emoji reaction",
+        "tags": [
+          "Group chat"
+        ]
+      },
+      "delete": {
+        "operationId": "GroupChat_removeReaction",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupChatActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove one emoji reaction",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/messages/read": {
+      "post": {
+        "operationId": "GroupChat_markRead",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupReadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupChatActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Advance your group read receipt",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/chat/mute": {
+      "patch": {
+        "operationId": "GroupChat_mute",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMuteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupChatActionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mute or unmute mention notifications for this group",
+        "tags": [
+          "Group chat"
+        ]
+      }
+    },
+    "/v1/groups/{groupId}/messages/photos": {
+      "post": {
+        "operationId": "GroupChat_uploadPhoto",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupPhotoUploadRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPhotoUploadDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload one gallery photo for a message",
+        "tags": [
+          "Group chat"
+        ]
+      }
     }
   },
   "info": {
@@ -11448,12 +11906,16 @@
           "joinedAt": {
             "type": "string",
             "nullable": true
+          },
+          "notificationsMuted": {
+            "type": "boolean"
           }
         },
         "required": [
           "status",
           "role",
-          "joinedAt"
+          "joinedAt",
+          "notificationsMuted"
         ]
       },
       "GroupSummaryDto": {
@@ -11489,6 +11951,9 @@
           "memberCount": {
             "type": "integer"
           },
+          "unreadCount": {
+            "type": "integer"
+          },
           "viewerMembership": {
             "nullable": true,
             "type": "object",
@@ -11508,6 +11973,7 @@
           "avatarUrl",
           "color",
           "memberCount",
+          "unreadCount",
           "viewerMembership"
         ]
       },
@@ -11658,6 +12124,9 @@
           "memberCount": {
             "type": "integer"
           },
+          "unreadCount": {
+            "type": "integer"
+          },
           "viewerMembership": {
             "nullable": true,
             "type": "object",
@@ -11689,6 +12158,7 @@
           "avatarUrl",
           "color",
           "memberCount",
+          "unreadCount",
           "viewerMembership",
           "members",
           "pendingRequests"
@@ -12878,6 +13348,398 @@
           "xp",
           "levelUps",
           "pathVisited"
+        ]
+      },
+      "GroupMessageAuthorDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer"
+          },
+          "verifiedLeader": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
+          "verifiedLeader"
+        ]
+      },
+      "GroupReplyPreviewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "body": {
+            "type": "string",
+            "nullable": true
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "username"
+        ]
+      },
+      "GroupMessageAttachmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "photo",
+              "place"
+            ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "placeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "placeName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "GroupReactionResponseDto": {
+        "type": "object",
+        "properties": {
+          "emoji": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "mine": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "emoji",
+          "count",
+          "mine"
+        ]
+      },
+      "GroupTripCardDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "meetingTime": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "integer"
+          },
+          "requiredLevel": {
+            "type": "integer"
+          },
+          "capacity": {
+            "type": "integer"
+          },
+          "joined": {
+            "type": "integer"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "title",
+          "startsAt",
+          "meetingTime",
+          "difficulty",
+          "requiredLevel",
+          "capacity",
+          "joined",
+          "condition",
+          "imageUrl"
+        ]
+      },
+      "GroupMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "trip"
+            ]
+          },
+          "author": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupMessageAuthorDto"
+              }
+            ]
+          },
+          "body": {
+            "type": "string",
+            "nullable": true
+          },
+          "replyTo": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupReplyPreviewDto"
+              }
+            ]
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMessageAttachmentResponseDto"
+            }
+          },
+          "reactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupReactionResponseDto"
+            }
+          },
+          "mentionedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "readByCount": {
+            "type": "integer"
+          },
+          "trip": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripCardDto"
+              }
+            ]
+          },
+          "editedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "kind",
+          "author",
+          "body",
+          "replyTo",
+          "attachments",
+          "reactions",
+          "mentionedUserIds",
+          "readByCount",
+          "trip",
+          "editedAt",
+          "deletedAt",
+          "createdAt"
+        ]
+      },
+      "GroupMessagesPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMessageDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "GroupMessageAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "photo",
+              "place"
+            ]
+          },
+          "imageKey": {
+            "type": "string"
+          },
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "CreateGroupMessageDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "replyToId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attachments": {
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMessageAttachmentDto"
+            }
+          }
+        }
+      },
+      "EditGroupMessageDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "GroupReactionDto": {
+        "type": "object",
+        "properties": {
+          "emoji": {
+            "type": "string",
+            "maxLength": 16,
+            "example": "👍"
+          }
+        },
+        "required": [
+          "emoji"
+        ]
+      },
+      "GroupChatActionDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "GroupReadDto": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "messageId"
+        ]
+      },
+      "GroupMuteDto": {
+        "type": "object",
+        "properties": {
+          "muted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "muted"
+        ]
+      },
+      "GroupPhotoUploadRequestDto": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "image"
+        ]
+      },
+      "GroupPhotoUploadDto": {
+        "type": "object",
+        "properties": {
+          "imageKey": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "imageKey",
+          "imageUrl"
         ]
       }
     }

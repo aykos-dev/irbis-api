@@ -138,6 +138,20 @@ enum GroupMemberStatus {
   @@map("group_member_status")
 }
 
+enum GroupMessageKind {
+  text
+  trip
+
+  @@map("group_message_kind")
+}
+
+enum GroupAttachmentType {
+  photo
+  place
+
+  @@map("group_attachment_type")
+}
+
 // Usernames are stored lowercase; the unique index and CHECKs in the auth_init migration enforce it.
 model User {
   id                      String           @id @default(uuid(7)) @db.Uuid
@@ -184,12 +198,12 @@ model User {
 
   refreshTokens     RefreshToken[]
   smsCodes          SmsCode[]
-  auditAsAdmin      AdminAuditLog[]     @relation("AuditAdmin")
-  auditAsTarget     AdminAuditLog[]     @relation("AuditTarget")
-  closuresCreated   Closure[]           @relation("ClosureCreatedBy")
-  closuresEnded     Closure[]           @relation("ClosureEndedBy")
-  overridesCreated  ConditionOverride[] @relation("OverrideCreatedBy")
-  overridesEnded    ConditionOverride[] @relation("OverrideEndedBy")
+  auditAsAdmin      AdminAuditLog[]        @relation("AuditAdmin")
+  auditAsTarget     AdminAuditLog[]        @relation("AuditTarget")
+  closuresCreated   Closure[]              @relation("ClosureCreatedBy")
+  closuresEnded     Closure[]              @relation("ClosureEndedBy")
+  overridesCreated  ConditionOverride[]    @relation("OverrideCreatedBy")
+  overridesEnded    ConditionOverride[]    @relation("OverrideEndedBy")
   xpEntries         XpEntry[]
   levelFacts        LevelFact[]
   levelUps          LevelUp[]
@@ -203,9 +217,12 @@ model User {
   emergencyContact  EmergencyContact?
   badgeAwards       BadgeAward[]
   trips             Trip[]
-  groupsCreated     Group[]             @relation("GroupCreator")
-  groupMemberships  GroupMember[]       @relation("GroupMemberUser")
-  groupInvitesSent  GroupMember[]       @relation("GroupMemberInviter")
+  groupsCreated     Group[]                @relation("GroupCreator")
+  groupMemberships  GroupMember[]          @relation("GroupMemberUser")
+  groupInvitesSent  GroupMember[]          @relation("GroupMemberInviter")
+  groupMessages     GroupMessage[]
+  groupReactions    GroupMessageReaction[]
+  groupMentions     GroupMessageMention[]
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -347,12 +364,13 @@ model Place {
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  condition PlaceCondition?
-  forecast  PlaceForecast?
-  closures  Closure[]
-  overrides ConditionOverride[]
-  pathNodes PathNode[]
-  trips     Trip[]
+  condition               PlaceCondition?
+  forecast                PlaceForecast?
+  closures                Closure[]
+  overrides               ConditionOverride[]
+  pathNodes               PathNode[]
+  trips                   Trip[]
+  groupMessageAttachments GroupMessageAttachment[]
 
   weekendConditions WeekendCondition[]
   checkIns          CheckIn[]
@@ -375,8 +393,9 @@ model Group {
   createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  createdBy User?         @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy User?          @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
   members   GroupMember[]
+  messages  GroupMessage[]
 
   @@index([visibility, createdAt, id])
   @@index([createdById])
@@ -404,6 +423,75 @@ model GroupMember {
   @@index([userId, status, updatedAt])
   @@index([groupId, status, role])
   @@map("group_members")
+}
+
+model GroupMessage {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  groupId   String           @map("group_id") @db.Uuid
+  senderId  String?          @map("sender_id") @db.Uuid
+  replyToId String?          @map("reply_to_id") @db.Uuid
+  kind      GroupMessageKind @default(text)
+  body      String?          @db.VarChar(2000)
+  tripData  Json?            @map("trip_data")
+  editedAt  DateTime?        @map("edited_at") @db.Timestamptz(3)
+  deletedAt DateTime?        @map("deleted_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  group       Group                    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sender      User?                    @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  replyTo     GroupMessage?            @relation("GroupMessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     GroupMessage[]           @relation("GroupMessageReplies")
+  attachments GroupMessageAttachment[]
+  reactions   GroupMessageReaction[]
+  mentions    GroupMessageMention[]
+
+  @@index([groupId, createdAt, id])
+  @@index([senderId, createdAt])
+  @@index([replyToId])
+  @@map("group_messages")
+}
+
+model GroupMessageAttachment {
+  id        String              @id @default(uuid(7)) @db.Uuid
+  messageId String              @map("message_id") @db.Uuid
+  type      GroupAttachmentType
+  imageKey  String?             @map("image_key") @db.VarChar(255)
+  placeId   String?             @map("place_id") @db.Uuid
+  order     Int
+
+  message GroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  place   Place?       @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, order])
+  @@index([placeId])
+  @@map("group_message_attachments")
+}
+
+model GroupMessageReaction {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  emoji     String   @db.VarChar(16)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  message GroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId, createdAt])
+  @@map("group_message_reactions")
+}
+
+model GroupMessageMention {
+  messageId String @map("message_id") @db.Uuid
+  userId    String @map("user_id") @db.Uuid
+
+  message GroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+  @@index([userId, messageId])
+  @@map("group_message_mentions")
 }
 
 enum ConditionStatus {

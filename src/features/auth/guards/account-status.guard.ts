@@ -23,6 +23,9 @@ export class AccountStatusGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (typeof context.getType === 'function' && context.getType() === 'ws') {
+      return true;
+    }
     const req = context.switchToHttp().getRequest<{ user?: AuthUser }>();
     if (!req.user) return true;
     const isPublic = this.reflector.getAllAndOverride<boolean | undefined>(

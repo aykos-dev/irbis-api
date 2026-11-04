@@ -7,6 +7,7 @@
  */
 import { writeFileSync } from 'node:fs';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { WsAdapter } from '@nestjs/platform-ws';
 
 const EXPORT_ENV: Record<string, string> = {
   NODE_ENV: 'test',
@@ -28,6 +29,7 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   abortOnError: false,
 });
 configureApp(app);
+app.useWebSocketAdapter(new WsAdapter(app));
 await app.init();
 
 const document = buildOpenApiDocument(app);

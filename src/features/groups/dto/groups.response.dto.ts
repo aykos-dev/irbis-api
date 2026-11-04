@@ -12,6 +12,7 @@ export class GroupViewerMembershipDto {
   @ApiProperty({ enum: GROUP_MEMBER_STATUSES }) status: GroupMemberStatusCode;
   @ApiProperty({ enum: GROUP_MEMBER_ROLES }) role: GroupMemberRoleCode;
   @ApiProperty({ type: String, nullable: true }) joinedAt: string | null;
+  @ApiProperty() notificationsMuted: boolean;
 }
 
 export class GroupSummaryDto {
@@ -23,6 +24,7 @@ export class GroupSummaryDto {
   @ApiProperty({ type: String, nullable: true }) avatarUrl: string | null;
   @ApiProperty() color: string;
   @ApiProperty({ type: 'integer' }) memberCount: number;
+  @ApiProperty({ type: 'integer' }) unreadCount: number;
   @ApiProperty({ type: GroupViewerMembershipDto, nullable: true })
   viewerMembership: GroupViewerMembershipDto | null;
 }

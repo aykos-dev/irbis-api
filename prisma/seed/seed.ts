@@ -52,6 +52,43 @@ export async function seedGroups(prisma: PrismaClient): Promise<number> {
       }),
     ),
   );
+  const trips = [
+    {
+      slug: 'tashkent-weekend-hikers',
+      data: {
+        title: 'Beldersay Ridge sunrise',
+        startsAt: '2026-11-07T00:30:00.000Z',
+        meetingTime: '05:30',
+        difficulty: 3,
+        requiredLevel: 3,
+        capacity: 10,
+        joined: 0,
+        condition: 'go',
+        imageUrl: null,
+      },
+    },
+    {
+      slug: 'caving-uzbekistan',
+      data: {
+        title: 'Intro to caving',
+        startsAt: '2026-11-08T03:00:00.000Z',
+        meetingTime: '08:00',
+        difficulty: 2,
+        requiredLevel: 2,
+        capacity: 8,
+        joined: 0,
+        condition: 'caution',
+        imageUrl: null,
+      },
+    },
+  ] as const;
+  for (const trip of trips) {
+    const group = await prisma.group.findUniqueOrThrow({ where: { slug: trip.slug }, select: { id: true } });
+    const existing = await prisma.groupMessage.findFirst({ where: { groupId: group.id, kind: 'trip' }, select: { id: true } });
+    if (!existing) {
+      await prisma.groupMessage.create({ data: { groupId: group.id, kind: 'trip', tripData: trip.data } });
+    }
+  }
   return groupSeeds.length;
 }
 

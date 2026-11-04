@@ -252,6 +252,15 @@ export class GroupsService {
     );
   }
 
+  async activeMembership(
+    idOrSlug: string,
+    userId: string,
+  ): Promise<{ role: 'owner' | 'admin' | 'member' }> {
+    const group = await this.group(idOrSlug, userId);
+    const membership = this.requireMember(group.viewerMembership);
+    return { role: membership.role };
+  }
+
   private async group(idOrSlug: string, viewerId?: string): Promise<GroupRow> {
     const group = await this.repository.find(idOrSlug, viewerId);
     if (!group) throw new GroupNotFoundError();
@@ -311,11 +320,13 @@ export class GroupsService {
       avatarUrl: this.publicUrl(row.avatarKey),
       color: row.color,
       memberCount: row.memberCount,
+      unreadCount: row.unreadCount,
       viewerMembership: row.viewerMembership
         ? {
             status: row.viewerMembership.status,
             role: row.viewerMembership.role,
             joinedAt: row.viewerMembership.joinedAt?.toISOString() ?? null,
+            notificationsMuted: row.viewerMembership.notificationsMuted,
           }
         : null,
     };

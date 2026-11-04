@@ -11,6 +11,7 @@ export interface GroupMembershipRow {
   role: GroupMemberRole;
   status: GroupMemberStatus;
   joinedAt: Date | null;
+  notificationsMuted: boolean;
 }
 
 export interface GroupRow {
@@ -23,6 +24,7 @@ export interface GroupRow {
   color: string;
   memberCount: number;
   viewerMembership: GroupMembershipRow | null;
+  unreadCount: number;
 }
 
 export interface MemberRow extends GroupMembershipRow {
@@ -88,11 +90,22 @@ export class GroupsRepository {
           })
         : Promise.resolve([]),
     ]);
-    return {
+    const result = {
       yours: yours.map((row) => this.toGroupRow(row)),
       discover: discover.map((row) => this.toGroupRow(row)),
       invitations: invitations.map((row) => this.toGroupRow(row)),
     };
+    if (viewerId) {
+      const counts = await this.unreadCounts(viewerId);
+      for (const group of [
+        ...result.yours,
+        ...result.discover,
+        ...result.invitations,
+      ]) {
+        group.unreadCount = counts.get(group.id) ?? 0;
+      }
+    }
+    return result;
   }
 
   async find(idOrSlug: string, viewerId?: string): Promise<GroupRow | null> {
@@ -182,6 +195,7 @@ export class GroupsRepository {
       role: row.role,
       status: row.status,
       joinedAt: row.joinedAt,
+      notificationsMuted: row.notificationsMuted,
       username: row.user.username,
       displayName: row.user.displayName,
       avatarKey: row.user.avatarKey,
@@ -195,7 +209,13 @@ export class GroupsRepository {
   ): Promise<GroupMembershipRow | null> {
     return this.prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId, userId } },
-      select: { userId: true, role: true, status: true, joinedAt: true },
+      select: {
+        userId: true,
+        role: true,
+        status: true,
+        joinedAt: true,
+        notificationsMuted: true,
+      },
     });
   }
 
@@ -322,7 +342,13 @@ export class GroupsRepository {
       _count: { select: { members: { where: { status: 'active' as const } } } },
       members: {
         where: { userId: viewerId ?? '00000000-0000-0000-0000-000000000000' },
-        select: { userId: true, role: true, status: true, joinedAt: true },
+        select: {
+          userId: true,
+          role: true,
+          status: true,
+          joinedAt: true,
+          notificationsMuted: true,
+        },
         take: 1,
       },
     };
@@ -349,6 +375,37 @@ export class GroupsRepository {
       color: row.color,
       memberCount: row._count.members,
       viewerMembership: row.members[0] ?? null,
+      unreadCount: 0,
     };
+  }
+
+  private async unreadCounts(userId: string): Promise<Map<string, number>> {
+    const memberships = await this.prisma.groupMember.findMany({
+      where: { userId, status: 'active' },
+      select: {
+        groupId: true,
+        lastReadAt: true,
+        joinedAt: true,
+        createdAt: true,
+      },
+    });
+    const pairs = await Promise.all(
+      memberships.map(async (membership) => ({
+        groupId: membership.groupId,
+        count: await this.prisma.groupMessage.count({
+          where: {
+            groupId: membership.groupId,
+            senderId: { not: userId },
+            createdAt: {
+              gt:
+                membership.lastReadAt ??
+                membership.joinedAt ??
+                membership.createdAt,
+            },
+          },
+        }),
+      })),
+    );
+    return new Map(pairs.map((pair) => [pair.groupId, pair.count]));
   }
 }

@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule } from '@nestjs/swagger';
+import { WsAdapter } from '@nestjs/platform-ws';
 import { AppModule } from './app.module.js';
 import { buildOpenApiDocument, configureApp } from './app.setup.js';
 import { AppConfig } from './config/app-config.js';
@@ -11,6 +12,7 @@ async function bootstrap(): Promise<void> {
     bodyParser: false,
   });
   configureApp(app);
+  app.useWebSocketAdapter(new WsAdapter(app));
 
   const config = app.get(AppConfig);
   if (config.nodeEnv !== 'production') {
