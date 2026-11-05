@@ -32,6 +32,7 @@ import {
   FIND_POOL_MAX,
   MENTOR_LEVEL,
   RATING_WINDOW_DAYS,
+  type BuddyRelationCode,
 } from './buddies.constants.js';
 import {
   BuddyExistsError,
@@ -67,6 +68,13 @@ import {
 export interface BuddyProfileSummary {
   buddyCount: number;
   ratings: RatingSummary | null;
+}
+
+/** The viewer's buddy relation to a profile's owner. */
+export interface BuddyRelation {
+  userId: string;
+  relation: BuddyRelationCode;
+  linkId: string | null;
 }
 
 /** Buddy links, weekend availability, Find buddies, buddies' trips and trip ratings. */
@@ -267,6 +275,31 @@ export class BuddiesService {
 
   /** AC5/AC8 by username: missing, private, deleted and blocked are the profile's own 404. */
   async publicSummary(rawUsername: string): Promise<BuddyProfileSummary> {
+    const targetId = await this.publicProfileId(rawUsername);
+    return this.profileSummary(targetId);
+  }
+
+  /** The viewer's relation to a public profile; same 404 rules as the summary. */
+  async relation(
+    rawUsername: string,
+    viewerId: string | undefined,
+  ): Promise<BuddyRelation> {
+    const userId = await this.publicProfileId(rawUsername);
+    if (!viewerId) return { userId, relation: 'none', linkId: null };
+    if (viewerId === userId) return { userId, relation: 'self', linkId: null };
+    const link = await this.repository.findLinkByPair(
+      pairKey(viewerId, userId),
+    );
+    if (!link) return { userId, relation: 'none', linkId: null };
+    if (link.status === 'accepted') {
+      return { userId, relation: 'buddies', linkId: null };
+    }
+    return link.addresseeId === viewerId
+      ? { userId, relation: 'incoming', linkId: link.id }
+      : { userId, relation: 'outgoing', linkId: null };
+  }
+
+  private async publicProfileId(rawUsername: string): Promise<string> {
     const target = await this.repository.findProfileTarget(
       rawUsername.trim().toLowerCase(),
     );
@@ -278,7 +311,7 @@ export class BuddiesService {
     ) {
       throw new ProfileNotFoundError();
     }
-    return this.profileSummary(target.id);
+    return target.id;
   }
 
   /** AC6. */

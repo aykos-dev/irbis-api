@@ -5,6 +5,16 @@ export type BuddyLevelFilter = (typeof BUDDY_LEVEL_FILTERS)[number];
 export const BUDDY_LINK_STATUSES = ['pending', 'accepted'] as const;
 export type BuddyLinkStatusCode = (typeof BUDDY_LINK_STATUSES)[number];
 
+/** How the viewer stands with a profile's owner (Add buddy / Requested / Accept / Buddies). */
+export const BUDDY_RELATIONS = [
+  'self',
+  'none',
+  'outgoing',
+  'incoming',
+  'buddies',
+] as const;
+export type BuddyRelationCode = (typeof BUDDY_RELATIONS)[number];
+
 export const RATING_TRAITS = ['reliable', 'safety', 'company'] as const;
 export type RatingTrait = (typeof RATING_TRAITS)[number];
 

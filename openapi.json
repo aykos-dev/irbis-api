@@ -9281,6 +9281,62 @@
         ]
       }
     },
+    "/v1/users/{username}/buddy-relation": {
+      "get": {
+        "operationId": "Users_getBuddyRelation",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyRelationDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My buddy relation to a public profile's owner (anonymous: none)",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
     "/v1/group-trips/{id}/ratings/pending": {
       "get": {
         "operationId": "GroupTrips_pendingRatings",
@@ -16875,6 +16931,44 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "BuddyRelation": {
+        "type": "string",
+        "enum": [
+          "self",
+          "none",
+          "outgoing",
+          "incoming",
+          "buddies"
+        ]
+      },
+      "BuddyRelationDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The profile owner's user id."
+          },
+          "relation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuddyRelation"
+              }
+            ]
+          },
+          "linkId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The pending link id when relation is incoming (to accept it); else null."
+          }
+        },
+        "required": [
+          "userId",
+          "relation",
+          "linkId"
         ]
       },
       "TripRatingScoresDto": {

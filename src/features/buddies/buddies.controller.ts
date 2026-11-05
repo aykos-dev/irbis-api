@@ -22,7 +22,10 @@ import {
 import type { Response } from 'express';
 import type { AuthUser } from '../../common/auth-user.js';
 import { ApiErrorResponses } from '../../common/decorators/api-error-responses.decorator.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  OptionalUser,
+} from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { Throttled } from '../../common/decorators/throttle.decorator.js';
 import { uuidPipe } from '../trip-events/trip-events.controller.js';
@@ -37,6 +40,7 @@ import {
   BuddiesListDto,
   BuddyCandidatePageDto,
   BuddyLinkDto,
+  BuddyRelationDto,
   BuddySummaryDto,
   BuddyTripsDto,
   MyPendingRatingsDto,
@@ -283,5 +287,22 @@ export class BuddySummaryController {
   @ApiErrorResponses({ 404: ['PROFILE_NOT_FOUND'], 429: ['RATE_LIMITED'] })
   summary(@Param('username') username: string): Promise<BuddySummaryDto> {
     return this.buddies.publicSummary(username);
+  }
+
+  @Public()
+  @Throttled('lookup')
+  @Get(':username/buddy-relation')
+  @ApiOperation({
+    operationId: 'Users_getBuddyRelation',
+    summary: "My buddy relation to a public profile's owner (anonymous: none)",
+  })
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: BuddyRelationDto })
+  @ApiErrorResponses({ 404: ['PROFILE_NOT_FOUND'], 429: ['RATE_LIMITED'] })
+  relation(
+    @Param('username') username: string,
+    @OptionalUser() viewer: AuthUser | undefined,
+  ): Promise<BuddyRelationDto> {
+    return this.buddies.relation(username, viewer?.id);
   }
 }

@@ -6,7 +6,9 @@ import {
 import { INTERESTS, type InterestCode } from '../../auth/auth.constants.js';
 import {
   BUDDY_LINK_STATUSES,
+  BUDDY_RELATIONS,
   type BuddyLinkStatusCode,
+  type BuddyRelationCode,
 } from '../buddies.constants.js';
 
 /** A place name in every locale (ru/en fall back to uz). */
@@ -185,4 +187,20 @@ export class BuddySummaryDto {
     description: 'Null below 3 distinct raters.',
   })
   ratings: BuddyProfileRatingsDto | null;
+}
+
+/** The signed-in viewer's buddy relation to a public profile (anonymous: none). */
+export class BuddyRelationDto {
+  @ApiProperty({ format: 'uuid', description: "The profile owner's user id." })
+  userId: string;
+  @ApiProperty({ enum: BUDDY_RELATIONS, enumName: 'BuddyRelation' })
+  relation: BuddyRelationCode;
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description:
+      'The pending link id when relation is incoming (to accept it); else null.',
+  })
+  linkId: string | null;
 }
