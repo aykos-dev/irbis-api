@@ -9116,6 +9116,63 @@
         ]
       }
     },
+    "/v1/me/buddy-summary": {
+      "get": {
+        "operationId": "Me_buddySummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddySummaryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My buddy count and trip-buddy ratings",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
     "/v1/me/ratings/pending": {
       "get": {
         "operationId": "Me_pendingRatings",
@@ -9170,6 +9227,57 @@
         "summary": "Trips I attended where I can still rate someone (Home card)",
         "tags": [
           "Buddies"
+        ]
+      }
+    },
+    "/v1/users/{username}/buddy-summary": {
+      "get": {
+        "operationId": "Users_getBuddySummary",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddySummaryDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A public profile's buddy count and trip-buddy ratings",
+        "tags": [
+          "Profile"
         ]
       }
     },
@@ -16664,6 +16772,64 @@
         "required": [
           "sat",
           "sun"
+        ]
+      },
+      "BuddyProfileRatingsDto": {
+        "type": "object",
+        "properties": {
+          "reliable": {
+            "type": "number",
+            "description": "Mean, 1 decimal.",
+            "example": 4.7
+          },
+          "safety": {
+            "type": "number",
+            "description": "Mean, 1 decimal.",
+            "example": 4.5
+          },
+          "company": {
+            "type": "number",
+            "description": "Mean, 1 decimal.",
+            "example": 4.8
+          },
+          "raters": {
+            "type": "integer",
+            "description": "Distinct raters."
+          },
+          "trips": {
+            "type": "integer",
+            "description": "Distinct trips rated."
+          }
+        },
+        "required": [
+          "reliable",
+          "safety",
+          "company",
+          "raters",
+          "trips"
+        ]
+      },
+      "BuddySummaryDto": {
+        "type": "object",
+        "properties": {
+          "buddyCount": {
+            "type": "integer",
+            "description": "Accepted buddies."
+          },
+          "ratings": {
+            "nullable": true,
+            "description": "Null below 3 distinct raters.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuddyProfileRatingsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "buddyCount",
+          "ratings"
         ]
       },
       "MyPendingRatingDto": {

@@ -145,6 +145,24 @@ export class BuddiesRepository {
     });
   }
 
+  /** The id and the public-profile visibility flags behind GET /v1/users/:username. */
+  findProfileTarget(username: string): Promise<{
+    id: string;
+    publicProfile: boolean;
+    deletedAt: Date | null;
+    blockedAt: Date | null;
+  } | null> {
+    return this.prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        publicProfile: true,
+        deletedAt: true,
+        blockedAt: true,
+      },
+    });
+  }
+
   findTarget(userId: string): Promise<TargetRow | null> {
     return this.prisma.user.findUnique({
       where: { id: userId },

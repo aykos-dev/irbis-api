@@ -161,3 +161,28 @@ export class MyPendingRatingDto {
 export class MyPendingRatingsDto {
   @ApiProperty({ type: [MyPendingRatingDto] }) items: MyPendingRatingDto[];
 }
+
+export class BuddyProfileRatingsDto {
+  @ApiProperty({ description: 'Mean, 1 decimal.', example: 4.7 })
+  reliable: number;
+  @ApiProperty({ description: 'Mean, 1 decimal.', example: 4.5 })
+  safety: number;
+  @ApiProperty({ description: 'Mean, 1 decimal.', example: 4.8 })
+  company: number;
+  @ApiProperty({ type: 'integer', description: 'Distinct raters.' })
+  raters: number;
+  @ApiProperty({ type: 'integer', description: 'Distinct trips rated.' })
+  trips: number;
+}
+
+/** Profile extras for buddies; rater ids are never exposed. */
+export class BuddySummaryDto {
+  @ApiProperty({ type: 'integer', description: 'Accepted buddies.' })
+  buddyCount: number;
+  @ApiProperty({
+    type: BuddyProfileRatingsDto,
+    nullable: true,
+    description: 'Null below 3 distinct raters.',
+  })
+  ratings: BuddyProfileRatingsDto | null;
+}

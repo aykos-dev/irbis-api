@@ -4,6 +4,7 @@ import { decodeCursor, encodeCursor } from '../../lib/cursor.js';
 import { minusDays } from '../../lib/dates.js';
 import { StorageService } from '../../lib/storage/storage.service.js';
 import { StorageUnavailableError } from '../../lib/storage/storage.errors.js';
+import { ProfileNotFoundError } from '../profile/profile.errors.js';
 import {
   GroupTripNotFoundError,
   SecuredAccountRequiredError,
@@ -262,6 +263,22 @@ export class BuddiesService {
       this.repository.ratingAggregates([userId]),
     ]);
     return { buddyCount, ratings: ratingSummary(ratings.get(userId)) };
+  }
+
+  /** AC5/AC8 by username: missing, private, deleted and blocked are the profile's own 404. */
+  async publicSummary(rawUsername: string): Promise<BuddyProfileSummary> {
+    const target = await this.repository.findProfileTarget(
+      rawUsername.trim().toLowerCase(),
+    );
+    if (
+      !target ||
+      !target.publicProfile ||
+      target.deletedAt !== null ||
+      target.blockedAt !== null
+    ) {
+      throw new ProfileNotFoundError();
+    }
+    return this.profileSummary(target.id);
   }
 
   /** AC6. */

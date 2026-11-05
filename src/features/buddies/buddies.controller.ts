@@ -23,6 +23,8 @@ import type { Response } from 'express';
 import type { AuthUser } from '../../common/auth-user.js';
 import { ApiErrorResponses } from '../../common/decorators/api-error-responses.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { Public } from '../../common/decorators/public.decorator.js';
+import { Throttled } from '../../common/decorators/throttle.decorator.js';
 import { uuidPipe } from '../trip-events/trip-events.controller.js';
 import {
   AvailabilityInputDto,
@@ -35,6 +37,7 @@ import {
   BuddiesListDto,
   BuddyCandidatePageDto,
   BuddyLinkDto,
+  BuddySummaryDto,
   BuddyTripsDto,
   MyPendingRatingsDto,
   TripRatingsPendingDto,
@@ -193,6 +196,17 @@ export class BuddiesMeController {
     return this.buddies.putAvailability(user.id, dto);
   }
 
+  @Get('buddy-summary')
+  @ApiOperation({
+    operationId: 'Me_buddySummary',
+    summary: 'My buddy count and trip-buddy ratings',
+  })
+  @ApiOkResponse({ type: BuddySummaryDto })
+  @ApiErrorResponses(SIGNED_IN)
+  summary(@CurrentUser() user: AuthUser): Promise<BuddySummaryDto> {
+    return this.buddies.profileSummary(user.id);
+  }
+
   @Get('ratings/pending')
   @ApiOperation({
     operationId: 'Me_pendingRatings',
@@ -250,5 +264,24 @@ export class TripRatingsController {
     @Body() dto: TripRatingInputDto,
   ): Promise<void> {
     return this.buddies.rate(user.id, id, userId, dto);
+  }
+}
+
+@ApiTags('Profile')
+@Controller('users')
+export class BuddySummaryController {
+  constructor(private readonly buddies: BuddiesService) {}
+
+  @Public()
+  @Throttled('lookup')
+  @Get(':username/buddy-summary')
+  @ApiOperation({
+    operationId: 'Users_getBuddySummary',
+    summary: "A public profile's buddy count and trip-buddy ratings",
+  })
+  @ApiOkResponse({ type: BuddySummaryDto })
+  @ApiErrorResponses({ 404: ['PROFILE_NOT_FOUND'], 429: ['RATE_LIMITED'] })
+  summary(@Param('username') username: string): Promise<BuddySummaryDto> {
+    return this.buddies.publicSummary(username);
   }
 }

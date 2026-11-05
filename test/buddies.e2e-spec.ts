@@ -390,4 +390,58 @@ describe('buddies (e2e) - find, links, availability, buddies trips, ratings (AC1
       .expect(200);
     expect(closed.body.items).toEqual([]);
   });
+  it('AC5/AC8: buddy summary counts accepted buddies, hides ratings below 3 raters, 404 when private', async () => {
+    const [ratee, r1, r2, r3, friend] = await Promise.all(
+      Array.from({ length: 5 }, () => signUp(app)),
+    );
+    const summary = (account: Account) =>
+      request(server()).get(`/v1/users/${account.username}/buddy-summary`);
+    expect((await summary(ratee).expect(200)).body).toEqual({
+      buddyCount: 0,
+      ratings: null,
+    });
+    await befriend(friend, ratee);
+
+    const now = new Date();
+    const trip = await groupTrip(ratee, [r1, r2, r3], {
+      startAt: now,
+      attended: [ratee, r1, r2, r3],
+    });
+    const rate = (rater: Account, score: typeof SCORE) =>
+      request(server())
+        .put(`/v1/group-trips/${trip}/ratings/${ratee.id}`)
+        .set(...auth(rater))
+        .send(score)
+        .expect(204);
+    await rate(r1, SCORE);
+    await rate(r2, { reliable: 4, safety: 4, company: 4 });
+    expect((await summary(ratee).expect(200)).body).toEqual({
+      buddyCount: 1,
+      ratings: null,
+    });
+    await rate(r3, { reliable: 4, safety: 3, company: 4 });
+    const me = await request(server())
+      .get('/v1/me/buddy-summary')
+      .set(...auth(ratee))
+      .expect(200);
+    expect(me.body).toEqual({
+      buddyCount: 1,
+      ratings: {
+        reliable: 4.3,
+        safety: 3.7,
+        company: 4.3,
+        raters: 3,
+        trips: 1,
+      },
+    });
+    expect((await summary(ratee).expect(200)).body).toEqual(me.body);
+
+    await prisma.user.update({
+      where: { id: ratee.id },
+      data: { publicProfile: false },
+    });
+    await summary(ratee)
+      .expect(404)
+      .expect((res) => expect(res.body.code).toBe('PROFILE_NOT_FOUND'));
+  });
 });
