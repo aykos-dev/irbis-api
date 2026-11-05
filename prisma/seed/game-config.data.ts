@@ -136,3 +136,20 @@ export const badgesConfig = { startAt: '2026-10-30T00:00:00.000Z' };
 export const badgesConfigRows = [
   { key: 'badges.config', value: badgesConfig },
 ];
+
+/** Seasonal leagues: four Tashkent seasons, honest divisions of up to 15. */
+export const leaguesConfig = {
+  startAt: '2026-11-05T00:00:00.000Z',
+  settlementHours: 48,
+  divisionCapacity: 15,
+  xpThresholds: [0, 1000, 2500, 5000, 9000],
+  movement: [
+    { min: 10, promote: 5, demote: 3 },
+    { min: 6, promote: 3, demote: 2 },
+    { min: 2, promote: 1, demote: 1 },
+  ],
+};
+
+export const leaguesConfigRows = [
+  { key: 'leagues.config', value: leaguesConfig },
+];

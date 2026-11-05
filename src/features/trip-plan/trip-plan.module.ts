@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { PhoneCipher } from '../auth/phone-cipher.js';
 import { LevelsModule } from '../levels/levels.module.js';
+import { LeaguesModule } from '../leagues/leagues.module.js';
 import {
   EmergencyContactController,
   TripPreviewController,
@@ -15,7 +16,7 @@ import { TripPlanService } from './trip-plan.service.js';
 import { TripSafetyService } from './trip-safety.service.js';
 
 @Module({
-  imports: [LevelsModule, AuthModule],
+  imports: [LevelsModule, AuthModule, LeaguesModule],
   controllers: [
     TripPreviewController,
     EmergencyContactController,

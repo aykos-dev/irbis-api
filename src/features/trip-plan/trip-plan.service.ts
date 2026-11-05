@@ -4,6 +4,7 @@ import { PhoneCipher } from '../auth/phone-cipher.js';
 import { maskPhone } from '../auth/phone.rules.js';
 import { tashkentDate } from '../conditions/weekend-window.js';
 import { GameConfigService } from '../levels/game-config.service.js';
+import { LeaguesService } from '../leagues/leagues.service.js';
 import { PlaceNotFoundError } from '../places/places.errors.js';
 import type {
   CheckOutTripDto,
@@ -70,6 +71,7 @@ export class TripPlanService {
     private readonly repository: TripPlanRepository,
     private readonly gameConfig: GameConfigService,
     private readonly phoneCipher: PhoneCipher,
+    private readonly leagues?: LeaguesService,
   ) {}
 
   /** AC3 + AC5: sunset, daylight buffer and the gear list for a planned window at a place. */
@@ -283,7 +285,7 @@ export class TripPlanService {
     if (trip.status !== 'active' && trip.status !== 'alerted') {
       throw new TripNotEditableError();
     }
-    return this.apply(
+    const checkedOut = await this.apply(
       id,
       { statuses: ['active', 'alerted'] },
       {
@@ -294,6 +296,13 @@ export class TripPlanService {
       },
       now,
     );
+    if (!this.leagues) return checkedOut;
+    const league = await this.leagues.recordCheckout(userId, id, now);
+    return {
+      ...checkedOut,
+      leagueElevationM: league.awardedM,
+      leagueSeasonElevationM: league.seasonalM,
+    };
   }
 
   /** AC7: only a planned trip can be deleted. */

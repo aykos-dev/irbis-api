@@ -26,6 +26,7 @@ import { ConditionsModule } from './features/conditions/conditions.module.js';
 import { LessonsAdminModule } from './features/lessons-admin/lessons-admin.module.js';
 import { LessonsModule } from './features/lessons/lessons.module.js';
 import { LevelsModule } from './features/levels/levels.module.js';
+import { LeaguesModule } from './features/leagues/leagues.module.js';
 import { StreaksModule } from './features/streaks/streaks.module.js';
 import { PlacesModule } from './features/places/places.module.js';
 import { ProfileModule } from './features/profile/profile.module.js';
@@ -76,6 +77,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     PlacesModule,
     ConditionsModule,
     LevelsModule,
+    LeaguesModule,
     LessonsAdminModule,
     LessonsModule,
     ProfileModule,

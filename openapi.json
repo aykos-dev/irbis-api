@@ -3164,6 +3164,151 @@
         ]
       }
     },
+    "/v1/leagues/current": {
+      "get": {
+        "operationId": "Leagues_current",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentLeagueDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Current seasonal league, division and pending result",
+        "tags": [
+          "Leagues"
+        ]
+      }
+    },
+    "/v1/me/league-result/seen": {
+      "post": {
+        "operationId": "Me_seenLeagueResult",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeagueResultSeenDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark the latest seasonal league result seen",
+        "tags": [
+          "Leagues"
+        ]
+      }
+    },
+    "/v1/users/{username}/league": {
+      "get": {
+        "operationId": "Users_getLeague",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicLeagueDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A public profile's latest league result",
+        "tags": [
+          "Leagues"
+        ]
+      }
+    },
     "/v1/admin/lesson-tiers": {
       "get": {
         "operationId": "Admin_listLessonTiers",
@@ -10305,6 +10450,330 @@
           "expiresAt"
         ]
       },
+      "CurrentLeagueSeasonStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "settling"
+        ]
+      },
+      "LeagueSeasonDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "2026-autumn"
+          },
+          "name": {
+            "type": "string",
+            "example": "Autumn 2026"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "settlesAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CurrentLeagueSeasonStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "startsAt",
+          "endsAt",
+          "settlesAt",
+          "status"
+        ]
+      },
+      "LeagueTier": {
+        "type": "string",
+        "enum": [
+          "scout",
+          "tracker",
+          "ranger",
+          "vanguard",
+          "legend"
+        ]
+      },
+      "LeagueStandingDto": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "elevationM": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isMe": {
+            "type": "boolean"
+          },
+          "isPrivate": {
+            "type": "boolean"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          }
+        },
+        "required": [
+          "memberId",
+          "rank",
+          "elevationM",
+          "isMe",
+          "isPrivate",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level"
+        ]
+      },
+      "LeagueMovementDto": {
+        "type": "object",
+        "properties": {
+          "promote": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "demote": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "champion": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "promote",
+          "demote",
+          "champion"
+        ]
+      },
+      "LeagueOutcome": {
+        "type": "string",
+        "enum": [
+          "champion",
+          "promoted",
+          "stayed",
+          "demoted"
+        ]
+      },
+      "LeagueMedal": {
+        "type": "string",
+        "enum": [
+          "gold",
+          "silver",
+          "bronze"
+        ]
+      },
+      "LeagueResultDto": {
+        "type": "object",
+        "properties": {
+          "fromTier": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeagueTier"
+              }
+            ]
+          },
+          "toTier": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeagueTier"
+              }
+            ]
+          },
+          "outcome": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeagueOutcome"
+              }
+            ]
+          },
+          "medal": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeagueMedal"
+              }
+            ]
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "elevationM": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "seasonName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fromTier",
+          "toTier",
+          "outcome",
+          "medal",
+          "rank",
+          "elevationM",
+          "seasonName"
+        ]
+      },
+      "CurrentLeagueDto": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "$ref": "#/components/schemas/LeagueSeasonDto"
+          },
+          "ranked": {
+            "type": "boolean"
+          },
+          "tier": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeagueTier"
+              }
+            ]
+          },
+          "division": {
+            "type": "integer",
+            "nullable": true
+          },
+          "rank": {
+            "type": "integer",
+            "nullable": true
+          },
+          "elevationM": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "standings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeagueStandingDto"
+            }
+          },
+          "movement": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeagueMovementDto"
+              }
+            ]
+          },
+          "pendingResult": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeagueResultDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "season",
+          "ranked",
+          "tier",
+          "division",
+          "rank",
+          "elevationM",
+          "standings",
+          "movement",
+          "pendingResult"
+        ]
+      },
+      "LeagueResultSeenDto": {
+        "type": "object",
+        "properties": {
+          "seen": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "seen"
+        ]
+      },
+      "PublicLeagueDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "ranked": {
+            "type": "boolean"
+          },
+          "tier": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeagueTier"
+              }
+            ]
+          },
+          "rank": {
+            "type": "integer",
+            "nullable": true
+          },
+          "medal": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeagueMedal"
+              }
+            ]
+          },
+          "elevationM": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "seasonName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "username",
+          "ranked",
+          "tier",
+          "rank",
+          "medal",
+          "elevationM",
+          "seasonName"
+        ]
+      },
       "L10nDto": {
         "type": "object",
         "properties": {
@@ -12926,6 +13395,16 @@
             "items": {
               "$ref": "#/components/schemas/TripWaypointDto"
             }
+          },
+          "leagueElevationM": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "League elevation awarded by this checkout; present on the checkout response."
+          },
+          "leagueSeasonElevationM": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The member season total after this checkout; present on the checkout response."
           },
           "pingEveryMin": {
             "type": "integer",

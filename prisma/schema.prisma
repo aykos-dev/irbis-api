@@ -115,6 +115,41 @@ enum NotificationCategory {
   @@map("notification_category")
 }
 
+enum LeagueTier {
+  scout
+  tracker
+  ranger
+  vanguard
+  legend
+
+  @@map("league_tier")
+}
+
+enum LeagueSeasonStatus {
+  active
+  settling
+  closed
+
+  @@map("league_season_status")
+}
+
+enum LeagueOutcome {
+  champion
+  promoted
+  stayed
+  demoted
+
+  @@map("league_outcome")
+}
+
+enum LeagueMedal {
+  gold
+  silver
+  bronze
+
+  @@map("league_medal")
+}
+
 enum GroupVisibility {
   public
   private
@@ -196,33 +231,35 @@ model User {
   findBuddies     Boolean     @default(true) @map("find_buddies")
   deletedAt       DateTime?   @map("deleted_at") @db.Timestamptz(3)
 
-  refreshTokens     RefreshToken[]
-  smsCodes          SmsCode[]
-  auditAsAdmin      AdminAuditLog[]        @relation("AuditAdmin")
-  auditAsTarget     AdminAuditLog[]        @relation("AuditTarget")
-  closuresCreated   Closure[]              @relation("ClosureCreatedBy")
-  closuresEnded     Closure[]              @relation("ClosureEndedBy")
-  overridesCreated  ConditionOverride[]    @relation("OverrideCreatedBy")
-  overridesEnded    ConditionOverride[]    @relation("OverrideEndedBy")
-  xpEntries         XpEntry[]
-  levelFacts        LevelFact[]
-  levelUps          LevelUp[]
-  lessonCompletions LessonCompletion[]
-  notifications     Notification[]
-  pathMonths        PathMonth[]
-  checkIns          CheckIn[]
-  activityDays      ActivityDay[]
-  streakState       StreakState?
-  streakFreezes     StreakFreeze[]
-  emergencyContact  EmergencyContact?
-  badgeAwards       BadgeAward[]
-  trips             Trip[]
-  groupsCreated     Group[]                @relation("GroupCreator")
-  groupMemberships  GroupMember[]          @relation("GroupMemberUser")
-  groupInvitesSent  GroupMember[]          @relation("GroupMemberInviter")
-  groupMessages     GroupMessage[]
-  groupReactions    GroupMessageReaction[]
-  groupMentions     GroupMessageMention[]
+  refreshTokens       RefreshToken[]
+  smsCodes            SmsCode[]
+  auditAsAdmin        AdminAuditLog[]        @relation("AuditAdmin")
+  auditAsTarget       AdminAuditLog[]        @relation("AuditTarget")
+  closuresCreated     Closure[]              @relation("ClosureCreatedBy")
+  closuresEnded       Closure[]              @relation("ClosureEndedBy")
+  overridesCreated    ConditionOverride[]    @relation("OverrideCreatedBy")
+  overridesEnded      ConditionOverride[]    @relation("OverrideEndedBy")
+  xpEntries           XpEntry[]
+  levelFacts          LevelFact[]
+  levelUps            LevelUp[]
+  lessonCompletions   LessonCompletion[]
+  notifications       Notification[]
+  pathMonths          PathMonth[]
+  checkIns            CheckIn[]
+  activityDays        ActivityDay[]
+  streakState         StreakState?
+  streakFreezes       StreakFreeze[]
+  emergencyContact    EmergencyContact?
+  badgeAwards         BadgeAward[]
+  trips               Trip[]
+  groupsCreated       Group[]                @relation("GroupCreator")
+  groupMemberships    GroupMember[]          @relation("GroupMemberUser")
+  groupInvitesSent    GroupMember[]          @relation("GroupMemberInviter")
+  groupMessages       GroupMessage[]
+  groupReactions      GroupMessageReaction[]
+  groupMentions       GroupMessageMention[]
+  leagueMemberships   LeagueMember[]
+  leagueContributions LeagueContribution[]
 
   @@index([createdAt, id])
   @@index([lastActiveAt, id])
@@ -598,6 +635,91 @@ model GameConfig {
   @@map("game_config")
 }
 
+// --- seasonal leagues -------------------------------------------------------
+
+model LeagueSeason {
+  id          String             @id @default(uuid(7)) @db.Uuid
+  key         String             @unique @db.VarChar(20)
+  name        String             @db.VarChar(40)
+  startsAt    DateTime           @map("starts_at") @db.Timestamptz(3)
+  endsAt      DateTime           @map("ends_at") @db.Timestamptz(3)
+  settlesAt   DateTime           @map("settles_at") @db.Timestamptz(3)
+  status      LeagueSeasonStatus @default(active)
+  finalizedAt DateTime?          @map("finalized_at") @db.Timestamptz(3)
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  divisions     LeagueDivision[]
+  members       LeagueMember[]
+  contributions LeagueContribution[]
+
+  @@index([status, settlesAt])
+  @@index([startsAt, endsAt])
+  @@map("league_seasons")
+}
+
+model LeagueDivision {
+  id        String     @id @default(uuid(7)) @db.Uuid
+  seasonId  String     @map("season_id") @db.Uuid
+  tier      LeagueTier
+  number    Int
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  season  LeagueSeason   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  members LeagueMember[]
+
+  @@unique([seasonId, tier, number])
+  @@index([seasonId, tier])
+  @@map("league_divisions")
+}
+
+model LeagueMember {
+  id              String         @id @default(uuid(7)) @db.Uuid
+  seasonId        String         @map("season_id") @db.Uuid
+  divisionId      String         @map("division_id") @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  tier            LeagueTier
+  elevationM      Int            @default(0) @map("elevation_m")
+  qualifyingTrips Int            @default(0) @map("qualifying_trips")
+  finalRank       Int?           @map("final_rank")
+  outcome         LeagueOutcome?
+  medal           LeagueMedal?
+  resultSeenAt    DateTime?      @map("result_seen_at") @db.Timestamptz(3)
+  enrolledAt      DateTime       @default(now()) @map("enrolled_at") @db.Timestamptz(3)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  season        LeagueSeason         @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  division      LeagueDivision       @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contributions LeagueContribution[]
+
+  @@unique([seasonId, userId])
+  @@index([divisionId, elevationM, enrolledAt])
+  @@index([userId, createdAt])
+  @@map("league_members")
+}
+
+model LeagueContribution {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  tripId     String   @unique @map("trip_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  seasonId   String   @map("season_id") @db.Uuid
+  memberId   String   @map("member_id") @db.Uuid
+  elevationM Int      @map("elevation_m")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  trip   Trip         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  season LeagueSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  member LeagueMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([userId, seasonId])
+  @@index([seasonId, createdAt])
+  @@map("league_contributions")
+}
+
 enum XpSource {
   lesson
   check_in
@@ -860,10 +982,11 @@ model Trip {
   createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  place     Place          @relation(fields: [placeId], references: [id], onDelete: Cascade)
-  waypoints TripWaypoint[]
-  sos       TripSos[]
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place              Place               @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  waypoints          TripWaypoint[]
+  sos                TripSos[]
+  leagueContribution LeagueContribution?
 
   @@index([userId, startAt])
   @@index([status, backBy])
