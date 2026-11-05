@@ -7053,6 +7053,504 @@
         ]
       }
     },
+    "/v1/group-trips": {
+      "post": {
+        "operationId": "GroupTrips_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupTripDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: SECURED_ACCOUNT_REQUIRED | TRIP_LEADER_REQUIRED | GROUP_LINK_FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: GROUP_TRIP_INVALID | EMERGENCY_CONTACT_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a group trip as a group owner or admin",
+        "tags": [
+          "Group trips"
+        ]
+      },
+      "get": {
+        "operationId": "GroupTrips_list",
+        "parameters": [
+          {
+            "name": "placeId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/GroupTripScope"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripsPageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Upcoming group trips you can see, or your own (scope=mine)",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}": {
+      "get": {
+        "operationId": "GroupTrips_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A group trip with participants (and requests for its leader)",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/requests": {
+      "post": {
+        "operationId": "GroupTrips_request",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinGroupTripDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: SECURED_ACCOUNT_REQUIRED | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: GROUP_TRIP_CLOSED | GROUP_TRIP_FULL | ALREADY_REQUESTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: EMERGENCY_CONTACT_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask to join a group trip",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/requests/{userId}/approve": {
+      "post": {
+        "operationId": "GroupTrips_approveRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: TRIP_LEADER_REQUIRED | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND | GROUP_TRIP_REQUEST_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: GROUP_TRIP_CLOSED | GROUP_TRIP_FULL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: EMERGENCY_CONTACT_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve a join request as the trip leader",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/requests/{userId}/reject": {
+      "post": {
+        "operationId": "GroupTrips_rejectRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: TRIP_LEADER_REQUIRED | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND | GROUP_TRIP_REQUEST_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a join request as the trip leader",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
     "/v1/check-ins": {
       "post": {
         "description": "Rules in order: recordedAt (future → 400, older than 72 h → 422), place, accuracy, radius of the place type. A repeat at the same place in the same Asia/Tashkent month is stored with counted=false and 0 XP.",
@@ -13241,6 +13739,563 @@
           "backBy",
           "status"
         ]
+      },
+      "GroupTripVisibility": {
+        "type": "string",
+        "enum": [
+          "public",
+          "private"
+        ]
+      },
+      "CreateGroupTripDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupIds": {
+            "maxItems": 10,
+            "description": "Groups where you are an active owner or admin.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "visibility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripVisibility"
+              }
+            ]
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Future, at most 60 Asia/Tashkent days ahead."
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time",
+            "description": "After startAt, within trip maxDurationH."
+          },
+          "meetingText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "meetingLat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "With meetingLng."
+          },
+          "meetingLng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "With meetingLat."
+          },
+          "carpoolFrom": {
+            "type": "string",
+            "example": "06:30",
+            "description": "HH:MM, with carpoolSeats."
+          },
+          "carpoolSeats": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "maxPeople": {
+            "type": "number",
+            "minimum": 2,
+            "maximum": 50,
+            "description": "Includes the leader."
+          },
+          "minLevel": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "gearKeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GearKey"
+            }
+          },
+          "customGear": {
+            "maxItems": 8,
+            "description": "Each 1–30 characters; duplicates are dropped.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "placeId",
+          "groupIds",
+          "visibility",
+          "startAt",
+          "backBy",
+          "meetingText"
+        ]
+      },
+      "GroupTripPlaceNamesDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "description": "Falls back to uz."
+          },
+          "en": {
+            "type": "string",
+            "description": "Falls back to uz."
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "GroupTripPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "names": {
+            "$ref": "#/components/schemas/GroupTripPlaceNamesDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "difficulty": {
+            "type": "integer"
+          },
+          "requiredLevel": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "names",
+          "type",
+          "difficulty",
+          "requiredLevel"
+        ]
+      },
+      "GroupTripStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "cancelled"
+        ]
+      },
+      "GroupTripMeetingDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number",
+            "nullable": true
+          },
+          "lng": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "text",
+          "lat",
+          "lng"
+        ]
+      },
+      "GroupTripCarpoolDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "example": "06:30"
+          },
+          "seats": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from",
+          "seats"
+        ]
+      },
+      "GroupTripGearDto": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GearKey"
+            }
+          },
+          "custom": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "keys",
+          "custom"
+        ]
+      },
+      "GroupTripLeaderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer"
+          },
+          "verifiedLeader": {
+            "type": "boolean",
+            "description": "Level 5 or higher."
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "displayName",
+          "level",
+          "verifiedLeader"
+        ]
+      },
+      "GroupTripGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "GroupTripRole": {
+        "type": "string",
+        "enum": [
+          "leader",
+          "member"
+        ]
+      },
+      "GroupTripMemberStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected",
+          "left"
+        ]
+      },
+      "GroupTripMeDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripRole"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripMemberStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "role",
+          "status"
+        ]
+      },
+      "GroupTripParticipantDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "displayName",
+          "level"
+        ]
+      },
+      "GroupTripRequestDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "level",
+          "note",
+          "createdAt"
+        ]
+      },
+      "GroupTripDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "place": {
+            "$ref": "#/components/schemas/GroupTripPlaceDto"
+          },
+          "visibility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripVisibility"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripStatus"
+              }
+            ]
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "meeting": {
+            "$ref": "#/components/schemas/GroupTripMeetingDto"
+          },
+          "carpool": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripCarpoolDto"
+              }
+            ]
+          },
+          "maxPeople": {
+            "type": "integer",
+            "nullable": true
+          },
+          "minLevel": {
+            "type": "integer",
+            "nullable": true
+          },
+          "gear": {
+            "$ref": "#/components/schemas/GroupTripGearDto"
+          },
+          "description": {
+            "type": "string"
+          },
+          "leader": {
+            "$ref": "#/components/schemas/GroupTripLeaderDto"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTripGroupDto"
+            }
+          },
+          "approvedCount": {
+            "type": "integer",
+            "description": "Approved people, leader included."
+          },
+          "spotsLeft": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Null when there is no cap."
+          },
+          "me": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripMeDto"
+              }
+            ]
+          },
+          "participants": {
+            "description": "Approved people.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTripParticipantDto"
+            }
+          },
+          "requests": {
+            "description": "Pending requests; leader only, else empty.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTripRequestDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "place",
+          "visibility",
+          "status",
+          "startAt",
+          "backBy",
+          "meeting",
+          "carpool",
+          "maxPeople",
+          "minLevel",
+          "gear",
+          "description",
+          "leader",
+          "groups",
+          "approvedCount",
+          "spotsLeft",
+          "me",
+          "participants",
+          "requests"
+        ]
+      },
+      "GroupTripScope": {
+        "type": "string",
+        "enum": [
+          "upcoming",
+          "mine"
+        ]
+      },
+      "GroupTripsPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTripDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "GroupTripContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 30,
+            "example": "sister"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+998\\d{9}$",
+            "example": "+998XXXXXXXXX"
+          }
+        },
+        "required": [
+          "name",
+          "relation",
+          "phone"
+        ]
+      },
+      "JoinGroupTripDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "contact": {
+            "description": "Saved as your emergency contact when you have none yet.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripContactDto"
+              }
+            ]
+          }
+        }
       },
       "CreateCheckInDto": {
         "type": "object",

@@ -30,6 +30,7 @@ import { StreaksModule } from './features/streaks/streaks.module.js';
 import { PlacesModule } from './features/places/places.module.js';
 import { ProfileModule } from './features/profile/profile.module.js';
 import { SearchModule } from './features/search/search.module.js';
+import { TripEventsModule } from './features/trip-events/trip-events.module.js';
 import { TripPlanModule } from './features/trip-plan/trip-plan.module.js';
 import { WeeklyPathModule } from './features/weekly-path/weekly-path.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -82,6 +83,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     SearchModule,
     WeeklyPathModule,
     TripPlanModule,
+    TripEventsModule,
     CheckInModule,
     GroupsModule,
     GroupChatModule,
