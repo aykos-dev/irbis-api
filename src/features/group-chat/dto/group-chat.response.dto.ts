@@ -31,7 +31,15 @@ export class GroupReplyPreviewDto {
 }
 
 export class GroupTripCardDto {
-  @ApiProperty() title: string;
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'Set for live group-trip cards; null for seeded cards.',
+  })
+  groupTripId: string | null;
+  @ApiProperty({ description: 'Place name in the viewer locale.' })
+  title: string;
   @ApiProperty() startsAt: string;
   @ApiProperty() meetingTime: string;
   @ApiProperty({ type: 'integer' }) difficulty: number;

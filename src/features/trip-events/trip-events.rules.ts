@@ -176,3 +176,53 @@ export function isFull(
 ): boolean {
   return maxPeople !== null && approvedCount >= maxPeople;
 }
+
+/** What PATCH /v1/group-trips/:id may carry: `undefined` keeps a field, `null` clears an optional one. */
+export type GroupTripPatch = {
+  [K in keyof GroupTripInput]?: GroupTripInput[K] | null;
+};
+
+const pick = <T>(
+  patch: T | null | undefined,
+  current: T | null,
+): T | undefined =>
+  patch === undefined ? (current ?? undefined) : (patch ?? undefined);
+
+/** AC5: the stored trip with the patch applied, ready for validateGroupTrip. */
+export function mergeGroupTripPatch(
+  current: GroupTripFields,
+  patch: GroupTripPatch,
+): GroupTripInput {
+  return {
+    visibility: patch.visibility ?? current.visibility,
+    startAt: patch.startAt ?? current.startAt.toISOString(),
+    backBy: patch.backBy ?? current.backBy.toISOString(),
+    meetingText: patch.meetingText ?? current.meetingText,
+    meetingLat: pick(patch.meetingLat, current.meetingLat),
+    meetingLng: pick(patch.meetingLng, current.meetingLng),
+    carpoolFrom: pick(patch.carpoolFrom, current.carpoolFrom),
+    carpoolSeats: pick(patch.carpoolSeats, current.carpoolSeats),
+    maxPeople: pick(patch.maxPeople, current.maxPeople),
+    minLevel: pick(patch.minLevel, current.minLevel),
+    gearKeys: patch.gearKeys ?? current.gearKeys,
+    customGear: patch.customGear ?? current.customGear,
+    description: patch.description ?? current.description,
+  };
+}
+
+/** AC5: edits stop at 00:00 Asia/Tashkent on the trip's start day. */
+export function isEditLocked(startAt: Date, now: Date): boolean {
+  return now.getTime() >= startOfTashkentDay(startAt).getTime();
+}
+
+/** AC7: the Asia/Tashkent day [start, end) that contains `at`. */
+export function tashkentDayRange(at: Date): { from: Date; to: Date } {
+  const from = startOfTashkentDay(at);
+  return { from, to: new Date(from.getTime() + DAY_MS) };
+}
+
+/** HH:MM in Asia/Tashkent (UTC+5, no DST). */
+export function tashkentTime(at: Date): string {
+  const local = new Date(at.getTime() + 5 * HOUR_MS);
+  return local.toISOString().slice(11, 16);
+}

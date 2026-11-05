@@ -1,10 +1,11 @@
-/** The Search screen's five tabs. Groups and tours ship empty until their features land. */
+/** The Search screen's tabs. Tours ship empty until their feature lands. */
 export const SEARCH_SCOPES = [
   'all',
   'places',
   'people',
   'groups',
   'tours',
+  'trips',
 ] as const;
 
 export type SearchScope = (typeof SEARCH_SCOPES)[number];

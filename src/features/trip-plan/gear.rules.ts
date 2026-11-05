@@ -57,3 +57,28 @@ export function gearList(input: GearInput): GearItem[] {
   }
   return items;
 }
+
+/** A gear list entry: a rule item, or a group trip's custom item (`custom-<n>`). */
+export type PlanGearItem =
+  GearItem | { key: `custom-${number}`; label: string; custom: true };
+
+/**
+ * trip-events AC6: the rule list ∪ the group trip's gear keys (deduped by key, rule items
+ * first), then its custom items in order.
+ */
+export function withGroupGear(
+  items: GearItem[],
+  group: { gearKeys: string[]; customGear: string[] },
+): PlanGearItem[] {
+  const seen = new Set<string>(items.map((item) => item.key));
+  const merged: PlanGearItem[] = [...items];
+  for (const key of group.gearKeys) {
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push({ key: key as GearKey });
+  }
+  group.customGear.forEach((label, i) => {
+    merged.push({ key: `custom-${i + 1}`, label, custom: true });
+  });
+  return merged;
+}

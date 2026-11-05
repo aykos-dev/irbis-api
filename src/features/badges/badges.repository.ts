@@ -133,8 +133,8 @@ export class BadgesRepository {
         select: { day: true },
         orderBy: { day: 'asc' },
       }),
-      // Producers for these arrive with groups, ratings, Top Shots and add-a-spot.
-      Promise.resolve(0),
+      this.prisma.groupTripMember.count({ where: { userId, attendedAt: since } }),
+      // Producers for these arrive with ratings, Top Shots and add-a-spot.
       Promise.resolve(0),
       Promise.resolve(0),
       this.prisma.levelFact.count({

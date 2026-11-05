@@ -78,3 +78,27 @@ export class AlreadyRequestedError extends ConflictError {
     super('You already asked to join this trip');
   }
 }
+
+/** 409: the trip's Asia/Tashkent start day has begun; it can no longer be edited. */
+export class GroupTripLockedError extends ConflictError {
+  override readonly code = 'GROUP_TRIP_LOCKED';
+  constructor() {
+    super('This trip can no longer be edited');
+  }
+}
+
+/** 409: the leader cancels the trip instead of leaving it. */
+export class LeaderCannotLeaveError extends ConflictError {
+  override readonly code = 'LEADER_CANNOT_LEAVE';
+  constructor() {
+    super('The leader cannot leave; cancel the trip instead');
+  }
+}
+
+/** 404: the caller has no pending or approved row on the trip. */
+export class NotOnGroupTripError extends NotFoundError {
+  override readonly code = 'NOT_ON_GROUP_TRIP';
+  constructor() {
+    super('You are not on this trip');
+  }
+}

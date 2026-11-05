@@ -17,7 +17,8 @@ import type {
   TripDto,
   TripPreviewDto,
 } from './dto/trip-plan.response.dto.js';
-import { gearList } from './gear.rules.js';
+import { GroupTripNotFoundError } from '../trip-events/trip-events.errors.js';
+import { gearList, withGroupGear } from './gear.rules.js';
 import { newLiveToken } from './live-token.js';
 import { sunsetAt } from './sunset.js';
 import { PLANNED_TRIP_LOOKBACK_MS } from './trip-plan.constants.js';
@@ -78,28 +79,34 @@ export class TripPlanService {
     startAt: Date,
     backBy: Date,
     now = new Date(),
+    groupTripId?: string,
   ): Promise<TripPreviewDto> {
     const place = await this.repository.findPreviewPlace(placeId);
     if (!place) throw new PlaceNotFoundError();
+    const group = groupTripId
+      ? await this.repository.findGroupTripGear(groupTripId, placeId)
+      : null;
+    if (groupTripId && !group) throw new GroupTripNotFoundError();
     const config = await this.gameConfig.tripConfig(now.getTime());
     assertTripTimes(startAt, backBy, now, config);
 
     const startDate = tashkentDate(startAt);
     const sameDay = tashkentDate(backBy) === startDate;
     const sunset = sunsetAt(place.latitude, place.longitude, startDate);
+    const gear = gearList({
+      placeType: place.type,
+      hours: (backBy.getTime() - startAt.getTime()) / HOUR_MS,
+      forecast: forecastFor(place.daily, startDate),
+      sunsetAt: sunset,
+      backBy,
+      gear: config.gear,
+    });
     return {
       sunsetAt: sunset,
       daylightBufferMin: sameDay
         ? Math.round((sunset.getTime() - backBy.getTime()) / MINUTE_MS)
         : null,
-      gear: gearList({
-        placeType: place.type,
-        hours: (backBy.getTime() - startAt.getTime()) / HOUR_MS,
-        forecast: forecastFor(place.daily, startDate),
-        sunsetAt: sunset,
-        backBy,
-        gear: config.gear,
-      }),
+      gear: group ? withGroupGear(gear, group) : gear,
     };
   }
 
@@ -349,6 +356,10 @@ export class TripPlanService {
       distanceM: trip.distanceM,
       climbM: trip.climbM,
       waypoints: trip.waypoints,
+      groupTripId: trip.groupTrip?.id ?? null,
+      groupGear: trip.groupTrip
+        ? { keys: trip.groupTrip.gearKeys, custom: trip.groupTrip.customGear }
+        : null,
     };
   }
 }

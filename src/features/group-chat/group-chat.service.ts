@@ -16,6 +16,11 @@ import type {
   GroupTripCardDto,
 } from './dto/group-chat.response.dto.js';
 import { GROUP_MESSAGE_PAGE_DEFAULT } from './group-chat.constants.js';
+
+type Locale = 'uz' | 'ru' | 'en';
+const HOUR_MS = 3_600_000;
+/** Asia/Tashkent is UTC+5 all year. */
+const TASHKENT_OFFSET_MS = 5 * HOUR_MS;
 import {
   GroupAttachmentInvalidError,
   GroupMessageDeleteForbiddenError,
@@ -51,14 +56,17 @@ export class GroupChatService {
     await this.activeMembership(groupId, userId);
     const cursor = this.cursor(query.cursor);
     const limit = query.limit ?? GROUP_MESSAGE_PAGE_DEFAULT;
-    const [rows, readers] = await Promise.all([
+    const [rows, readers, locale] = await Promise.all([
       this.repository.list(groupId, cursor, limit + 1),
       this.repository.readers(groupId),
+      this.repository.locale(userId),
     ]);
     const page = rows.slice(0, limit);
     const last = page[page.length - 1];
     return {
-      items: page.reverse().map((row) => this.message(row, userId, readers)),
+      items: page
+        .reverse()
+        .map((row) => this.message(row, userId, readers, locale)),
       nextCursor:
         rows.length > limit && last
           ? encodeCursor({
@@ -102,6 +110,29 @@ export class GroupChatService {
     ]);
     this.events.emit({ type: 'message.created', groupId, message });
     return message;
+  }
+
+  /**
+   * trip-events AC8: emits `message.created` for freshly inserted live trip cards, the card
+   * title in `viewerId`'s locale.
+   */
+  async announceTripCards(
+    messageIds: string[],
+    viewerId: string,
+  ): Promise<void> {
+    if (!messageIds.length) return;
+    const locale = await this.repository.locale(viewerId);
+    for (const id of messageIds) {
+      const row = await this.repository.find(id);
+      if (!row) continue;
+      const readers = await this.repository.readers(row.groupId);
+      const message = this.message(row, viewerId, readers, locale);
+      this.events.emit({
+        type: 'message.created',
+        groupId: row.groupId,
+        message,
+      });
+    }
   }
 
   async edit(
@@ -232,6 +263,7 @@ export class GroupChatService {
     row: GroupMessageRow,
     viewerId: string,
     readers: { userId: string; lastReadAt: Date | null }[],
+    locale: Locale = 'uz',
   ): GroupMessageDto {
     const reactions = new Map<string, { count: number; mine: boolean }>();
     for (const reaction of row.reactions) {
@@ -283,10 +315,40 @@ export class GroupChatService {
           reader.lastReadAt !== null &&
           reader.lastReadAt >= row.createdAt,
       ).length,
-      trip: this.trip(row.tripData),
+      trip: row.groupTrip
+        ? this.liveTrip(row.groupTrip, locale)
+        : this.trip(row.tripData),
       editedAt: row.editedAt?.toISOString() ?? null,
       deletedAt: row.deletedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
+    };
+  }
+
+  /** A card built from the group trip as it is now. */
+  private liveTrip(
+    trip: NonNullable<GroupMessageRow['groupTrip']>,
+    locale: Locale,
+  ): GroupTripCardDto {
+    const { place } = trip;
+    const title =
+      locale === 'ru'
+        ? (place.nameRu ?? place.nameUz)
+        : locale === 'en'
+          ? (place.nameEn ?? place.nameUz)
+          : place.nameUz;
+    return {
+      groupTripId: trip.id,
+      title,
+      startsAt: trip.startAt.toISOString(),
+      meetingTime: new Date(trip.startAt.getTime() + TASHKENT_OFFSET_MS)
+        .toISOString()
+        .slice(11, 16),
+      difficulty: place.difficulty,
+      requiredLevel: trip.minLevel ?? place.requiredLevel,
+      capacity: trip.maxPeople ?? 0,
+      joined: trip._count.members,
+      condition: place.condition?.status ?? 'unknown',
+      imageUrl: null,
     };
   }
 
@@ -306,6 +368,7 @@ export class GroupChatService {
     )
       return null;
     return {
+      groupTripId: null,
       title: v.title,
       startsAt: v.startsAt,
       meetingTime: v.meetingTime,

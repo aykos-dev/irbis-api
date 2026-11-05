@@ -15,7 +15,18 @@ import {
 } from '../trip-plan.constants.js';
 
 export class GearItemDto {
-  @ApiProperty({ enum: GEAR_KEYS, enumName: 'GearKey' }) key: GearKey;
+  @ApiProperty({
+    type: String,
+    example: 'water',
+    description: `A GearKey (${GEAR_KEYS.join(', ')}), or custom-<n> for a group trip's custom item.`,
+  })
+  key: GearKey | `custom-${number}`;
+
+  @ApiPropertyOptional({ description: 'Custom items only: the text to show.' })
+  label?: string;
+
+  @ApiPropertyOptional({ description: 'True for a group trip custom item.' })
+  custom?: boolean;
 
   @ApiPropertyOptional({ description: 'Water only, litres in 0.5 steps.' })
   litres?: number;
@@ -75,6 +86,12 @@ export class TripWaypointDto {
   @ApiProperty({ type: String, format: 'date-time' }) recordedAt: Date;
 }
 
+export class TripGroupGearDto {
+  @ApiProperty({ enum: GEAR_KEYS, enumName: 'GearKey', isArray: true })
+  keys: string[];
+  @ApiProperty({ type: [String] }) custom: string[];
+}
+
 export class TripDto {
   @ApiProperty({ format: 'uuid' }) id: string;
   @ApiProperty({ type: TripPlaceDto }) place: TripPlaceDto;
@@ -108,6 +125,19 @@ export class TripDto {
   @ApiProperty({ type: 'integer' }) distanceM: number;
   @ApiProperty({ type: 'integer' }) climbM: number;
   @ApiProperty({ type: [TripWaypointDto] }) waypoints: TripWaypointDto[];
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'The group trip this plan belongs to.',
+  })
+  groupTripId: string | null;
+  @ApiProperty({
+    type: TripGroupGearDto,
+    nullable: true,
+    description: "The group trip's gear; null for a personal plan.",
+  })
+  groupGear: TripGroupGearDto | null;
   @ApiProperty({
     type: 'integer',
     description:

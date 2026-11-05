@@ -39,3 +39,6 @@ export const GROUP_TRIP_PAGE_SIZE = 20;
 export const VERIFIED_LEADER_LEVEL = 5;
 /** HH:MM, 00:00–23:59. */
 export const CARPOOL_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export const ADMIN_GROUP_TRIP_PAGE_SIZE = 50;
+export const ADMIN_NOTE_MAX = 500;

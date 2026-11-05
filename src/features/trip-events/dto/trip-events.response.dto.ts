@@ -136,3 +136,29 @@ export class GroupTripsPageDto {
   @ApiProperty({ type: [GroupTripDto] }) items: GroupTripDto[];
   @ApiProperty({ type: String, nullable: true }) nextCursor: string | null;
 }
+
+/** AC8 search hit. */
+export class SearchGroupTripDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty({ description: 'English name, else Russian, else Uzbek.' })
+  placeName: string;
+  @ApiProperty({ format: 'date-time' }) startAt: string;
+  @ApiProperty({ type: 'integer' }) approvedCount: number;
+  @ApiProperty({ type: 'integer', nullable: true }) maxPeople: number | null;
+}
+
+export class AdminGroupTripDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty() placeName: string;
+  @ApiProperty() leaderUsername: string;
+  @ApiProperty({ format: 'date-time' }) startAt: string;
+  @ApiProperty({ enum: GROUP_TRIP_STATUSES, enumName: 'GroupTripStatus' })
+  status: GroupTripStatusCode;
+  @ApiProperty({ type: 'integer' }) approvedCount: number;
+  @ApiProperty({ type: 'integer', nullable: true }) maxPeople: number | null;
+}
+
+export class AdminGroupTripsPageDto {
+  @ApiProperty({ type: [AdminGroupTripDto] }) items: AdminGroupTripDto[];
+  @ApiProperty({ type: String, nullable: true }) nextCursor: string | null;
+}

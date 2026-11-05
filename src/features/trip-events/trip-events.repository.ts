@@ -10,7 +10,9 @@ import type {
   GroupTripVisibilityCode,
 } from './trip-events.constants.js';
 import {
+  GroupTripClosedError,
   GroupTripFullError,
+  GroupTripInvalidError,
   GroupTripRequestNotFoundError,
 } from './trip-events.errors.js';
 import type { GroupTripFields } from './trip-events.rules.js';
@@ -85,6 +87,27 @@ export interface ListFilter {
   now: Date;
   cursor?: { startAt: Date; id: string };
   take: number;
+}
+
+const searchSelect = {
+  id: true,
+  startAt: true,
+  maxPeople: true,
+  place: { select: { nameUz: true, nameRu: true, nameEn: true } },
+  _count: { select: { members: { where: { status: 'approved' } } } },
+} satisfies Prisma.GroupTripSelect;
+
+export interface SearchTripRow {
+  id: string;
+  startAt: Date;
+  maxPeople: number | null;
+  place: { nameUz: string; nameRu: string | null; nameEn: string | null };
+  _count: { members: number };
+}
+
+export interface AdminTripRow extends SearchTripRow {
+  status: GroupTripStatusCode;
+  creator: { username: string };
 }
 
 const userSelect = {
@@ -165,7 +188,8 @@ export class TripEventsRepository {
 
   /**
    * AC1: the group trip, its group links, the leader's planned Trip and the leader row in one
-   * transaction. Throws EMERGENCY_CONTACT_REQUIRED when the leader has no saved contact.
+   * transaction, plus one chat card per linked group (AC8). Throws EMERGENCY_CONTACT_REQUIRED
+   * when the leader has no saved contact.
    */
   async create(
     creatorId: string,
@@ -173,17 +197,13 @@ export class TripEventsRepository {
     groupIds: string[],
     fields: GroupTripFields,
     now: Date,
-  ): Promise<string> {
+  ): Promise<{ id: string; messageIds: string[] }> {
     return this.prisma.$transaction(async (tx) => {
       const trip = await tx.groupTrip.create({
-        data: {
-          ...fields,
-          creatorId,
-          placeId,
-          groups: { create: groupIds.map((groupId) => ({ groupId })) },
-        },
+        data: { ...fields, creatorId, placeId },
         select: { id: true },
       });
+      const messageIds = await this.linkGroups(tx, trip.id, groupIds);
       const personalTripId = await this.createPersonalTrip(
         tx,
         creatorId,
@@ -199,8 +219,212 @@ export class TripEventsRepository {
           decidedAt: now,
         },
       });
-      return trip.id;
+      return { id: trip.id, messageIds };
     });
+  }
+
+  /**
+   * AC5: under a row lock, re-checks maxPeople against the approved count, saves the fields,
+   * moves still-planned personal Trips with the place/window, swaps group links (new links get
+   * a chat card) and writes the notices. Returns the new card message ids.
+   */
+  async update(
+    tripId: string,
+    placeId: string,
+    fields: GroupTripFields,
+    groupIds: string[] | undefined,
+    notices: TripNotice[],
+  ): Promise<string[]> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM group_trips WHERE id = ${tripId}::uuid FOR UPDATE`;
+      const approved = await tx.groupTripMember.count({
+        where: { tripId, status: 'approved' },
+      });
+      if (fields.maxPeople !== null && fields.maxPeople < approved) {
+        throw new GroupTripInvalidError({ maxPeople: ['belowApproved'] });
+      }
+      await tx.groupTrip.update({
+        where: { id: tripId },
+        data: { ...fields, placeId },
+      });
+      await tx.trip.updateMany({
+        where: { groupTripId: tripId, status: 'planned' },
+        data: { placeId, startAt: fields.startAt, backBy: fields.backBy },
+      });
+      let messageIds: string[] = [];
+      if (groupIds) {
+        const linked = await tx.groupTripGroup.findMany({
+          where: { tripId },
+          select: { groupId: true },
+        });
+        const keep = new Set(groupIds);
+        const had = new Set(linked.map((row) => row.groupId));
+        await tx.groupTripGroup.deleteMany({
+          where: { tripId, groupId: { notIn: groupIds } },
+        });
+        messageIds = await this.linkGroups(
+          tx,
+          tripId,
+          [...keep].filter((id) => !had.has(id)),
+        );
+      }
+      if (notices.length) {
+        await tx.notification.createMany({
+          data: notices.map((notice) => this.notification(notice)),
+        });
+      }
+      return messageIds;
+    });
+  }
+
+  /**
+   * AC5 cancel (leader or admin): status cancelled, still-planned personal Trips deleted,
+   * notices written and, for an admin, the audit row, all in one transaction.
+   */
+  async cancel(
+    tripId: string,
+    now: Date,
+    notices: TripNotice[],
+    audit?: { adminId: string; userId: string; note: string },
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.groupTrip.updateMany({
+        where: { id: tripId, status: 'open' },
+        data: { status: 'cancelled', cancelledAt: now },
+      });
+      if (count === 0) throw new GroupTripClosedError();
+      await tx.trip.deleteMany({
+        where: { groupTripId: tripId, status: 'planned' },
+      });
+      if (notices.length) {
+        await tx.notification.createMany({
+          data: notices.map((notice) => this.notification(notice)),
+        });
+      }
+      if (audit) {
+        await tx.adminAuditLog.create({
+          data: {
+            adminId: audit.adminId,
+            userId: audit.userId,
+            action: 'cancel_group_trip',
+            note: audit.note,
+            detail: tripId,
+          },
+        });
+      }
+    });
+  }
+
+  /** AC5 leave: the row becomes `left` and the caller's still-planned Trip is deleted. */
+  async leave(tripId: string, userId: string, now: Date): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.groupTripMember.update({
+        where: { tripId_userId: { tripId, userId } },
+        data: { status: 'left', personalTripId: null, decidedAt: now },
+      });
+      await tx.trip.deleteMany({
+        where: { groupTripId: tripId, userId, status: 'planned' },
+      });
+    });
+  }
+
+  /**
+   * AC7: stamps attendedAt on the user's approved rows for open trips at the place starting
+   * within [from, to). Rows already stamped are left alone, so a repeat is a no-op.
+   */
+  async markAttended(
+    userId: string,
+    placeId: string,
+    range: { from: Date; to: Date },
+    at: Date,
+  ): Promise<number> {
+    const { count } = await this.prisma.groupTripMember.updateMany({
+      where: {
+        userId,
+        status: 'approved',
+        attendedAt: null,
+        trip: {
+          placeId,
+          status: 'open',
+          startAt: { gte: range.from, lt: range.to },
+        },
+      },
+      data: { attendedAt: at },
+    });
+    return count;
+  }
+
+  /** AC8 search: open, upcoming, public trips matching a place name (any locale) or the description. */
+  searchPublic(
+    term: string,
+    now: Date,
+    take: number,
+  ): Promise<SearchTripRow[]> {
+    const contains = { contains: term, mode: 'insensitive' as const };
+    return this.prisma.groupTrip.findMany({
+      where: {
+        visibility: 'public',
+        status: 'open',
+        startAt: { gte: now },
+        OR: [
+          { description: contains },
+          { place: { nameUz: contains } },
+          { place: { nameRu: contains } },
+          { place: { nameEn: contains } },
+        ],
+      },
+      select: searchSelect,
+      orderBy: [{ startAt: 'asc' }, { id: 'asc' }],
+      take,
+    });
+  }
+
+  /** AC8 admin: every trip, newest start first, optionally by status. */
+  adminList(
+    status: GroupTripStatusCode | undefined,
+    cursor: { startAt: Date; id: string } | undefined,
+    take: number,
+  ): Promise<AdminTripRow[]> {
+    const and: Prisma.GroupTripWhereInput[] = [];
+    if (status) and.push({ status });
+    if (cursor) {
+      and.push({
+        OR: [
+          { startAt: { lt: cursor.startAt } },
+          { startAt: cursor.startAt, id: { lt: cursor.id } },
+        ],
+      });
+    }
+    return this.prisma.groupTrip.findMany({
+      where: { AND: and },
+      select: {
+        ...searchSelect,
+        status: true,
+        creator: { select: { username: true } },
+      },
+      orderBy: [{ startAt: 'desc' }, { id: 'desc' }],
+      take,
+    });
+  }
+
+  /** One `trip` chat message per group, its id kept on the link row. */
+  private async linkGroups(
+    tx: Prisma.TransactionClient,
+    tripId: string,
+    groupIds: string[],
+  ): Promise<string[]> {
+    const messageIds: string[] = [];
+    for (const groupId of groupIds) {
+      const message = await tx.groupMessage.create({
+        data: { groupId, kind: 'trip', groupTripId: tripId },
+        select: { id: true },
+      });
+      await tx.groupTripGroup.create({
+        data: { tripId, groupId, messageId: message.id },
+      });
+      messageIds.push(message.id);
+    }
+    return messageIds;
   }
 
   find(id: string): Promise<GroupTripRow | null> {

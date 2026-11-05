@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -26,6 +27,7 @@ import {
   CreateGroupTripDto,
   GroupTripsQueryDto,
   JoinGroupTripDto,
+  UpdateGroupTripDto,
 } from './dto/trip-events.request.dto.js';
 import {
   GroupTripDto,
@@ -34,7 +36,7 @@ import {
 import { TripEventsService } from './trip-events.service.js';
 
 /** Non-uuid ids answer 400 VALIDATION_FAILED like every other bad input. */
-function uuidPipe(field: string): ParseUUIDPipe {
+export function uuidPipe(field: string): ParseUUIDPipe {
   return new ParseUUIDPipe({
     exceptionFactory: () => new RequestValidationError({ [field]: ['isUuid'] }),
   });
@@ -170,5 +172,67 @@ export class TripEventsController {
     @Param('userId', uuidPipe('userId')) userId: string,
   ): Promise<GroupTripDto> {
     return this.trips.reject(user.id, id, userId);
+  }
+
+  @ApiBearerAuth()
+  @Patch(':id')
+  @ApiOperation({
+    operationId: 'GroupTrips_update',
+    summary: 'Edit a group trip as its leader (until its start day)',
+  })
+  @ApiOkResponse({ type: GroupTripDto })
+  @ApiErrorResponses({
+    ...SIGNED_IN_ERRORS,
+    403: ['TRIP_LEADER_REQUIRED', 'GROUP_LINK_FORBIDDEN', 'ACCOUNT_BLOCKED'],
+    404: ['GROUP_TRIP_NOT_FOUND', 'PLACE_NOT_FOUND'],
+    409: ['GROUP_TRIP_CLOSED', 'GROUP_TRIP_LOCKED'],
+    422: ['GROUP_TRIP_INVALID'],
+  })
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe('id')) id: string,
+    @Body() dto: UpdateGroupTripDto,
+  ): Promise<GroupTripDto> {
+    return this.trips.update(user.id, id, dto);
+  }
+
+  @ApiBearerAuth()
+  @Post(':id/cancel')
+  @ApiOperation({
+    operationId: 'GroupTrips_cancel',
+    summary: 'Cancel a group trip as its leader',
+  })
+  @ApiCreatedResponse({ type: GroupTripDto })
+  @ApiErrorResponses({
+    ...SIGNED_IN_ERRORS,
+    403: ['TRIP_LEADER_REQUIRED', 'ACCOUNT_BLOCKED'],
+    404: ['GROUP_TRIP_NOT_FOUND'],
+    409: ['GROUP_TRIP_CLOSED'],
+  })
+  cancel(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe('id')) id: string,
+  ): Promise<GroupTripDto> {
+    return this.trips.cancel(user.id, id);
+  }
+
+  @ApiBearerAuth()
+  @Post(':id/leave')
+  @ApiOperation({
+    operationId: 'GroupTrips_leave',
+    summary: 'Leave a group trip (or withdraw a request)',
+  })
+  @ApiCreatedResponse({ type: GroupTripDto })
+  @ApiErrorResponses({
+    ...SIGNED_IN_ERRORS,
+    403: ['ACCOUNT_BLOCKED'],
+    404: ['GROUP_TRIP_NOT_FOUND', 'NOT_ON_GROUP_TRIP'],
+    409: ['LEADER_CANNOT_LEAVE'],
+  })
+  leave(
+    @CurrentUser() user: AuthUser,
+    @Param('id', uuidPipe('id')) id: string,
+  ): Promise<GroupTripDto> {
+    return this.trips.leave(user.id, id);
   }
 }

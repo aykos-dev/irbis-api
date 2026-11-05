@@ -28,6 +28,26 @@ const messageInclude = {
   },
   reactions: { select: { emoji: true, userId: true } },
   mentions: { select: { userId: true } },
+  // Live trip card (trip-events AC8).
+  groupTrip: {
+    select: {
+      id: true,
+      startAt: true,
+      maxPeople: true,
+      minLevel: true,
+      place: {
+        select: {
+          nameUz: true,
+          nameRu: true,
+          nameEn: true,
+          difficulty: true,
+          requiredLevel: true,
+          condition: { select: { status: true } },
+        },
+      },
+      _count: { select: { members: { where: { status: 'approved' } } } },
+    },
+  },
 } satisfies Prisma.GroupMessageInclude;
 
 export type GroupMessageRow = Prisma.GroupMessageGetPayload<{
@@ -79,6 +99,14 @@ export class GroupChatRepository {
       where: { id: messageId },
       include: messageInclude,
     });
+  }
+
+  async locale(userId: string): Promise<'uz' | 'ru' | 'en'> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { locale: true },
+    });
+    return user?.locale ?? 'uz';
   }
 
   async readers(

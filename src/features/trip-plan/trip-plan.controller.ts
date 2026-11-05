@@ -78,7 +78,7 @@ export class TripPreviewController {
   @ApiErrorResponses({
     400: ['VALIDATION_FAILED'],
     ...SIGNED_IN_ERRORS,
-    404: ['PLACE_NOT_FOUND'],
+    404: ['PLACE_NOT_FOUND', 'GROUP_TRIP_NOT_FOUND'],
     422: ['TRIP_TIMES_INVALID'],
   })
   preview(
@@ -89,6 +89,8 @@ export class TripPreviewController {
       id,
       new Date(query.startAt),
       new Date(query.backBy),
+      undefined,
+      query.groupTripId,
     );
   }
 }

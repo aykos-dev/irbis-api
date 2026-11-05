@@ -1,20 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { RequestValidationError } from '../../common/errors/validation.error.js';
 import { decodeCursor, encodeCursor } from '../../lib/cursor.js';
+import { GroupChatService } from '../group-chat/group-chat.service.js';
 import { GameConfigService } from '../levels/game-config.service.js';
 import { PlaceNotFoundError } from '../places/places.errors.js';
 import { EmergencyContactRequiredError } from '../trip-plan/trip-plan.errors.js';
 import { TripPlanService } from '../trip-plan/trip-plan.service.js';
 import type {
+  AdminGroupTripsQueryDto,
   CreateGroupTripDto,
   GroupTripsQueryDto,
   JoinGroupTripDto,
+  UpdateGroupTripDto,
 } from './dto/trip-events.request.dto.js';
 import type {
+  AdminGroupTripsPageDto,
   GroupTripDto,
   GroupTripsPageDto,
+  SearchGroupTripDto,
 } from './dto/trip-events.response.dto.js';
 import {
+  ADMIN_GROUP_TRIP_PAGE_SIZE,
   GROUP_TRIP_PAGE_SIZE,
   VERIFIED_LEADER_LEVEL,
 } from './trip-events.constants.js';
@@ -23,7 +29,10 @@ import {
   GroupLinkForbiddenError,
   GroupTripClosedError,
   GroupTripFullError,
+  GroupTripLockedError,
   GroupTripNotFoundError,
+  LeaderCannotLeaveError,
+  NotOnGroupTripError,
   SecuredAccountRequiredError,
   TripLeaderRequiredError,
 } from './trip-events.errors.js';
@@ -33,7 +42,14 @@ import {
   type TripNotice,
   TripEventsRepository,
 } from './trip-events.repository.js';
-import { isFull, spotsLeft, validateGroupTrip } from './trip-events.rules.js';
+import {
+  isEditLocked,
+  isFull,
+  mergeGroupTripPatch,
+  spotsLeft,
+  tashkentDayRange,
+  validateGroupTrip,
+} from './trip-events.rules.js';
 
 @Injectable()
 export class TripEventsService {
@@ -41,6 +57,7 @@ export class TripEventsService {
     private readonly repository: TripEventsRepository,
     private readonly gameConfig: GameConfigService,
     private readonly tripPlan: TripPlanService,
+    @Optional() private readonly chat?: GroupChatService,
   ) {}
 
   /** AC1: owner/admin of the linked groups; leader row + leader's planned Trip together. */
@@ -61,14 +78,189 @@ export class TripEventsService {
     if (!(await this.repository.placeExists(dto.placeId))) {
       throw new PlaceNotFoundError();
     }
-    const id = await this.repository.create(
+    const { id, messageIds } = await this.repository.create(
       userId,
       dto.placeId,
       groupIds,
       fields,
       now,
     );
+    await this.chat?.announceTripCards(messageIds, userId);
     return this.details(id, userId);
+  }
+
+  /** AC5: leader-only edit until the trip's Tashkent start day; planned Trips follow place/window. */
+  async update(
+    userId: string,
+    id: string,
+    dto: UpdateGroupTripDto,
+    now = new Date(),
+  ): Promise<GroupTripDto> {
+    const trip = await this.ledTrip(userId, id);
+    if (trip.status !== 'open') throw new GroupTripClosedError();
+    if (isEditLocked(trip.startAt, now)) throw new GroupTripLockedError();
+    let groupIds: string[] | undefined;
+    if (dto.groupIds) {
+      groupIds = [...new Set(dto.groupIds)];
+      const led = new Set(await this.repository.ledGroupIds(userId));
+      const linked = new Set(trip.groups.map(({ group }) => group.id));
+      if (groupIds.some((gid) => !linked.has(gid) && !led.has(gid))) {
+        throw new GroupLinkForbiddenError();
+      }
+    }
+    const config = await this.gameConfig.tripConfig(now.getTime());
+    const fields = validateGroupTrip(
+      mergeGroupTripPatch(trip, dto),
+      now,
+      config.maxDurationH,
+    );
+    const placeId = dto.placeId ?? trip.place.id;
+    if (placeId !== trip.place.id) {
+      if (!(await this.repository.placeExists(placeId))) {
+        throw new PlaceNotFoundError();
+      }
+    }
+    const messageIds = await this.repository.update(
+      trip.id,
+      placeId,
+      fields,
+      groupIds,
+      this.memberNotices(trip, userId, 'trip_changed', {
+        uz: `${placeName(trip, 'uz')} sayohati o'zgartirildi`,
+        ru: `Поездка «${placeName(trip, 'ru')}» изменена`,
+        en: `The trip to ${placeName(trip, 'en')} was updated`,
+      }),
+    );
+    await this.chat?.announceTripCards(messageIds, userId);
+    return this.details(trip.id, userId);
+  }
+
+  /** AC5: the leader cancels; planned Trips are deleted and members notified. */
+  async cancel(
+    userId: string,
+    id: string,
+    now = new Date(),
+  ): Promise<GroupTripDto> {
+    const trip = await this.ledTrip(userId, id);
+    if (trip.status !== 'open') throw new GroupTripClosedError();
+    await this.repository.cancel(trip.id, now, this.cancelNotices(trip));
+    return this.details(trip.id, userId);
+  }
+
+  /** AC5: a member (pending or approved) leaves; their planned Trip goes too. */
+  async leave(
+    userId: string,
+    id: string,
+    now = new Date(),
+  ): Promise<GroupTripDto> {
+    const trip = await this.visibleTrip(id, userId);
+    const mine = trip.members.find((member) => member.userId === userId);
+    if (!mine) throw new NotOnGroupTripError();
+    if (mine.role === 'leader') throw new LeaderCannotLeaveError();
+    await this.repository.leave(trip.id, userId, now);
+    return this.details(trip.id, userId);
+  }
+
+  /**
+   * AC7: after an accepted check-in, the user's approved rows on open trips at that place
+   * starting the same Tashkent day get attendedAt. Idempotent, no XP.
+   */
+  async recordAttendance(
+    userId: string,
+    placeId: string,
+    recordedAt: Date,
+  ): Promise<void> {
+    await this.repository.markAttended(
+      userId,
+      placeId,
+      tashkentDayRange(recordedAt),
+      recordedAt,
+    );
+  }
+
+  /** AC8 search: open upcoming public trips by place name or description. */
+  async search(
+    term: string,
+    take: number,
+    now = new Date(),
+  ): Promise<SearchGroupTripDto[]> {
+    const rows = await this.repository.searchPublic(term, now, take);
+    return rows.map((row) => ({
+      id: row.id,
+      placeName: row.place.nameEn ?? row.place.nameRu ?? row.place.nameUz,
+      startAt: row.startAt.toISOString(),
+      approvedCount: row._count.members,
+      maxPeople: row.maxPeople,
+    }));
+  }
+
+  /** AC8 admin list: every trip, newest start first. */
+  async adminList(
+    query: AdminGroupTripsQueryDto,
+  ): Promise<AdminGroupTripsPageDto> {
+    const take = ADMIN_GROUP_TRIP_PAGE_SIZE;
+    const rows = await this.repository.adminList(
+      query.status,
+      parseCursor(query.cursor),
+      take + 1,
+    );
+    const page = rows.slice(0, take);
+    const last = page[page.length - 1];
+    return {
+      items: page.map((row) => ({
+        id: row.id,
+        placeName: row.place.nameEn ?? row.place.nameRu ?? row.place.nameUz,
+        leaderUsername: row.creator.username,
+        startAt: row.startAt.toISOString(),
+        status: row.status,
+        approvedCount: row._count.members,
+        maxPeople: row.maxPeople,
+      })),
+      nextCursor:
+        rows.length > take && last
+          ? encodeCursor({ startAt: last.startAt.toISOString(), id: last.id })
+          : null,
+    };
+  }
+
+  /** AC8 admin cancel: the leader-cancel effects plus an audit row. */
+  async adminCancel(
+    adminId: string,
+    id: string,
+    note: string,
+    now = new Date(),
+  ): Promise<GroupTripDto> {
+    const trip = await this.repository.find(id);
+    if (!trip) throw new GroupTripNotFoundError();
+    if (trip.status !== 'open') throw new GroupTripClosedError();
+    await this.repository.cancel(trip.id, now, this.cancelNotices(trip), {
+      adminId,
+      userId: trip.creatorId,
+      note,
+    });
+    const updated = await this.repository.find(trip.id);
+    if (!updated) throw new GroupTripNotFoundError();
+    return this.toDto(updated);
+  }
+
+  private cancelNotices(trip: GroupTripRow): TripNotice[] {
+    return this.memberNotices(trip, trip.creatorId, 'trip_cancelled', {
+      uz: `${placeName(trip, 'uz')} sayohati bekor qilindi`,
+      ru: `Поездка «${placeName(trip, 'ru')}» отменена`,
+      en: `The trip to ${placeName(trip, 'en')} was cancelled`,
+    });
+  }
+
+  /** One notice per pending/approved person other than `exceptId`. */
+  private memberNotices(
+    trip: GroupTripRow,
+    exceptId: string,
+    kind: string,
+    title: TripNotice['title'],
+  ): TripNotice[] {
+    return trip.members
+      .filter((member) => member.userId !== exceptId)
+      .map((member) => notice(trip, member.userId, member.userId, kind, title));
   }
 
   /** AC2: public to anyone; private only to people on the trip or in a linked group. */
