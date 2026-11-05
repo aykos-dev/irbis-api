@@ -163,7 +163,7 @@ export class TripEventsService {
 
   /**
    * AC7: after an accepted check-in, the user's approved rows on open trips at that place
-   * starting the same Tashkent day get attendedAt. Idempotent, no XP.
+   * starting the same Tashkent day get attendedAt and a `trip_rate` notice. Idempotent, no XP.
    */
   async recordAttendance(
     userId: string,
@@ -175,6 +175,21 @@ export class TripEventsService {
       placeId,
       tashkentDayRange(recordedAt),
       recordedAt,
+      (trip) => {
+        const uz = trip.place.nameUz;
+        const ru = trip.place.nameRu ?? uz;
+        const en = trip.place.nameEn ?? uz;
+        return {
+          userId,
+          kind: 'trip_rate',
+          title: {
+            uz: `${uz} sayohatidagi hamrohlaringizni baholang`,
+            ru: `Оцените напарников по поездке: ${ru}`,
+            en: `Rate your trip buddies: ${en}`,
+          },
+          data: { groupTripId: trip.id },
+        };
+      },
     );
   }
 

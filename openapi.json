@@ -8466,6 +8466,896 @@
         ]
       }
     },
+    "/v1/buddies/find": {
+      "get": {
+        "operationId": "Buddies_find",
+        "parameters": [
+          {
+            "name": "level",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BuddyLevelFilter"
+            }
+          },
+          {
+            "name": "weekend",
+            "required": false,
+            "in": "query",
+            "description": "Only people free Sat or Sun this Asia/Tashkent week.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "region",
+            "required": false,
+            "in": "query",
+            "description": "Matches only people who show their home region.",
+            "schema": {
+              "$ref": "#/components/schemas/HomeRegion"
+            }
+          },
+          {
+            "name": "interests",
+            "required": false,
+            "in": "query",
+            "description": "Comma-separated, any overlap: peaks, caves, lakes, camping, trails.",
+            "schema": {
+              "example": "peaks,lakes",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyCandidatePageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Find buddies: active, public, findable people you are not linked to",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies": {
+      "get": {
+        "operationId": "Buddies_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddiesListDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My buddies and pending requests both ways",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/trips": {
+      "get": {
+        "operationId": "Buddies_trips",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyTripsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upcoming public group trips my buddies are going on (max 10)",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/requests": {
+      "post": {
+        "operationId": "Buddies_request",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuddyRequestInputDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "They had already asked you: the link is now accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyLinkDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyLinkDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: SECURED_ACCOUNT_REQUIRED | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: BUDDY_USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: BUDDY_EXISTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a buddy request (accepts theirs if they already asked you)",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/requests/{id}/accept": {
+      "post": {
+        "operationId": "Buddies_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyLinkDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: BUDDY_REQUEST_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept a buddy request sent to me",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/requests/{id}/decline": {
+      "post": {
+        "operationId": "Buddies_decline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: BUDDY_REQUEST_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Decline a buddy request sent to me",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/{userId}": {
+      "delete": {
+        "operationId": "Buddies_remove",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: BUDDY_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a buddy or cancel my outgoing request",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/me/availability": {
+      "get": {
+        "operationId": "Me_getAvailability",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "I'm free Sat / Sun for the current Asia/Tashkent week",
+        "tags": [
+          "Buddies"
+        ]
+      },
+      "put": {
+        "operationId": "Me_putAvailability",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvailabilityInputDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set I'm free Sat / Sun for the current Asia/Tashkent week",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/me/ratings/pending": {
+      "get": {
+        "operationId": "Me_pendingRatings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyPendingRatingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Trips I attended where I can still rate someone (Home card)",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/ratings/pending": {
+      "get": {
+        "operationId": "GroupTrips_pendingRatings",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripRatingsPendingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: NOT_ATTENDEE | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Other attendees of this trip with my own scores so far",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/ratings/{userId}": {
+      "put": {
+        "operationId": "GroupTrips_rate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripRatingInputDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: NOT_ATTENDEE | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: RATING_CLOSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: RATING_SELF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rate another attendee 1-5 per trait (until 7 days after backBy)",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
     "/v1/check-ins": {
       "post": {
         "description": "Rules in order: recordedAt (future → 400, older than 72 h → 422), place, accuracy, radius of the place type. A repeat at the same place in the same Asia/Tashkent month is stored with counted=false and 0 XP.",
@@ -15401,6 +16291,543 @@
         },
         "required": [
           "placeId"
+        ]
+      },
+      "BuddyLevelFilter": {
+        "type": "string",
+        "enum": [
+          "any",
+          "near",
+          "mentors"
+        ]
+      },
+      "BuddyRatingDto": {
+        "type": "object",
+        "properties": {
+          "mean": {
+            "type": "number",
+            "description": "Mean of all traits, 1 decimal.",
+            "example": 4.6
+          },
+          "raters": {
+            "type": "integer",
+            "description": "Distinct raters."
+          }
+        },
+        "required": [
+          "mean",
+          "raters"
+        ]
+      },
+      "BuddyFreeDto": {
+        "type": "object",
+        "properties": {
+          "sat": {
+            "type": "boolean"
+          },
+          "sun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sat",
+          "sun"
+        ]
+      },
+      "BuddyCandidateDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null when no avatar is set or storage is unavailable."
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "verifiedLeader": {
+            "type": "boolean",
+            "description": "Level 5 or above."
+          },
+          "region": {
+            "nullable": true,
+            "description": "Null unless the person shows their home region.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HomeRegion"
+              }
+            ]
+          },
+          "interests": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "$ref": "#/components/schemas/Interest"
+            }
+          },
+          "rating": {
+            "nullable": true,
+            "description": "Null below 3 distinct raters.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuddyRatingDto"
+              }
+            ]
+          },
+          "tripsTogether": {
+            "type": "integer",
+            "description": "Group trips you both attended."
+          },
+          "free": {
+            "description": "This Asia/Tashkent week.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuddyFreeDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
+          "verifiedLeader",
+          "region",
+          "interests",
+          "rating",
+          "tripsTogether",
+          "free"
+        ]
+      },
+      "BuddyCandidatePageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyCandidateDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "matchCount": {
+            "type": "integer",
+            "description": "All matches for the filters."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "matchCount"
+        ]
+      },
+      "BuddyLinkStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "accepted"
+        ]
+      },
+      "BuddyLinkDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null when no avatar is set or storage is unavailable."
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The link (request) id."
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuddyLinkStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
+          "id",
+          "status"
+        ]
+      },
+      "BuddiesListDto": {
+        "type": "object",
+        "properties": {
+          "buddies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyLinkDto"
+            }
+          },
+          "incoming": {
+            "description": "Pending, sent to me.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyLinkDto"
+            }
+          },
+          "outgoing": {
+            "description": "Pending, sent by me.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyLinkDto"
+            }
+          }
+        },
+        "required": [
+          "buddies",
+          "incoming",
+          "outgoing"
+        ]
+      },
+      "BuddyPlaceNamesDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "description": "Falls back to uz."
+          },
+          "en": {
+            "type": "string",
+            "description": "Falls back to uz."
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "BuddyTripBuddyDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "displayName",
+          "username"
+        ]
+      },
+      "BuddyTripDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeName": {
+            "$ref": "#/components/schemas/BuddyPlaceNamesDto"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approvedCount": {
+            "type": "integer"
+          },
+          "maxPeople": {
+            "type": "integer",
+            "nullable": true
+          },
+          "buddies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyTripBuddyDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "placeName",
+          "startAt",
+          "approvedCount",
+          "maxPeople",
+          "buddies"
+        ]
+      },
+      "BuddyTripsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyTripDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "BuddyRequestInputDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "AvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-02",
+            "description": "Monday of the current Asia/Tashkent week."
+          },
+          "sat": {
+            "type": "boolean"
+          },
+          "sun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "weekStart",
+          "sat",
+          "sun"
+        ]
+      },
+      "AvailabilityInputDto": {
+        "type": "object",
+        "properties": {
+          "sat": {
+            "type": "boolean"
+          },
+          "sun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sat",
+          "sun"
+        ]
+      },
+      "MyPendingRatingDto": {
+        "type": "object",
+        "properties": {
+          "groupTripId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeName": {
+            "$ref": "#/components/schemas/BuddyPlaceNamesDto"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closesAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unrated": {
+            "type": "integer",
+            "description": "Attendees not rated yet."
+          }
+        },
+        "required": [
+          "groupTripId",
+          "placeName",
+          "startAt",
+          "closesAt",
+          "unrated"
+        ]
+      },
+      "MyPendingRatingsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyPendingRatingDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "TripRatingScoresDto": {
+        "type": "object",
+        "properties": {
+          "reliable": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "safety": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "company": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "reliable",
+          "safety",
+          "company"
+        ]
+      },
+      "RatingAttendeeDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null when no avatar is set or storage is unavailable."
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "myScores": {
+            "nullable": true,
+            "description": "Your scores for this person, or null when not rated yet.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripRatingScoresDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
+          "myScores"
+        ]
+      },
+      "TripRatingsPendingDto": {
+        "type": "object",
+        "properties": {
+          "groupTripId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "closesAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "backBy + 7 days."
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RatingAttendeeDto"
+            }
+          }
+        },
+        "required": [
+          "groupTripId",
+          "closesAt",
+          "attendees"
+        ]
+      },
+      "TripRatingInputDto": {
+        "type": "object",
+        "properties": {
+          "reliable": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "safety": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "company": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "reliable",
+          "safety",
+          "company"
         ]
       },
       "CreateCheckInDto": {

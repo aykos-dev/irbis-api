@@ -19,6 +19,7 @@ import { AppConfigModule } from './config/config.module.js';
 import { AccountStatusGuard } from './features/auth/guards/account-status.guard.js';
 import { AuthModule } from './features/auth/auth.module.js';
 import { BadgesModule } from './features/badges/badges.module.js';
+import { BuddiesModule } from './features/buddies/buddies.module.js';
 import { CheckInModule } from './features/check-in/check-in.module.js';
 import { GroupsModule } from './features/groups/groups.module.js';
 import { GroupChatModule } from './features/group-chat/group-chat.module.js';
@@ -84,6 +85,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     WeeklyPathModule,
     TripPlanModule,
     TripEventsModule,
+    BuddiesModule,
     CheckInModule,
     GroupsModule,
     GroupChatModule,

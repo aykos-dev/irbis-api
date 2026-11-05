@@ -330,28 +330,55 @@ export class TripEventsRepository {
 
   /**
    * AC7: stamps attendedAt on the user's approved rows for open trips at the place starting
-   * within [from, to). Rows already stamped are left alone, so a repeat is a no-op.
+   * within [from, to). Rows already stamped are left alone, so a repeat is a no-op. Each row
+   * this call stamps also gets its `trip_rate` notice (buddies AC7), once per member per trip.
    */
   async markAttended(
     userId: string,
     placeId: string,
     range: { from: Date; to: Date },
     at: Date,
+    rateNotice: (trip: {
+      id: string;
+      place: { nameUz: string; nameRu: string | null; nameEn: string | null };
+    }) => TripNotice,
   ): Promise<number> {
-    const { count } = await this.prisma.groupTripMember.updateMany({
-      where: {
-        userId,
-        status: 'approved',
-        attendedAt: null,
-        trip: {
-          placeId,
-          status: 'open',
-          startAt: { gte: range.from, lt: range.to },
+    return this.prisma.$transaction(async (tx) => {
+      const rows = await tx.groupTripMember.findMany({
+        where: {
+          userId,
+          status: 'approved',
+          attendedAt: null,
+          trip: {
+            placeId,
+            status: 'open',
+            startAt: { gte: range.from, lt: range.to },
+          },
         },
-      },
-      data: { attendedAt: at },
+        select: {
+          id: true,
+          trip: {
+            select: {
+              id: true,
+              place: { select: { nameUz: true, nameRu: true, nameEn: true } },
+            },
+          },
+        },
+      });
+      let stamped = 0;
+      for (const row of rows) {
+        const { count } = await tx.groupTripMember.updateMany({
+          where: { id: row.id, attendedAt: null },
+          data: { attendedAt: at },
+        });
+        if (count === 0) continue;
+        stamped += 1;
+        await tx.notification.create({
+          data: this.notification(rateNotice(row.trip)),
+        });
+      }
+      return stamped;
     });
-    return count;
   }
 
   /** AC8 search: open, upcoming, public trips matching a place name (any locale) or the description. */
