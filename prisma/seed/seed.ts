@@ -17,6 +17,7 @@ import {
   badgesConfigRows,
   gameConfigRows,
   lessonsConfigRow,
+  leaguesConfigRows,
   pathConfigRows,
   tripConfigRows,
 } from './game-config.data.js';
@@ -122,6 +123,11 @@ export async function seedBadgesConfig(prisma: PrismaClient): Promise<number> {
   return upsertGameConfig(prisma, badgesConfigRows);
 }
 
+/** Upserts seasonal league rules (`leagues.config`). */
+export async function seedLeaguesConfig(prisma: PrismaClient): Promise<number> {
+  return upsertGameConfig(prisma, leaguesConfigRows);
+}
+
 async function upsertGameConfig(
   prisma: PrismaClient,
   rows: readonly { key: string; value: object }[],
@@ -212,7 +218,8 @@ async function main(): Promise<void> {
       (await seedTripConfig(prisma)) +
       (await seedCheckInConfig(prisma)) +
       (await seedStreaksConfig(prisma)) +
-      (await seedBadgesConfig(prisma));
+      (await seedBadgesConfig(prisma)) +
+      (await seedLeaguesConfig(prisma));
     const lessons = await seedLessons(prisma);
     const groups = await seedGroups(prisma);
     process.stdout.write(

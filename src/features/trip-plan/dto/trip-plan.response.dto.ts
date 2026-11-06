@@ -108,6 +108,20 @@ export class TripDto {
   @ApiProperty({ type: 'integer' }) distanceM: number;
   @ApiProperty({ type: 'integer' }) climbM: number;
   @ApiProperty({ type: [TripWaypointDto] }) waypoints: TripWaypointDto[];
+  @ApiPropertyOptional({
+    type: 'integer',
+    minimum: 0,
+    description:
+      'League elevation awarded by this checkout; present on the checkout response.',
+  })
+  leagueElevationM?: number;
+  @ApiPropertyOptional({
+    type: 'integer',
+    minimum: 0,
+    description:
+      'The member season total after this checkout; present on the checkout response.',
+  })
+  leagueSeasonElevationM?: number;
   @ApiProperty({
     type: 'integer',
     description:
