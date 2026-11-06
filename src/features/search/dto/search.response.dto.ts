@@ -102,6 +102,24 @@ export class SearchGroupDto {
   memberCount: number;
 }
 
+/** An open, upcoming public group trip. */
+export class SearchTripDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ description: 'English name, else Russian, else Uzbek.' })
+  placeName: string;
+
+  @ApiProperty({ format: 'date-time' })
+  startAt: string;
+
+  @ApiProperty({ type: 'integer' })
+  approvedCount: number;
+
+  @ApiProperty({ type: 'integer', nullable: true })
+  maxPeople: number | null;
+}
+
 export class SearchResultsDto {
   @ApiProperty({ type: [SearchPlaceDto] })
   places: SearchPlaceDto[];
@@ -117,4 +135,10 @@ export class SearchResultsDto {
     description: 'Always empty until tours ship.',
   })
   tours: string[];
+
+  @ApiPropertyOptional({
+    type: [SearchTripDto],
+    description: 'Present for scope all and trips.',
+  })
+  trips?: SearchTripDto[];
 }

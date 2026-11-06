@@ -68,6 +68,7 @@ enum AdminAction {
   set_password
   set_recovery_phone
   change_role
+  cancel_group_trip
 
   @@map("admin_action")
 }
@@ -258,6 +259,13 @@ model User {
   groupMessages       GroupMessage[]
   groupReactions      GroupMessageReaction[]
   groupMentions       GroupMessageMention[]
+  groupTripsCreated   GroupTrip[]            @relation("GroupTripCreator")
+  groupTripMembers    GroupTripMember[]
+  buddyLinksSent      BuddyLink[]            @relation("BuddyRequester")
+  buddyLinksGot       BuddyLink[]            @relation("BuddyAddressee")
+  availability        BuddyAvailability[]
+  ratingsGiven        TripRating[]           @relation("TripRater")
+  ratingsReceived     TripRating[]           @relation("TripRatee")
   leagueMemberships   LeagueMember[]
   leagueContributions LeagueContribution[]
 
@@ -408,6 +416,7 @@ model Place {
   pathNodes               PathNode[]
   trips                   Trip[]
   groupMessageAttachments GroupMessageAttachment[]
+  groupTrips              GroupTrip[]
 
   weekendConditions WeekendCondition[]
   checkIns          CheckIn[]
@@ -430,9 +439,10 @@ model Group {
   createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  createdBy User?          @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy User?            @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
   members   GroupMember[]
   messages  GroupMessage[]
+  trips     GroupTripGroup[]
 
   @@index([visibility, createdAt, id])
   @@index([createdById])
@@ -463,16 +473,18 @@ model GroupMember {
 }
 
 model GroupMessage {
-  id        String           @id @default(uuid(7)) @db.Uuid
-  groupId   String           @map("group_id") @db.Uuid
-  senderId  String?          @map("sender_id") @db.Uuid
-  replyToId String?          @map("reply_to_id") @db.Uuid
-  kind      GroupMessageKind @default(text)
-  body      String?          @db.VarChar(2000)
-  tripData  Json?            @map("trip_data")
-  editedAt  DateTime?        @map("edited_at") @db.Timestamptz(3)
-  deletedAt DateTime?        @map("deleted_at") @db.Timestamptz(3)
-  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  id          String           @id @default(uuid(7)) @db.Uuid
+  groupId     String           @map("group_id") @db.Uuid
+  senderId    String?          @map("sender_id") @db.Uuid
+  replyToId   String?          @map("reply_to_id") @db.Uuid
+  kind        GroupMessageKind @default(text)
+  body        String?          @db.VarChar(2000)
+  tripData    Json?            @map("trip_data")
+  // Live trip card (kind trip): built from the group trip instead of tripData.
+  groupTripId String?          @map("group_trip_id") @db.Uuid
+  editedAt    DateTime?        @map("edited_at") @db.Timestamptz(3)
+  deletedAt   DateTime?        @map("deleted_at") @db.Timestamptz(3)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
 
   group       Group                    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   sender      User?                    @relation(fields: [senderId], references: [id], onDelete: SetNull)
@@ -481,8 +493,10 @@ model GroupMessage {
   attachments GroupMessageAttachment[]
   reactions   GroupMessageReaction[]
   mentions    GroupMessageMention[]
+  groupTrip   GroupTrip?               @relation(fields: [groupTripId], references: [id], onDelete: Cascade)
 
   @@index([groupId, createdAt, id])
+  @@index([groupTripId])
   @@index([senderId, createdAt])
   @@index([replyToId])
   @@map("group_messages")
@@ -982,14 +996,20 @@ model Trip {
   createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  // trip-events: set on the personal trip of a group-trip leader or approved joiner.
+  groupTripId String? @map("group_trip_id") @db.Uuid
+
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   place              Place               @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  groupTrip          GroupTrip?          @relation(fields: [groupTripId], references: [id], onDelete: SetNull)
+  groupTripMember    GroupTripMember?
   waypoints          TripWaypoint[]
   sos                TripSos[]
   leagueContribution LeagueContribution?
 
   @@index([userId, startAt])
   @@index([status, backBy])
+  @@index([groupTripId])
   @@map("trips")
 }
 
@@ -1143,4 +1163,174 @@ model BadgeAward {
   @@unique([userId, key])
   @@index([userId, earnedAt])
   @@map("badge_awards")
+}
+
+// --- trip-events (group trips) ---
+
+enum GroupTripVisibility {
+  public
+  private
+
+  @@map("group_trip_visibility")
+}
+
+enum GroupTripStatus {
+  open
+  cancelled
+
+  @@map("group_trip_status")
+}
+
+enum GroupTripRole {
+  leader
+  member
+
+  @@map("group_trip_role")
+}
+
+enum GroupTripMemberStatus {
+  pending
+  approved
+  rejected
+  left
+
+  @@map("group_trip_member_status")
+}
+
+// A trip a group owner/admin leads; each approved member gets a personal planned Trip.
+model GroupTrip {
+  id           String              @id @default(uuid(7)) @db.Uuid
+  creatorId    String              @map("creator_id") @db.Uuid
+  placeId      String              @map("place_id") @db.Uuid
+  visibility   GroupTripVisibility
+  status       GroupTripStatus     @default(open)
+  startAt      DateTime            @map("start_at") @db.Timestamptz(3)
+  backBy       DateTime            @map("back_by") @db.Timestamptz(3)
+  meetingText  String              @map("meeting_text") @db.VarChar(120)
+  meetingLat   Float?              @map("meeting_lat")
+  meetingLng   Float?              @map("meeting_lng")
+  carpoolFrom  String?             @map("carpool_from") @db.VarChar(5)
+  carpoolSeats Int?                @map("carpool_seats")
+  maxPeople    Int?                @map("max_people")
+  minLevel     Int?                @map("min_level")
+  gearKeys     String[]            @default([]) @map("gear_keys")
+  customGear   String[]            @default([]) @map("custom_gear")
+  description  String              @db.VarChar(500)
+  cancelledAt  DateTime?           @map("cancelled_at") @db.Timestamptz(3)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  creator  User              @relation("GroupTripCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  place    Place             @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  groups   GroupTripGroup[]
+  members  GroupTripMember[]
+  trips    Trip[]
+  messages GroupMessage[]
+  ratings  TripRating[]
+
+  @@index([status, startAt])
+  @@index([placeId, startAt])
+  @@map("group_trips")
+}
+
+model GroupTripGroup {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  tripId    String  @map("trip_id") @db.Uuid
+  groupId   String  @map("group_id") @db.Uuid
+  // Chat card message id (trip-events slice 2).
+  messageId String? @map("message_id") @db.Uuid
+
+  trip  GroupTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  group Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, groupId])
+  @@index([groupId])
+  @@map("group_trip_groups")
+}
+
+model GroupTripMember {
+  id             String                @id @default(uuid(7)) @db.Uuid
+  tripId         String                @map("trip_id") @db.Uuid
+  userId         String                @map("user_id") @db.Uuid
+  role           GroupTripRole
+  status         GroupTripMemberStatus
+  note           String?               @db.VarChar(200)
+  personalTripId String?               @unique @map("personal_trip_id") @db.Uuid
+  attendedAt     DateTime?             @map("attended_at") @db.Timestamptz(3)
+  decidedAt      DateTime?             @map("decided_at") @db.Timestamptz(3)
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  trip         GroupTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personalTrip Trip?     @relation(fields: [personalTripId], references: [id], onDelete: SetNull)
+
+  @@unique([tripId, userId])
+  @@index([userId, status])
+  @@map("group_trip_members")
+}
+
+// --- buddies ---
+
+enum BuddyLinkStatus {
+  pending
+  accepted
+
+  @@map("buddy_link_status")
+}
+
+// One link per unordered pair: pairKey = the two user ids sorted and joined by ':'.
+model BuddyLink {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  requesterId String          @map("requester_id") @db.Uuid
+  addresseeId String          @map("addressee_id") @db.Uuid
+  status      BuddyLinkStatus
+  pairKey     String          @unique @map("pair_key") @db.VarChar(73)
+  acceptedAt  DateTime?       @map("accepted_at") @db.Timestamptz(3)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  requester User @relation("BuddyRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("BuddyAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+  @@map("buddy_links")
+}
+
+// "I'm free Sat / Sun" for one Asia/Tashkent week (weekStart = that Monday).
+model BuddyAvailability {
+  userId    String   @map("user_id") @db.Uuid
+  weekStart DateTime @map("week_start") @db.Date
+  sat       Boolean  @default(false)
+  sun       Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, weekStart])
+  @@map("buddy_availability")
+}
+
+// Anonymous 1-5 scores between attendees of one group trip (CHECK constraints in the migration).
+model TripRating {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  groupTripId String   @map("group_trip_id") @db.Uuid
+  raterId     String   @map("rater_id") @db.Uuid
+  rateeId     String   @map("ratee_id") @db.Uuid
+  reliable    Int
+  safety      Int
+  company     Int
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  groupTrip GroupTrip @relation(fields: [groupTripId], references: [id], onDelete: Cascade)
+  rater     User      @relation("TripRater", fields: [raterId], references: [id], onDelete: Cascade)
+  ratee     User      @relation("TripRatee", fields: [rateeId], references: [id], onDelete: Cascade)
+
+  @@unique([groupTripId, raterId, rateeId])
+  @@index([rateeId])
+  @@index([raterId])
+  @@map("trip_ratings")
 }

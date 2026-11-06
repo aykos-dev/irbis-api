@@ -5803,31 +5803,27 @@
         ]
       }
     },
-    "/v1/path": {
-      "get": {
-        "description": "Public. Signed in: the stored month (picked on the first call, then frozen) and `interests` is ignored. Guest: level 1, picked from `interests`, nothing stored.",
-        "operationId": "Path_get",
-        "parameters": [
-          {
-            "name": "interests",
-            "required": false,
-            "in": "query",
-            "description": "Guests only (ignored when signed in). Comma list; empty or absent means every type.",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/Interest"
+    "/v1/group-trips": {
+      "post": {
+        "operationId": "GroupTrips_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupTripDto"
               }
             }
           }
-        ],
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PathDto"
+                  "$ref": "#/components/schemas/GroupTripDto"
                 }
               }
             }
@@ -5838,29 +5834,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "This month's path, chest and weekend weather",
-        "tags": [
-          "Path"
-        ]
-      }
-    },
-    "/v1/path/chest/open": {
-      "post": {
-        "description": "Awards path.config.chestXp once per month. Already opened: 200 with xp 0.",
-        "operationId": "Path_openChest",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PathChestOpenDto"
                 }
               }
             }
@@ -5876,7 +5849,7 @@
             }
           },
           "403": {
-            "description": "Error. code: ACCOUNT_BLOCKED",
+            "description": "Error. code: SECURED_ACCOUNT_REQUIRED | TRIP_LEADER_REQUIRED | GROUP_LINK_FORBIDDEN | ACCOUNT_BLOCKED",
             "content": {
               "application/json": {
                 "schema": {
@@ -5886,7 +5859,218 @@
             }
           },
           "404": {
-            "description": "Error. code: PATH_NOT_FOUND",
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: GROUP_TRIP_INVALID | EMERGENCY_CONTACT_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a group trip as a group owner or admin",
+        "tags": [
+          "Group trips"
+        ]
+      },
+      "get": {
+        "operationId": "GroupTrips_list",
+        "parameters": [
+          {
+            "name": "placeId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/GroupTripScope"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripsPageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Upcoming group trips you can see, or your own (scope=mine)",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}": {
+      "get": {
+        "operationId": "GroupTrips_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A group trip with participants (and requests for its leader)",
+        "tags": [
+          "Group trips"
+        ]
+      },
+      "patch": {
+        "operationId": "GroupTrips_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGroupTripDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: TRIP_LEADER_REQUIRED | GROUP_LINK_FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND | PLACE_NOT_FOUND",
             "content": {
               "application/json": {
                 "schema": {
@@ -5896,7 +6080,17 @@
             }
           },
           "409": {
-            "description": "Error. code: PATH_CHEST_LOCKED",
+            "description": "Error. code: GROUP_TRIP_CLOSED | GROUP_TRIP_LOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: GROUP_TRIP_INVALID",
             "content": {
               "application/json": {
                 "schema": {
@@ -5911,34 +6105,412 @@
             "bearer": []
           }
         ],
-        "summary": "Open this month's chest once every node is done",
+        "summary": "Edit a group trip as its leader (until its start day)",
         "tags": [
-          "Path"
+          "Group trips"
         ]
       }
     },
-    "/v1/qa/path/visits": {
+    "/v1/group-trips/{id}/requests": {
       "post": {
-        "description": "Builds this month's path if missing, then records the visit (no XP). Answers 404 NOT_FOUND unless QA_TOOLS_ENABLED=true.",
-        "operationId": "QaPath_visit",
-        "parameters": [],
+        "operationId": "GroupTrips_request",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PathVisitDto"
+                "$ref": "#/components/schemas/JoinGroupTripDto"
               }
             }
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PathDto"
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: SECURED_ACCOUNT_REQUIRED | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: GROUP_TRIP_CLOSED | GROUP_TRIP_FULL | ALREADY_REQUESTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: EMERGENCY_CONTACT_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask to join a group trip",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/requests/{userId}/approve": {
+      "post": {
+        "operationId": "GroupTrips_approveRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: TRIP_LEADER_REQUIRED | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND | GROUP_TRIP_REQUEST_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: GROUP_TRIP_CLOSED | GROUP_TRIP_FULL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: EMERGENCY_CONTACT_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve a join request as the trip leader",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/requests/{userId}/reject": {
+      "post": {
+        "operationId": "GroupTrips_rejectRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: TRIP_LEADER_REQUIRED | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND | GROUP_TRIP_REQUEST_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a join request as the trip leader",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/cancel": {
+      "post": {
+        "operationId": "GroupTrips_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: TRIP_LEADER_REQUIRED | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: GROUP_TRIP_CLOSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a group trip as its leader",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/leave": {
+      "post": {
+        "operationId": "GroupTrips_leave",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
                 }
               }
             }
@@ -5974,7 +6546,17 @@
             }
           },
           "404": {
-            "description": "Error. code: NOT_FOUND | PLACE_NOT_ON_PATH",
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND | NOT_ON_GROUP_TRIP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: LEADER_CANNOT_LEAVE",
             "content": {
               "application/json": {
                 "schema": {
@@ -5989,9 +6571,180 @@
             "bearer": []
           }
         ],
-        "summary": "QA only: mark a place visited on your path this month",
+        "summary": "Leave a group trip (or withdraw a request)",
         "tags": [
-          "QA"
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/admin/group-trips": {
+      "get": {
+        "operationId": "Admin_listGroupTrips",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/GroupTripStatus"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminGroupTripsPageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Group trips, newest start first",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/group-trips/{id}/cancel": {
+      "post": {
+        "operationId": "Admin_cancelGroupTrip",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCancelGroupTripDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupTripDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: FORBIDDEN | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: GROUP_TRIP_CLOSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a group trip (audited)",
+        "tags": [
+          "Admin"
         ]
       }
     },
@@ -6023,6 +6776,16 @@
             "description": "After startAt.",
             "schema": {
               "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupTripId",
+            "required": false,
+            "in": "query",
+            "description": "Merge this group trip's gear (it must be at this place).",
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }
@@ -6069,7 +6832,7 @@
             }
           },
           "404": {
-            "description": "Error. code: PLACE_NOT_FOUND",
+            "description": "Error. code: PLACE_NOT_FOUND | GROUP_TRIP_NOT_FOUND",
             "content": {
               "application/json": {
                 "schema": {
@@ -7198,104 +7961,6 @@
         ]
       }
     },
-    "/v1/check-ins": {
-      "post": {
-        "description": "Rules in order: recordedAt (future → 400, older than 72 h → 422), place, accuracy, radius of the place type. A repeat at the same place in the same Asia/Tashkent month is stored with counted=false and 0 XP.",
-        "operationId": "checkInsCreate",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCheckInDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "This clientId was already stored: its result is returned again (no new XP).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckInResult"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckInResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Error. code: VALIDATION_FAILED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Error. code: UNAUTHENTICATED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Error. code: ACCOUNT_BLOCKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Error. code: PLACE_NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Error. code: CHECK_IN_TOO_OLD | LOCATION_INACCURATE | CHECK_IN_TOO_FAR",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Check in at a place with a GPS fix (earns XP once per place per month)",
-        "tags": [
-          "Check-ins"
-        ]
-      }
-    },
     "/v1/groups/{groupId}/messages": {
       "get": {
         "operationId": "GroupChat_list",
@@ -7751,6 +8416,1350 @@
         "summary": "Upload one gallery photo for a message",
         "tags": [
           "Group chat"
+        ]
+      }
+    },
+    "/v1/path": {
+      "get": {
+        "description": "Public. Signed in: the stored month (picked on the first call, then frozen) and `interests` is ignored. Guest: level 1, picked from `interests`, nothing stored.",
+        "operationId": "Path_get",
+        "parameters": [
+          {
+            "name": "interests",
+            "required": false,
+            "in": "query",
+            "description": "Guests only (ignored when signed in). Comma list; empty or absent means every type.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Interest"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "This month's path, chest and weekend weather",
+        "tags": [
+          "Path"
+        ]
+      }
+    },
+    "/v1/path/chest/open": {
+      "post": {
+        "description": "Awards path.config.chestXp once per month. Already opened: 200 with xp 0.",
+        "operationId": "Path_openChest",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathChestOpenDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PATH_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: PATH_CHEST_LOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open this month's chest once every node is done",
+        "tags": [
+          "Path"
+        ]
+      }
+    },
+    "/v1/qa/path/visits": {
+      "post": {
+        "description": "Builds this month's path if missing, then records the visit (no XP). Answers 404 NOT_FOUND unless QA_TOOLS_ENABLED=true.",
+        "operationId": "QaPath_visit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PathVisitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: NOT_FOUND | PLACE_NOT_ON_PATH",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "QA only: mark a place visited on your path this month",
+        "tags": [
+          "QA"
+        ]
+      }
+    },
+    "/v1/buddies/find": {
+      "get": {
+        "operationId": "Buddies_find",
+        "parameters": [
+          {
+            "name": "level",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BuddyLevelFilter"
+            }
+          },
+          {
+            "name": "weekend",
+            "required": false,
+            "in": "query",
+            "description": "Only people free Sat or Sun this Asia/Tashkent week.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "region",
+            "required": false,
+            "in": "query",
+            "description": "Matches only people who show their home region.",
+            "schema": {
+              "$ref": "#/components/schemas/HomeRegion"
+            }
+          },
+          {
+            "name": "interests",
+            "required": false,
+            "in": "query",
+            "description": "Comma-separated, any overlap: peaks, caves, lakes, camping, trails.",
+            "schema": {
+              "example": "peaks,lakes",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyCandidatePageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Find buddies: active, public, findable people you are not linked to",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies": {
+      "get": {
+        "operationId": "Buddies_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddiesListDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My buddies and pending requests both ways",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/trips": {
+      "get": {
+        "operationId": "Buddies_trips",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyTripsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upcoming public group trips my buddies are going on (max 10)",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/requests": {
+      "post": {
+        "operationId": "Buddies_request",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuddyRequestInputDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "They had already asked you: the link is now accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyLinkDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyLinkDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: SECURED_ACCOUNT_REQUIRED | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: BUDDY_USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: BUDDY_EXISTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a buddy request (accepts theirs if they already asked you)",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/requests/{id}/accept": {
+      "post": {
+        "operationId": "Buddies_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyLinkDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: BUDDY_REQUEST_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept a buddy request sent to me",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/requests/{id}/decline": {
+      "post": {
+        "operationId": "Buddies_decline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: BUDDY_REQUEST_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Decline a buddy request sent to me",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/buddies/{userId}": {
+      "delete": {
+        "operationId": "Buddies_remove",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: BUDDY_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a buddy or cancel my outgoing request",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/me/availability": {
+      "get": {
+        "operationId": "Me_getAvailability",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "I'm free Sat / Sun for the current Asia/Tashkent week",
+        "tags": [
+          "Buddies"
+        ]
+      },
+      "put": {
+        "operationId": "Me_putAvailability",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvailabilityInputDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set I'm free Sat / Sun for the current Asia/Tashkent week",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/me/buddy-summary": {
+      "get": {
+        "operationId": "Me_buddySummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddySummaryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My buddy count and trip-buddy ratings",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/me/ratings/pending": {
+      "get": {
+        "operationId": "Me_pendingRatings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyPendingRatingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Trips I attended where I can still rate someone (Home card)",
+        "tags": [
+          "Buddies"
+        ]
+      }
+    },
+    "/v1/users/{username}/buddy-summary": {
+      "get": {
+        "operationId": "Users_getBuddySummary",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddySummaryDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A public profile's buddy count and trip-buddy ratings",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
+    "/v1/users/{username}/buddy-relation": {
+      "get": {
+        "operationId": "Users_getBuddyRelation",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuddyRelationDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PROFILE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error. code: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My buddy relation to a public profile's owner (anonymous: none)",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/ratings/pending": {
+      "get": {
+        "operationId": "GroupTrips_pendingRatings",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripRatingsPendingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: NOT_ATTENDEE | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Other attendees of this trip with my own scores so far",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/group-trips/{id}/ratings/{userId}": {
+      "put": {
+        "operationId": "GroupTrips_rate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripRatingInputDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: NOT_ATTENDEE | ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: GROUP_TRIP_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error. code: RATING_CLOSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: RATING_SELF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rate another attendee 1-5 per trait (until 7 days after backBy)",
+        "tags": [
+          "Group trips"
+        ]
+      }
+    },
+    "/v1/check-ins": {
+      "post": {
+        "description": "Rules in order: recordedAt (future → 400, older than 72 h → 422), place, accuracy, radius of the place type. A repeat at the same place in the same Asia/Tashkent month is stored with counted=false and 0 XP.",
+        "operationId": "checkInsCreate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "This clientId was already stored: its result is returned again (no new XP).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResult"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error. code: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error. code: UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error. code: ACCOUNT_BLOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error. code: PLACE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error. code: CHECK_IN_TOO_OLD | LOCATION_INACCURATE | CHECK_IN_TOO_FAR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check in at a place with a GPS fix (earns XP once per place per month)",
+        "tags": [
+          "Check-ins"
         ]
       }
     }
@@ -8916,7 +10925,8 @@
           "unblock",
           "set_password",
           "set_recovery_phone",
-          "change_role"
+          "change_role",
+          "cancel_group_trip"
         ]
       },
       "AdminAuditItemDto": {
@@ -12160,7 +14170,8 @@
           "places",
           "people",
           "groups",
-          "tours"
+          "tours",
+          "trips"
         ]
       },
       "SearchPlaceNameDto": {
@@ -12317,6 +14328,37 @@
           "memberCount"
         ]
       },
+      "SearchTripDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeName": {
+            "type": "string",
+            "description": "English name, else Russian, else Uzbek."
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approvedCount": {
+            "type": "integer"
+          },
+          "maxPeople": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "placeName",
+          "startAt",
+          "approvedCount",
+          "maxPeople"
+        ]
+      },
       "SearchResultsDto": {
         "type": "object",
         "properties": {
@@ -12343,6 +14385,13 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "trips": {
+            "description": "Present for scope all and trips.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchTripDto"
             }
           }
         },
@@ -12691,6 +14740,1835 @@
         },
         "required": [
           "admin"
+        ]
+      },
+      "GroupTripVisibility": {
+        "type": "string",
+        "enum": [
+          "public",
+          "private"
+        ]
+      },
+      "GearKey": {
+        "type": "string",
+        "enum": [
+          "water",
+          "warmLayer",
+          "firstAid",
+          "offlineMap",
+          "sun",
+          "headlamp",
+          "waterFilter"
+        ]
+      },
+      "CreateGroupTripDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupIds": {
+            "maxItems": 10,
+            "description": "Groups where you are an active owner or admin.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "visibility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripVisibility"
+              }
+            ]
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Future, at most 60 Asia/Tashkent days ahead."
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time",
+            "description": "After startAt, within trip maxDurationH."
+          },
+          "meetingText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "meetingLat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "With meetingLng."
+          },
+          "meetingLng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "With meetingLat."
+          },
+          "carpoolFrom": {
+            "type": "string",
+            "example": "06:30",
+            "description": "HH:MM, with carpoolSeats."
+          },
+          "carpoolSeats": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "maxPeople": {
+            "type": "number",
+            "minimum": 2,
+            "maximum": 50,
+            "description": "Includes the leader."
+          },
+          "minLevel": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "gearKeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GearKey"
+            }
+          },
+          "customGear": {
+            "maxItems": 8,
+            "description": "Each 1–30 characters; duplicates are dropped.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "placeId",
+          "groupIds",
+          "visibility",
+          "startAt",
+          "backBy",
+          "meetingText"
+        ]
+      },
+      "GroupTripPlaceNamesDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "description": "Falls back to uz."
+          },
+          "en": {
+            "type": "string",
+            "description": "Falls back to uz."
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "GroupTripPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "names": {
+            "$ref": "#/components/schemas/GroupTripPlaceNamesDto"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "difficulty": {
+            "type": "integer"
+          },
+          "requiredLevel": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "names",
+          "type",
+          "difficulty",
+          "requiredLevel"
+        ]
+      },
+      "GroupTripStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "cancelled"
+        ]
+      },
+      "GroupTripMeetingDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number",
+            "nullable": true
+          },
+          "lng": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "text",
+          "lat",
+          "lng"
+        ]
+      },
+      "GroupTripCarpoolDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "example": "06:30"
+          },
+          "seats": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from",
+          "seats"
+        ]
+      },
+      "GroupTripGearDto": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GearKey"
+            }
+          },
+          "custom": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "keys",
+          "custom"
+        ]
+      },
+      "GroupTripLeaderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer"
+          },
+          "verifiedLeader": {
+            "type": "boolean",
+            "description": "Level 5 or higher."
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "displayName",
+          "level",
+          "verifiedLeader"
+        ]
+      },
+      "GroupTripGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "GroupTripRole": {
+        "type": "string",
+        "enum": [
+          "leader",
+          "member"
+        ]
+      },
+      "GroupTripMemberStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected",
+          "left"
+        ]
+      },
+      "GroupTripMeDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripRole"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripMemberStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "role",
+          "status"
+        ]
+      },
+      "GroupTripParticipantDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "displayName",
+          "level"
+        ]
+      },
+      "GroupTripRequestDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "level",
+          "note",
+          "createdAt"
+        ]
+      },
+      "GroupTripDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "place": {
+            "$ref": "#/components/schemas/GroupTripPlaceDto"
+          },
+          "visibility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripVisibility"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripStatus"
+              }
+            ]
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "meeting": {
+            "$ref": "#/components/schemas/GroupTripMeetingDto"
+          },
+          "carpool": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripCarpoolDto"
+              }
+            ]
+          },
+          "maxPeople": {
+            "type": "integer",
+            "nullable": true
+          },
+          "minLevel": {
+            "type": "integer",
+            "nullable": true
+          },
+          "gear": {
+            "$ref": "#/components/schemas/GroupTripGearDto"
+          },
+          "description": {
+            "type": "string"
+          },
+          "leader": {
+            "$ref": "#/components/schemas/GroupTripLeaderDto"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTripGroupDto"
+            }
+          },
+          "approvedCount": {
+            "type": "integer",
+            "description": "Approved people, leader included."
+          },
+          "spotsLeft": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Null when there is no cap."
+          },
+          "me": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripMeDto"
+              }
+            ]
+          },
+          "participants": {
+            "description": "Approved people.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTripParticipantDto"
+            }
+          },
+          "requests": {
+            "description": "Pending requests; leader only, else empty.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTripRequestDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "place",
+          "visibility",
+          "status",
+          "startAt",
+          "backBy",
+          "meeting",
+          "carpool",
+          "maxPeople",
+          "minLevel",
+          "gear",
+          "description",
+          "leader",
+          "groups",
+          "approvedCount",
+          "spotsLeft",
+          "me",
+          "participants",
+          "requests"
+        ]
+      },
+      "GroupTripScope": {
+        "type": "string",
+        "enum": [
+          "upcoming",
+          "mine"
+        ]
+      },
+      "GroupTripsPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTripDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "GroupTripContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 30,
+            "example": "sister"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+998\\d{9}$",
+            "example": "+998XXXXXXXXX"
+          }
+        },
+        "required": [
+          "name",
+          "relation",
+          "phone"
+        ]
+      },
+      "JoinGroupTripDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "contact": {
+            "description": "Saved as your emergency contact when you have none yet.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripContactDto"
+              }
+            ]
+          }
+        }
+      },
+      "UpdateGroupTripDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupIds": {
+            "maxItems": 10,
+            "description": "Replaces the links; groups you own or administer.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "visibility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripVisibility"
+              }
+            ]
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "meetingText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "meetingLat": {
+            "type": "number",
+            "nullable": true,
+            "minimum": -90,
+            "maximum": 90
+          },
+          "meetingLng": {
+            "type": "number",
+            "nullable": true,
+            "minimum": -180,
+            "maximum": 180
+          },
+          "carpoolFrom": {
+            "type": "string",
+            "nullable": true,
+            "example": "06:30"
+          },
+          "carpoolSeats": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 8
+          },
+          "maxPeople": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 2,
+            "maximum": 50,
+            "description": "Not below the approved count."
+          },
+          "minLevel": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 7
+          },
+          "gearKeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GearKey"
+            }
+          },
+          "customGear": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "AdminGroupTripDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeName": {
+            "type": "string"
+          },
+          "leaderUsername": {
+            "type": "string"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripStatus"
+              }
+            ]
+          },
+          "approvedCount": {
+            "type": "integer"
+          },
+          "maxPeople": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "placeName",
+          "leaderUsername",
+          "startAt",
+          "status",
+          "approvedCount",
+          "maxPeople"
+        ]
+      },
+      "AdminGroupTripsPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminGroupTripDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "AdminCancelGroupTripDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "note"
+        ]
+      },
+      "GearNote": {
+        "type": "string",
+        "enum": [
+          "frost",
+          "sunset",
+          "streams"
+        ]
+      },
+      "GearItemDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "water",
+            "description": "A GearKey (water, warmLayer, firstAid, offlineMap, sun, headlamp, waterFilter), or custom-<n> for a group trip's custom item."
+          },
+          "label": {
+            "type": "string",
+            "description": "Custom items only: the text to show."
+          },
+          "custom": {
+            "type": "boolean",
+            "description": "True for a group trip custom item."
+          },
+          "litres": {
+            "type": "number",
+            "description": "Water only, litres in 0.5 steps."
+          },
+          "note": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GearNote"
+              }
+            ]
+          },
+          "noteTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "With note `sunset`: the sunset time."
+          }
+        },
+        "required": [
+          "key"
+        ]
+      },
+      "TripPreviewDto": {
+        "type": "object",
+        "properties": {
+          "sunsetAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Sunset at the place on the start date (Asia/Tashkent)."
+          },
+          "daylightBufferMin": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Minutes from backBy to sunset (negative = after dark); null when backBy is on a later day."
+          },
+          "gear": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GearItemDto"
+            }
+          }
+        },
+        "required": [
+          "sunsetAt",
+          "daylightBufferMin",
+          "gear"
+        ]
+      },
+      "EmergencyContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "relation": {
+            "type": "string"
+          },
+          "phoneMasked": {
+            "type": "string",
+            "example": "+998 •• ••• •• 41"
+          }
+        },
+        "required": [
+          "name",
+          "relation",
+          "phoneMasked"
+        ]
+      },
+      "PutEmergencyContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 30,
+            "example": "sister"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+998\\d{9}$",
+            "example": "+998XXXXXXXXX"
+          }
+        },
+        "required": [
+          "name",
+          "relation",
+          "phone"
+        ]
+      },
+      "TripLocationDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "accuracyM"
+        ]
+      },
+      "CreateTripDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time",
+            "description": "After startAt."
+          },
+          "alertEnabled": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "boolean",
+            "description": "true: the trip starts now (status active)."
+          },
+          "location": {
+            "description": "Device position; stored only when start is true.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripLocationDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "placeId",
+          "startAt",
+          "backBy",
+          "alertEnabled",
+          "start"
+        ]
+      },
+      "TripPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameUz": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlaceType"
+              }
+            ]
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "nameUz",
+          "nameRu",
+          "nameEn",
+          "type",
+          "latitude",
+          "longitude"
+        ]
+      },
+      "TripStatus": {
+        "type": "string",
+        "enum": [
+          "planned",
+          "active",
+          "checked_out",
+          "alerted"
+        ]
+      },
+      "TripWaypointDto": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "integer"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "n",
+          "lat",
+          "lng",
+          "recordedAt"
+        ]
+      },
+      "TripGroupGearDto": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GearKey"
+            }
+          },
+          "custom": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "keys",
+          "custom"
+        ]
+      },
+      "TripDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "place": {
+            "$ref": "#/components/schemas/TripPlaceDto"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripStatus"
+              }
+            ]
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "alertAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "backBy + trip.config alertDelayMin."
+          },
+          "alertEnabled": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "checkedOutAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "alertSentAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "contact": {
+            "$ref": "#/components/schemas/EmergencyContactDto"
+          },
+          "liveUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Public live page link for active, alerted and checked-out trips."
+          },
+          "lastLocationAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "distanceM": {
+            "type": "integer"
+          },
+          "climbM": {
+            "type": "integer"
+          },
+          "waypoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripWaypointDto"
+            }
+          },
+          "leagueElevationM": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "League elevation awarded by this checkout; present on the checkout response."
+          },
+          "leagueSeasonElevationM": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The member season total after this checkout; present on the checkout response."
+          },
+          "groupTripId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The group trip this plan belongs to."
+          },
+          "groupGear": {
+            "nullable": true,
+            "description": "The group trip's gear; null for a personal plan.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripGroupGearDto"
+              }
+            ]
+          },
+          "pingEveryMin": {
+            "type": "integer",
+            "description": "trip.active pingEveryMin: how often the app sends a location."
+          }
+        },
+        "required": [
+          "id",
+          "place",
+          "status",
+          "startAt",
+          "backBy",
+          "alertAt",
+          "alertEnabled",
+          "startedAt",
+          "checkedOutAt",
+          "alertSentAt",
+          "contact",
+          "liveUrl",
+          "lastLocationAt",
+          "distanceM",
+          "climbM",
+          "waypoints",
+          "groupTripId",
+          "groupGear",
+          "pingEveryMin"
+        ]
+      },
+      "CurrentTripsDto": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripDto"
+              }
+            ]
+          },
+          "planned": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripDto"
+            }
+          }
+        },
+        "required": [
+          "active",
+          "planned"
+        ]
+      },
+      "StartTripDto": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "description": "Device position at start, used for the alert link.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripLocationDto"
+              }
+            ]
+          }
+        }
+      },
+      "PostTripLocationDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fix was taken: not before startedAt, at most 2 min ahead of the server."
+          },
+          "distanceM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "climbM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "accuracyM",
+          "recordedAt",
+          "distanceM",
+          "climbM"
+        ]
+      },
+      "CheckInWaypointDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000,
+            "description": "Above the configured maximum (50 m) → LOCATION_INACCURATE."
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fix was taken: not before startedAt, at most 2 min ahead of the server (queued check-ins may arrive late)."
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "accuracyM",
+          "recordedAt"
+        ]
+      },
+      "WaypointResultDto": {
+        "type": "object",
+        "properties": {
+          "waypoint": {
+            "$ref": "#/components/schemas/TripWaypointDto"
+          },
+          "xpAwarded": {
+            "type": "integer",
+            "description": "XP the ledger granted; 0 when the daily cap is used up."
+          }
+        },
+        "required": [
+          "waypoint",
+          "xpAwarded"
+        ]
+      },
+      "SendSosDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "accuracyM": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000
+          }
+        }
+      },
+      "SosResultDto": {
+        "type": "object",
+        "properties": {
+          "sentAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "sosCallNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Rescue number to dial (E.164); null when not configured."
+          }
+        },
+        "required": [
+          "sentAt",
+          "contactName",
+          "sosCallNumber"
+        ]
+      },
+      "SosContactDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Emergency contact phone, full E.164."
+          },
+          "sosCallNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Rescue number to dial (E.164); null when not configured."
+          }
+        },
+        "required": [
+          "phone",
+          "sosCallNumber"
+        ]
+      },
+      "UpdateTripDto": {
+        "type": "object",
+        "properties": {
+          "startAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Planned trips only."
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Active trips: after now and within maxDurationH of startAt, until the alert is sent."
+          },
+          "alertEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CheckOutTripDto": {
+        "type": "object",
+        "properties": {
+          "distanceM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "climbM": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000
+          }
+        }
+      },
+      "LivePlaceNamesDto": {
+        "type": "object",
+        "properties": {
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string",
+            "description": "Falls back to uz."
+          },
+          "en": {
+            "type": "string",
+            "description": "Falls back to uz."
+          }
+        },
+        "required": [
+          "uz",
+          "ru",
+          "en"
+        ]
+      },
+      "LiveTripStatus": {
+        "type": "string",
+        "enum": [
+          "on_trip",
+          "late",
+          "alerted",
+          "back_safe",
+          "ended"
+        ]
+      },
+      "LiveTripDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Display name, else username."
+          },
+          "placeNames": {
+            "$ref": "#/components/schemas/LivePlaceNamesDto"
+          },
+          "backBy": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LiveTripStatus"
+              }
+            ]
+          },
+          "lastLocationAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Absent once the link has ended."
+          },
+          "mapsUrl": {
+            "type": "string",
+            "description": "Absent once the link has ended."
+          }
+        },
+        "required": [
+          "displayName",
+          "placeNames",
+          "backBy",
+          "status"
+        ]
+      },
+      "GroupMessageAuthorDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "integer"
+          },
+          "verifiedLeader": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
+          "verifiedLeader"
+        ]
+      },
+      "GroupReplyPreviewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "body": {
+            "type": "string",
+            "nullable": true
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "username"
+        ]
+      },
+      "GroupMessageAttachmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "photo",
+              "place"
+            ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "placeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "placeName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "GroupReactionResponseDto": {
+        "type": "object",
+        "properties": {
+          "emoji": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "mine": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "emoji",
+          "count",
+          "mine"
+        ]
+      },
+      "GroupTripCardDto": {
+        "type": "object",
+        "properties": {
+          "groupTripId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Set for live group-trip cards; null for seeded cards."
+          },
+          "title": {
+            "type": "string",
+            "description": "Place name in the viewer locale."
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "meetingTime": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "integer"
+          },
+          "requiredLevel": {
+            "type": "integer"
+          },
+          "capacity": {
+            "type": "integer"
+          },
+          "joined": {
+            "type": "integer"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "groupTripId",
+          "title",
+          "startsAt",
+          "meetingTime",
+          "difficulty",
+          "requiredLevel",
+          "capacity",
+          "joined",
+          "condition",
+          "imageUrl"
+        ]
+      },
+      "GroupMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "trip"
+            ]
+          },
+          "author": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupMessageAuthorDto"
+              }
+            ]
+          },
+          "body": {
+            "type": "string",
+            "nullable": true
+          },
+          "replyTo": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupReplyPreviewDto"
+              }
+            ]
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMessageAttachmentResponseDto"
+            }
+          },
+          "reactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupReactionResponseDto"
+            }
+          },
+          "mentionedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "readByCount": {
+            "type": "integer"
+          },
+          "trip": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupTripCardDto"
+              }
+            ]
+          },
+          "editedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "kind",
+          "author",
+          "body",
+          "replyTo",
+          "attachments",
+          "reactions",
+          "mentionedUserIds",
+          "readByCount",
+          "trip",
+          "editedAt",
+          "deletedAt",
+          "createdAt"
+        ]
+      },
+      "GroupMessagesPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMessageDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "GroupMessageAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "photo",
+              "place"
+            ]
+          },
+          "imageKey": {
+            "type": "string"
+          },
+          "placeId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "CreateGroupMessageDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "replyToId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attachments": {
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupMessageAttachmentDto"
+            }
+          }
+        }
+      },
+      "EditGroupMessageDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "GroupReactionDto": {
+        "type": "object",
+        "properties": {
+          "emoji": {
+            "type": "string",
+            "maxLength": 16,
+            "example": "👍"
+          }
+        },
+        "required": [
+          "emoji"
+        ]
+      },
+      "GroupChatActionDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "GroupReadDto": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "messageId"
+        ]
+      },
+      "GroupMuteDto": {
+        "type": "object",
+        "properties": {
+          "muted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "muted"
+        ]
+      },
+      "GroupPhotoUploadRequestDto": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "image"
+        ]
+      },
+      "GroupPhotoUploadDto": {
+        "type": "object",
+        "properties": {
+          "imageKey": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "imageKey",
+          "imageUrl"
         ]
       },
       "PathPlaceNameDto": {
@@ -13058,601 +16936,237 @@
           "placeId"
         ]
       },
-      "GearKey": {
+      "BuddyLevelFilter": {
         "type": "string",
         "enum": [
-          "water",
-          "warmLayer",
-          "firstAid",
-          "offlineMap",
-          "sun",
-          "headlamp",
-          "waterFilter"
+          "any",
+          "near",
+          "mentors"
         ]
       },
-      "GearNote": {
-        "type": "string",
-        "enum": [
-          "frost",
-          "sunset",
-          "streams"
-        ]
-      },
-      "GearItemDto": {
+      "BuddyRatingDto": {
         "type": "object",
         "properties": {
-          "key": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/GearKey"
-              }
-            ]
-          },
-          "litres": {
+          "mean": {
             "type": "number",
-            "description": "Water only, litres in 0.5 steps."
+            "description": "Mean of all traits, 1 decimal.",
+            "example": 4.6
           },
-          "note": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/GearNote"
-              }
-            ]
-          },
-          "noteTime": {
-            "type": "string",
-            "format": "date-time",
-            "description": "With note `sunset`: the sunset time."
-          }
-        },
-        "required": [
-          "key"
-        ]
-      },
-      "TripPreviewDto": {
-        "type": "object",
-        "properties": {
-          "sunsetAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Sunset at the place on the start date (Asia/Tashkent)."
-          },
-          "daylightBufferMin": {
+          "raters": {
             "type": "integer",
-            "nullable": true,
-            "description": "Minutes from backBy to sunset (negative = after dark); null when backBy is on a later day."
-          },
-          "gear": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GearItemDto"
-            }
+            "description": "Distinct raters."
           }
         },
         "required": [
-          "sunsetAt",
-          "daylightBufferMin",
-          "gear"
+          "mean",
+          "raters"
         ]
       },
-      "EmergencyContactDto": {
+      "BuddyFreeDto": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
-          },
-          "relation": {
-            "type": "string"
-          },
-          "phoneMasked": {
-            "type": "string",
-            "example": "+998 •• ••• •• 41"
-          }
-        },
-        "required": [
-          "name",
-          "relation",
-          "phoneMasked"
-        ]
-      },
-      "PutEmergencyContactDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 60
-          },
-          "relation": {
-            "type": "string",
-            "maxLength": 30,
-            "example": "sister"
-          },
-          "phone": {
-            "type": "string",
-            "pattern": "^\\+998\\d{9}$",
-            "example": "+998XXXXXXXXX"
-          }
-        },
-        "required": [
-          "name",
-          "relation",
-          "phone"
-        ]
-      },
-      "TripLocationDto": {
-        "type": "object",
-        "properties": {
-          "lat": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "lng": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "accuracyM": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100000
-          }
-        },
-        "required": [
-          "lat",
-          "lng",
-          "accuracyM"
-        ]
-      },
-      "CreateTripDto": {
-        "type": "object",
-        "properties": {
-          "placeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "startAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "backBy": {
-            "type": "string",
-            "format": "date-time",
-            "description": "After startAt."
-          },
-          "alertEnabled": {
+          "sat": {
             "type": "boolean"
           },
-          "start": {
-            "type": "boolean",
-            "description": "true: the trip starts now (status active)."
-          },
-          "location": {
-            "description": "Device position; stored only when start is true.",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TripLocationDto"
-              }
-            ]
+          "sun": {
+            "type": "boolean"
           }
         },
         "required": [
-          "placeId",
-          "startAt",
-          "backBy",
-          "alertEnabled",
-          "start"
+          "sat",
+          "sun"
         ]
       },
-      "TripPlaceDto": {
+      "BuddyCandidateDto": {
         "type": "object",
         "properties": {
-          "id": {
+          "userId": {
             "type": "string",
             "format": "uuid"
           },
-          "slug": {
+          "username": {
             "type": "string"
           },
-          "nameUz": {
-            "type": "string"
-          },
-          "nameRu": {
+          "displayName": {
             "type": "string",
             "nullable": true
           },
-          "nameEn": {
+          "avatarUrl": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Null when no avatar is set or storage is unavailable."
           },
-          "type": {
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "verifiedLeader": {
+            "type": "boolean",
+            "description": "Level 5 or above."
+          },
+          "region": {
+            "nullable": true,
+            "description": "Null unless the person shows their home region.",
             "allOf": [
               {
-                "$ref": "#/components/schemas/PlaceType"
+                "$ref": "#/components/schemas/HomeRegion"
               }
             ]
           },
-          "latitude": {
-            "type": "number"
+          "interests": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "$ref": "#/components/schemas/Interest"
+            }
           },
-          "longitude": {
-            "type": "number"
+          "rating": {
+            "nullable": true,
+            "description": "Null below 3 distinct raters.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuddyRatingDto"
+              }
+            ]
+          },
+          "tripsTogether": {
+            "type": "integer",
+            "description": "Group trips you both attended."
+          },
+          "free": {
+            "description": "This Asia/Tashkent week.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuddyFreeDto"
+              }
+            ]
           }
         },
         "required": [
-          "id",
-          "slug",
-          "nameUz",
-          "nameRu",
-          "nameEn",
-          "type",
-          "latitude",
-          "longitude"
+          "userId",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
+          "verifiedLeader",
+          "region",
+          "interests",
+          "rating",
+          "tripsTogether",
+          "free"
         ]
       },
-      "TripStatus": {
+      "BuddyCandidatePageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyCandidateDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "matchCount": {
+            "type": "integer",
+            "description": "All matches for the filters."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "matchCount"
+        ]
+      },
+      "BuddyLinkStatus": {
         "type": "string",
         "enum": [
-          "planned",
-          "active",
-          "checked_out",
-          "alerted"
+          "pending",
+          "accepted"
         ]
       },
-      "TripWaypointDto": {
+      "BuddyLinkDto": {
         "type": "object",
         "properties": {
-          "n": {
-            "type": "integer"
-          },
-          "lat": {
-            "type": "number"
-          },
-          "lng": {
-            "type": "number"
-          },
-          "recordedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "n",
-          "lat",
-          "lng",
-          "recordedAt"
-        ]
-      },
-      "TripDto": {
-        "type": "object",
-        "properties": {
-          "id": {
+          "userId": {
             "type": "string",
             "format": "uuid"
           },
-          "place": {
-            "$ref": "#/components/schemas/TripPlaceDto"
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null when no avatar is set or storage is unavailable."
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The link (request) id."
           },
           "status": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/TripStatus"
+                "$ref": "#/components/schemas/BuddyLinkStatus"
               }
             ]
-          },
-          "startAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "backBy": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "alertAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "backBy + trip.config alertDelayMin."
-          },
-          "alertEnabled": {
-            "type": "boolean"
-          },
-          "startedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "checkedOutAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "alertSentAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "contact": {
-            "$ref": "#/components/schemas/EmergencyContactDto"
-          },
-          "liveUrl": {
-            "type": "string",
-            "nullable": true,
-            "description": "Public live page link for active, alerted and checked-out trips."
-          },
-          "lastLocationAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "distanceM": {
-            "type": "integer"
-          },
-          "climbM": {
-            "type": "integer"
-          },
-          "waypoints": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TripWaypointDto"
-            }
-          },
-          "leagueElevationM": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "League elevation awarded by this checkout; present on the checkout response."
-          },
-          "leagueSeasonElevationM": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "The member season total after this checkout; present on the checkout response."
-          },
-          "pingEveryMin": {
-            "type": "integer",
-            "description": "trip.active pingEveryMin: how often the app sends a location."
           }
         },
         "required": [
+          "userId",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
           "id",
-          "place",
-          "status",
-          "startAt",
-          "backBy",
-          "alertAt",
-          "alertEnabled",
-          "startedAt",
-          "checkedOutAt",
-          "alertSentAt",
-          "contact",
-          "liveUrl",
-          "lastLocationAt",
-          "distanceM",
-          "climbM",
-          "waypoints",
-          "pingEveryMin"
+          "status"
         ]
       },
-      "CurrentTripsDto": {
+      "BuddiesListDto": {
         "type": "object",
         "properties": {
-          "active": {
-            "nullable": true,
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TripDto"
-              }
-            ]
-          },
-          "planned": {
+          "buddies": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TripDto"
+              "$ref": "#/components/schemas/BuddyLinkDto"
+            }
+          },
+          "incoming": {
+            "description": "Pending, sent to me.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyLinkDto"
+            }
+          },
+          "outgoing": {
+            "description": "Pending, sent by me.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyLinkDto"
             }
           }
         },
         "required": [
-          "active",
-          "planned"
+          "buddies",
+          "incoming",
+          "outgoing"
         ]
       },
-      "StartTripDto": {
-        "type": "object",
-        "properties": {
-          "location": {
-            "description": "Device position at start, used for the alert link.",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TripLocationDto"
-              }
-            ]
-          }
-        }
-      },
-      "PostTripLocationDto": {
-        "type": "object",
-        "properties": {
-          "lat": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "lng": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "accuracyM": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 5000
-          },
-          "recordedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the fix was taken: not before startedAt, at most 2 min ahead of the server."
-          },
-          "distanceM": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 1000000
-          },
-          "climbM": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 20000
-          }
-        },
-        "required": [
-          "lat",
-          "lng",
-          "accuracyM",
-          "recordedAt",
-          "distanceM",
-          "climbM"
-        ]
-      },
-      "CheckInWaypointDto": {
-        "type": "object",
-        "properties": {
-          "lat": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "lng": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "accuracyM": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 5000,
-            "description": "Above the configured maximum (50 m) → LOCATION_INACCURATE."
-          },
-          "recordedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the fix was taken: not before startedAt, at most 2 min ahead of the server (queued check-ins may arrive late)."
-          }
-        },
-        "required": [
-          "lat",
-          "lng",
-          "accuracyM",
-          "recordedAt"
-        ]
-      },
-      "WaypointResultDto": {
-        "type": "object",
-        "properties": {
-          "waypoint": {
-            "$ref": "#/components/schemas/TripWaypointDto"
-          },
-          "xpAwarded": {
-            "type": "integer",
-            "description": "XP the ledger granted; 0 when the daily cap is used up."
-          }
-        },
-        "required": [
-          "waypoint",
-          "xpAwarded"
-        ]
-      },
-      "SendSosDto": {
-        "type": "object",
-        "properties": {
-          "lat": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "lng": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "accuracyM": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 5000
-          }
-        }
-      },
-      "SosResultDto": {
-        "type": "object",
-        "properties": {
-          "sentAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "contactName": {
-            "type": "string"
-          },
-          "sosCallNumber": {
-            "type": "string",
-            "nullable": true,
-            "description": "Rescue number to dial (E.164); null when not configured."
-          }
-        },
-        "required": [
-          "sentAt",
-          "contactName",
-          "sosCallNumber"
-        ]
-      },
-      "SosContactDto": {
-        "type": "object",
-        "properties": {
-          "phone": {
-            "type": "string",
-            "description": "Emergency contact phone, full E.164."
-          },
-          "sosCallNumber": {
-            "type": "string",
-            "nullable": true,
-            "description": "Rescue number to dial (E.164); null when not configured."
-          }
-        },
-        "required": [
-          "phone",
-          "sosCallNumber"
-        ]
-      },
-      "UpdateTripDto": {
-        "type": "object",
-        "properties": {
-          "startAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Planned trips only."
-          },
-          "backBy": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Active trips: after now and within maxDurationH of startAt, until the alert is sent."
-          },
-          "alertEnabled": {
-            "type": "boolean"
-          }
-        }
-      },
-      "CheckOutTripDto": {
-        "type": "object",
-        "properties": {
-          "distanceM": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 1000000
-          },
-          "climbM": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 20000
-          }
-        }
-      },
-      "LivePlaceNamesDto": {
+      "BuddyPlaceNamesDto": {
         "type": "object",
         "properties": {
           "uz": {
@@ -13673,52 +17187,386 @@
           "en"
         ]
       },
-      "LiveTripStatus": {
-        "type": "string",
-        "enum": [
-          "on_trip",
-          "late",
-          "alerted",
-          "back_safe",
-          "ended"
-        ]
-      },
-      "LiveTripDto": {
+      "BuddyTripBuddyDto": {
         "type": "object",
         "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "displayName": {
             "type": "string",
-            "description": "Display name, else username."
+            "nullable": true
           },
-          "placeNames": {
-            "$ref": "#/components/schemas/LivePlaceNamesDto"
-          },
-          "backBy": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LiveTripStatus"
-              }
-            ]
-          },
-          "lastLocationAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Absent once the link has ended."
-          },
-          "mapsUrl": {
-            "type": "string",
-            "description": "Absent once the link has ended."
+          "username": {
+            "type": "string"
           }
         },
         "required": [
+          "userId",
           "displayName",
-          "placeNames",
-          "backBy",
-          "status"
+          "username"
+        ]
+      },
+      "BuddyTripDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeName": {
+            "$ref": "#/components/schemas/BuddyPlaceNamesDto"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approvedCount": {
+            "type": "integer"
+          },
+          "maxPeople": {
+            "type": "integer",
+            "nullable": true
+          },
+          "buddies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyTripBuddyDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "placeName",
+          "startAt",
+          "approvedCount",
+          "maxPeople",
+          "buddies"
+        ]
+      },
+      "BuddyTripsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuddyTripDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "BuddyRequestInputDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "AvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-02",
+            "description": "Monday of the current Asia/Tashkent week."
+          },
+          "sat": {
+            "type": "boolean"
+          },
+          "sun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "weekStart",
+          "sat",
+          "sun"
+        ]
+      },
+      "AvailabilityInputDto": {
+        "type": "object",
+        "properties": {
+          "sat": {
+            "type": "boolean"
+          },
+          "sun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sat",
+          "sun"
+        ]
+      },
+      "BuddyProfileRatingsDto": {
+        "type": "object",
+        "properties": {
+          "reliable": {
+            "type": "number",
+            "description": "Mean, 1 decimal.",
+            "example": 4.7
+          },
+          "safety": {
+            "type": "number",
+            "description": "Mean, 1 decimal.",
+            "example": 4.5
+          },
+          "company": {
+            "type": "number",
+            "description": "Mean, 1 decimal.",
+            "example": 4.8
+          },
+          "raters": {
+            "type": "integer",
+            "description": "Distinct raters."
+          },
+          "trips": {
+            "type": "integer",
+            "description": "Distinct trips rated."
+          }
+        },
+        "required": [
+          "reliable",
+          "safety",
+          "company",
+          "raters",
+          "trips"
+        ]
+      },
+      "BuddySummaryDto": {
+        "type": "object",
+        "properties": {
+          "buddyCount": {
+            "type": "integer",
+            "description": "Accepted buddies."
+          },
+          "ratings": {
+            "nullable": true,
+            "description": "Null below 3 distinct raters.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuddyProfileRatingsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "buddyCount",
+          "ratings"
+        ]
+      },
+      "MyPendingRatingDto": {
+        "type": "object",
+        "properties": {
+          "groupTripId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placeName": {
+            "$ref": "#/components/schemas/BuddyPlaceNamesDto"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closesAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unrated": {
+            "type": "integer",
+            "description": "Attendees not rated yet."
+          }
+        },
+        "required": [
+          "groupTripId",
+          "placeName",
+          "startAt",
+          "closesAt",
+          "unrated"
+        ]
+      },
+      "MyPendingRatingsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyPendingRatingDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "BuddyRelation": {
+        "type": "string",
+        "enum": [
+          "self",
+          "none",
+          "outgoing",
+          "incoming",
+          "buddies"
+        ]
+      },
+      "BuddyRelationDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The profile owner's user id."
+          },
+          "relation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuddyRelation"
+              }
+            ]
+          },
+          "linkId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The pending link id when relation is incoming (to accept it); else null."
+          }
+        },
+        "required": [
+          "userId",
+          "relation",
+          "linkId"
+        ]
+      },
+      "TripRatingScoresDto": {
+        "type": "object",
+        "properties": {
+          "reliable": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "safety": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "company": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "reliable",
+          "safety",
+          "company"
+        ]
+      },
+      "RatingAttendeeDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null when no avatar is set or storage is unavailable."
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "myScores": {
+            "nullable": true,
+            "description": "Your scores for this person, or null when not rated yet.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripRatingScoresDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "level",
+          "myScores"
+        ]
+      },
+      "TripRatingsPendingDto": {
+        "type": "object",
+        "properties": {
+          "groupTripId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "closesAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "backBy + 7 days."
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RatingAttendeeDto"
+            }
+          }
+        },
+        "required": [
+          "groupTripId",
+          "closesAt",
+          "attendees"
+        ]
+      },
+      "TripRatingInputDto": {
+        "type": "object",
+        "properties": {
+          "reliable": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "safety": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "company": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "reliable",
+          "safety",
+          "company"
         ]
       },
       "CreateCheckInDto": {
@@ -13827,398 +17675,6 @@
           "xp",
           "levelUps",
           "pathVisited"
-        ]
-      },
-      "GroupMessageAuthorDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "username": {
-            "type": "string"
-          },
-          "displayName": {
-            "type": "string",
-            "nullable": true
-          },
-          "avatarUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "level": {
-            "type": "integer"
-          },
-          "verifiedLeader": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "username",
-          "displayName",
-          "avatarUrl",
-          "level",
-          "verifiedLeader"
-        ]
-      },
-      "GroupReplyPreviewDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "body": {
-            "type": "string",
-            "nullable": true
-          },
-          "username": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "body",
-          "username"
-        ]
-      },
-      "GroupMessageAttachmentResponseDto": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "photo",
-              "place"
-            ]
-          },
-          "imageUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "placeId": {
-            "type": "string",
-            "nullable": true
-          },
-          "placeName": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "type"
-        ]
-      },
-      "GroupReactionResponseDto": {
-        "type": "object",
-        "properties": {
-          "emoji": {
-            "type": "string"
-          },
-          "count": {
-            "type": "integer"
-          },
-          "mine": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "emoji",
-          "count",
-          "mine"
-        ]
-      },
-      "GroupTripCardDto": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "startsAt": {
-            "type": "string"
-          },
-          "meetingTime": {
-            "type": "string"
-          },
-          "difficulty": {
-            "type": "integer"
-          },
-          "requiredLevel": {
-            "type": "integer"
-          },
-          "capacity": {
-            "type": "integer"
-          },
-          "joined": {
-            "type": "integer"
-          },
-          "condition": {
-            "type": "string"
-          },
-          "imageUrl": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "title",
-          "startsAt",
-          "meetingTime",
-          "difficulty",
-          "requiredLevel",
-          "capacity",
-          "joined",
-          "condition",
-          "imageUrl"
-        ]
-      },
-      "GroupMessageDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "groupId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "text",
-              "trip"
-            ]
-          },
-          "author": {
-            "nullable": true,
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/GroupMessageAuthorDto"
-              }
-            ]
-          },
-          "body": {
-            "type": "string",
-            "nullable": true
-          },
-          "replyTo": {
-            "nullable": true,
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/GroupReplyPreviewDto"
-              }
-            ]
-          },
-          "attachments": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GroupMessageAttachmentResponseDto"
-            }
-          },
-          "reactions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GroupReactionResponseDto"
-            }
-          },
-          "mentionedUserIds": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "readByCount": {
-            "type": "integer"
-          },
-          "trip": {
-            "nullable": true,
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/GroupTripCardDto"
-              }
-            ]
-          },
-          "editedAt": {
-            "type": "string",
-            "nullable": true
-          },
-          "deletedAt": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "groupId",
-          "kind",
-          "author",
-          "body",
-          "replyTo",
-          "attachments",
-          "reactions",
-          "mentionedUserIds",
-          "readByCount",
-          "trip",
-          "editedAt",
-          "deletedAt",
-          "createdAt"
-        ]
-      },
-      "GroupMessagesPageDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GroupMessageDto"
-            }
-          },
-          "nextCursor": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "items",
-          "nextCursor"
-        ]
-      },
-      "GroupMessageAttachmentDto": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "photo",
-              "place"
-            ]
-          },
-          "imageKey": {
-            "type": "string"
-          },
-          "placeId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "required": [
-          "type"
-        ]
-      },
-      "CreateGroupMessageDto": {
-        "type": "object",
-        "properties": {
-          "body": {
-            "type": "string",
-            "maxLength": 2000
-          },
-          "replyToId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "attachments": {
-            "maxItems": 5,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GroupMessageAttachmentDto"
-            }
-          }
-        }
-      },
-      "EditGroupMessageDto": {
-        "type": "object",
-        "properties": {
-          "body": {
-            "type": "string",
-            "maxLength": 2000
-          }
-        },
-        "required": [
-          "body"
-        ]
-      },
-      "GroupReactionDto": {
-        "type": "object",
-        "properties": {
-          "emoji": {
-            "type": "string",
-            "maxLength": 16,
-            "example": "👍"
-          }
-        },
-        "required": [
-          "emoji"
-        ]
-      },
-      "GroupChatActionDto": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "status"
-        ]
-      },
-      "GroupReadDto": {
-        "type": "object",
-        "properties": {
-          "messageId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "required": [
-          "messageId"
-        ]
-      },
-      "GroupMuteDto": {
-        "type": "object",
-        "properties": {
-          "muted": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "muted"
-        ]
-      },
-      "GroupPhotoUploadRequestDto": {
-        "type": "object",
-        "properties": {
-          "image": {
-            "type": "string",
-            "format": "binary"
-          }
-        },
-        "required": [
-          "image"
-        ]
-      },
-      "GroupPhotoUploadDto": {
-        "type": "object",
-        "properties": {
-          "imageKey": {
-            "type": "string"
-          },
-          "imageUrl": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "imageKey",
-          "imageUrl"
         ]
       }
     }

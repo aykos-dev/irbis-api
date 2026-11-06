@@ -37,6 +37,14 @@ export class TripPreviewQueryDto {
   @ApiProperty({ format: 'date-time', description: 'After startAt.' })
   @IsISO8601({ strict: true })
   backBy: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: "Merge this group trip's gear (it must be at this place).",
+  })
+  @IsOptional()
+  @IsUUID()
+  groupTripId?: string;
 }
 
 export class PutEmergencyContactDto {

@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { AppConfig } from '../../config/app-config.js';
 import { StorageService } from '../../lib/storage/storage.service.js';
 import { StorageUnavailableError } from '../../lib/storage/storage.errors.js';
 import { PlacesService } from '../places/places.service.js';
 import { GroupsService } from '../groups/groups.service.js';
+import { TripEventsService } from '../trip-events/trip-events.service.js';
 import type { SearchQueryDto } from './dto/search.request.dto.js';
 import type { SearchResultsDto } from './dto/search.response.dto.js';
 import { SEARCH_LIMIT, SEARCH_MIN_QUERY } from './search.constants.js';
@@ -18,6 +19,7 @@ export class SearchService {
     private readonly storage: StorageService,
     private readonly config: AppConfig,
     private readonly groups: GroupsService,
+    @Optional() private readonly trips?: TripEventsService,
   ) {}
 
   async search(
@@ -37,7 +39,8 @@ export class SearchService {
     const wantPlaces = scope === 'all' || scope === 'places';
     const wantPeople = scope === 'all' || scope === 'people';
     const wantGroups = scope === 'all' || scope === 'groups';
-    const [places, people, groups] = await Promise.all([
+    const wantTrips = scope === 'all' || scope === 'trips';
+    const [places, people, groups, trips] = await Promise.all([
       wantPlaces
         ? this.places.search(term, point, SEARCH_LIMIT)
         : Promise.resolve([]),
@@ -46,6 +49,9 @@ export class SearchService {
         : Promise.resolve([]),
       wantGroups
         ? this.groups.searchPublic(term, SEARCH_LIMIT)
+        : Promise.resolve([]),
+      wantTrips && this.trips
+        ? this.trips.search(term, SEARCH_LIMIT)
         : Promise.resolve([]),
     ]);
     return {
@@ -66,6 +72,7 @@ export class SearchService {
         memberCount: group.memberCount,
       })),
       tours: [],
+      ...(wantTrips ? { trips } : {}),
     };
   }
 

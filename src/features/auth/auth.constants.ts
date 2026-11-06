@@ -22,6 +22,7 @@ export const ADMIN_ACTIONS = [
   'set_password',
   'set_recovery_phone',
   'change_role',
+  'cancel_group_trip',
 ] as const;
 export type AdminActionCode = (typeof ADMIN_ACTIONS)[number];
 

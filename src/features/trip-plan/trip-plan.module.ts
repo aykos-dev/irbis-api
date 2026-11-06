@@ -31,5 +31,7 @@ import { TripSafetyService } from './trip-safety.service.js';
     PhoneCipher,
     TripAlertJob,
   ],
+  // trip-events saves a joiner's emergency contact through putEmergencyContact.
+  exports: [TripPlanService],
 })
 export class TripPlanModule {}

@@ -61,8 +61,13 @@ export interface TripLiveFields {
   waypoints: TripWaypointRecord[];
 }
 
+/** The group trip a personal Trip belongs to (trip-events AC6). */
+export interface TripGroupFields {
+  groupTrip?: { id: string; gearKeys: string[]; customGear: string[] } | null;
+}
+
 /** A trip as the repository reads it. */
-export type TripRow = TripRecord & TripLiveFields;
+export type TripRow = TripRecord & TripLiveFields & TripGroupFields;
 
 export interface TripWaypointRecord {
   n: number;
@@ -213,6 +218,7 @@ const tripSelect = {
     select: { n: true, lat: true, lng: true, recordedAt: true },
     orderBy: { n: 'asc' },
   },
+  groupTrip: { select: { id: true, gearKeys: true, customGear: true } },
   place: {
     select: {
       id: true,
@@ -234,6 +240,17 @@ const isUniqueViolation = (error: unknown): boolean =>
 @Injectable()
 export class TripPlanRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** trip-events AC6: a group trip's gear when it is at `placeId`. */
+  async findGroupTripGear(
+    groupTripId: string,
+    placeId: string,
+  ): Promise<{ gearKeys: string[]; customGear: string[] } | null> {
+    return this.prisma.groupTrip.findFirst({
+      where: { id: groupTripId, placeId },
+      select: { gearKeys: true, customGear: true },
+    });
+  }
 
   async findPreviewPlace(id: string): Promise<PreviewPlace | null> {
     const row = await this.prisma.place.findUnique({
